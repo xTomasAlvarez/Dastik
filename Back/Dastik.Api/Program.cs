@@ -1,9 +1,16 @@
+using Dastik.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
 // 1. Cargar variables de entorno desde el archivo .env (busca en el directorio actual y padres)
 DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection") 
+        ?? "Host=localhost;Database=dastik_erp;Username=postgres;Password=postgres"));
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
