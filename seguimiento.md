@@ -40,10 +40,10 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Suite de pruebas xUnit + FluentAssertions escrita en `ComisionesTests.cs` (5 casos de negocio).
 - Fase RED verificada y commiteada con `test: agregar prueba fallida para calculo de comisiones en sabados (RED)`.
 
-**Paso 4: TDD - Regla de Comisión (Feat & Refactor)**
-- Escribir la implementación en `Dastik.Api` (la clase/servicio de dominio) para que la prueba del Paso 3 pase (Green).
-- Refactorizar si es necesario.
-- Mensaje de commit sugerido.
+**Paso 4: TDD - Regla de Comisión (✅ COMPLETADO - GREEN)**
+- Lógica de dominio implementada en `CalculadoraComisiones.cs` con tipos estrictos (`decimal(18,2)`).
+- 5/5 pruebas unitarias pasando en verde (Green).
+- Rama `feature/tdd-comisiones` integrada en `develop`.
 
 **Paso 5: Entidades de Dominio (Feat)**
 - Instrucciones para crear la rama `feature/domain-entities`.
