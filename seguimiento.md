@@ -35,10 +35,10 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Código para configurar `Program.cs` de modo que cargue el `.env` existente.
 - Mensaje de commit sugerido.
 
-**Paso 3: TDD - Regla de Comisión (Test)**
-- Instrucciones para crear la rama `feature/tdd-comisiones`.
-- Escribir la prueba fallida (Red) en `Dastik.Tests` para la regla de negocio: *"Si la venta es el día sábado y el monto es >= $120,000, la comisión es del 5%. Caso contrario, es 0"*.
-- Mensaje de commit sugerido.
+**Paso 3: TDD - Regla de Comisión (✅ COMPLETADO - RED)**
+- Rama `feature/tdd-comisiones` activa.
+- Suite de pruebas xUnit + FluentAssertions escrita en `ComisionesTests.cs` (5 casos de negocio).
+- Fase RED verificada y commiteada con `test: agregar prueba fallida para calculo de comisiones en sabados (RED)`.
 
 **Paso 4: TDD - Regla de Comisión (Feat & Refactor)**
 - Escribir la implementación en `Dastik.Api` (la clase/servicio de dominio) para que la prueba del Paso 3 pase (Green).
