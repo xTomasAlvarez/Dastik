@@ -45,10 +45,10 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - 5/5 pruebas unitarias pasando en verde (Green).
 - Rama `feature/tdd-comisiones` integrada en `develop`.
 
-**Paso 5: Entidades de Dominio (Feat)**
-- Instrucciones para crear la rama `feature/domain-entities`.
-- Crear las entidades puras (sin atributos de BD) en `Dastik.Api`: `Producto`, `Variante`, `Categoria`, `Marca`, `UnidadNegocio`.
-- Mensaje de commit sugerido.
+**Paso 5: Entidades de Dominio (✅ COMPLETADO)**
+- Entidades POCOs puras creadas en `Domain/Entities`: `UnidadNegocio`, `Marca`, `Categoria`, `Proveedor`, `Producto`, `Variante`.
+- Cero Data Annotations, `decimal` para dinero, `string` para `Talle`, y propiedades de navegación bidireccionales.
+- Rama `feature/domain-entities` integrada en `develop`.
 
 **Paso 6: EF Core y Fluent API (Feat)**
 - Instrucciones para crear la rama `feature/efcore-setup`.
