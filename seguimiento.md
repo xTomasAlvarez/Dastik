@@ -57,3 +57,31 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Tipos de datos monetarios mapeados estrictamente a `decimal(18,2)`.
 - Migración inicial `InitialCatalog` generada exitosamente.
 - Rama `feature/efcore-setup` integrada a `develop`.
+
+---
+
+### Plan de Ejecución (Fase 2: Inventario y EAN-13)
+
+**Paso 1: Setup CQRS y Validaciones (✅ COMPLETADO)**
+- `MediatR` y `FluentValidation.DependencyInjectionExtensions` instalados.
+- Registrados en `Program.cs` escaneando el assembly actual.
+- Rama `feature/mediatr-setup` integrada a `develop`.
+
+**Paso 2: TDD - Generador EAN-13 (Test)**
+- Instrucciones para crear la rama `feature/ean13-generator`.
+- Escribir la prueba fallida (Red) en `Dastik.Tests` para un servicio de dominio llamado `GeneradorEan13`. Debe generar un string numérico de 13 dígitos y con dígito verificador válido (módulo 10).
+- Mensaje de commit sugerido.
+
+**Paso 3: TDD - Generador EAN-13 (Feat & Refactor)**
+- Escribir la implementación de `GeneradorEan13` en `Dastik.Api` (`Domain/Services`) para que el test del Paso 2 pase.
+- Mensaje de commit sugerido.
+
+**Paso 4: Vertical Slice - Crear Producto (Feat)**
+- Instrucciones para crear la rama `feature/slice-crear-producto`.
+- Crear estructura en `Features/Inventario/CrearProducto/` (`Command`, `Validator`, `Handler`).
+- Handler crea `Producto` con sus `Variantes`, generando EAN-13 si falta código de barras. Persistencia en `AppDbContext`.
+- Mensaje de commit sugerido.
+
+**Paso 5: Endpoint Crear Producto (Feat)**
+- Exponer el caso de uso a través de Endpoint Minimal API inyectando `ISender`.
+- Mensaje de commit sugerido.
