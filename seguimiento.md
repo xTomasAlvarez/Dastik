@@ -50,9 +50,10 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Cero Data Annotations, `decimal` para dinero, `string` para `Talle`, y propiedades de navegación bidireccionales.
 - Rama `feature/domain-entities` integrada en `develop`.
 
-**Paso 6: EF Core y Fluent API (Feat)**
-- Instrucciones para crear la rama `feature/efcore-setup`.
-- Instalar paquetes NuGet (`Microsoft.EntityFrameworkCore.Design`, `Npgsql.EntityFrameworkCore.PostgreSQL`).
-- Crear el `AppDbContext` y las clases `IEntityTypeConfiguration` para las entidades del Paso 5.
-- Instrucciones para generar la primera migración inicial.
-- Mensaje de commit sugerido.
+**Paso 6: EF Core y Fluent API (✅ COMPLETADO)**
+- Paquetes `Npgsql.EntityFrameworkCore.PostgreSQL` y `Microsoft.EntityFrameworkCore.Design` (8.0.11) instalados.
+- `AppDbContext` configurado con registro dinámico de mapeos (`ApplyConfigurationsFromAssembly`).
+- Mapeos Fluent API implementados para todas las entidades en `Infrastructure/Persistence/Configurations/`.
+- Tipos de datos monetarios mapeados estrictamente a `decimal(18,2)`.
+- Migración inicial `InitialCatalog` generada exitosamente.
+- Rama `feature/efcore-setup` integrada a `develop`.
