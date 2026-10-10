@@ -1,3 +1,6 @@
+// 1. Cargar variables de entorno desde el archivo .env (busca en el directorio actual y padres)
+DotNetEnv.Env.TraversePath().Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
