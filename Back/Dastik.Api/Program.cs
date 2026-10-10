@@ -1,4 +1,5 @@
 using Dastik.Api.Infrastructure.Persistence;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 // 1. Cargar variables de entorno desde el archivo .env (busca en el directorio actual y padres)
@@ -10,6 +11,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection") 
         ?? "Host=localhost;Database=dastik_erp;Username=postgres;Password=postgres"));
+
+// CQRS con MediatR y FluentValidation
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+});
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
