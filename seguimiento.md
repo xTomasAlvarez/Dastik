@@ -83,6 +83,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Inyección de `GeneradorEan13` para generación automática de códigos de barra faltantes.
 - Rama `feature/slice-crear-producto` integrada a `develop`.
 
-**Paso 5: Endpoint Crear Producto (Feat)**
-- Exponer el caso de uso a través de Endpoint Minimal API inyectando `ISender`.
-- Mensaje de commit sugerido.
+**Paso 5: Endpoint Crear Producto (✅ COMPLETADO)**
+- Endpoint Minimal API expuesto en `POST /api/productos` vía `CrearProductoEndpoint.cs`.
+- Validación preventiva con FluentValidation (retorno RFC 7807 `ValidationProblem`) y dispatch desacoplado con `ISender`.
+- Rama `feature/endpoint-crear-producto` integrada a `develop`.
