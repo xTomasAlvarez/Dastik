@@ -125,12 +125,70 @@ public static class CajaEndpoints
             .WithSummary("Alias directo para cobrar orden en caja.")
             .WithOpenApi();
 
-        // 3. Cierre de Turno (Arqueo)
-        group.MapPost("/turnos/cerrar", async (
+        // 3. Resumen en Vivo del Turno (para Arqueo)
+        group.MapGet("/turnos/{turnoId:int}/resumen", async (
+            int turnoId,
+            AppDbContext context,
+            CancellationToken ct) =>
+        {
+            var turno = await context.Turnos
+                .Include(t => t.Ordenes)
+                    .ThenInclude(o => o.Pagos)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == turnoId, ct);
+
+            if (turno == null)
+            {
+                return Results.NotFound(new { error = $"Turno con ID {turnoId} no encontrado." });
+            }
+
+            var ordenesPagadas = turno.Ordenes
+                .Where(o => o.Estado == EstadoOrden.Pagada)
+                .ToList();
+
+            var pagos = ordenesPagadas.SelectMany(o => o.Pagos).ToList();
+
+            decimal totalVentasEfectivo = pagos
+                .Where(p => p.MetodoPago == MetodoPago.Efectivo)
+                .Sum(p => p.Monto);
+
+            decimal totalVentasTarjeta = pagos
+                .Where(p => p.MetodoPago == MetodoPago.Tarjeta)
+                .Sum(p => p.Monto);
+
+            decimal totalVentasTransferencia = pagos
+                .Where(p => p.MetodoPago == MetodoPago.Transferencia)
+                .Sum(p => p.Monto);
+
+            decimal totalVentas = totalVentasEfectivo + totalVentasTarjeta + totalVentasTransferencia;
+            decimal saldoEsperado = turno.SaldoInicial + totalVentasEfectivo;
+
+            var resumen = new
+            {
+                turnoId = turno.Id,
+                empleadoId = turno.EmpleadoId,
+                fechaApertura = turno.FechaApertura,
+                saldoInicial = turno.SaldoInicial,
+                totalVentasEfectivo,
+                totalVentasTarjeta,
+                totalVentasTransferencia,
+                totalVentas,
+                saldoEsperado,
+                cantidadOrdenes = ordenesPagadas.Count
+            };
+
+            return Results.Ok(resumen);
+        })
+        .WithName("ObtenerResumenTurno")
+        .WithSummary("Calcula y retorna el resumen en vivo de ventas y efectivo esperado para arqueo.")
+        .WithOpenApi();
+
+        // 4. Cierre de Turno (Arqueo) - Soporta /turnos/cerrar y /cerrar-turno
+        async Task<IResult> CerrarTurnoHandler(
             CerrarTurnoCommand command,
             ISender sender,
             IValidator<CerrarTurnoCommand> validator,
-            CancellationToken ct) =>
+            CancellationToken ct)
         {
             var validationResult = await validator.ValidateAsync(command, ct);
             if (!validationResult.IsValid)
@@ -145,9 +203,16 @@ public static class CajaEndpoints
             }
 
             return Results.Ok(result.Value);
-        })
-        .WithName("CerrarTurno")
-        .WithSummary("Cierra un turno de caja calculando el balance de arqueo y asentando diferencias.")
-        .WithOpenApi();
+        }
+
+        group.MapPost("/turnos/cerrar", CerrarTurnoHandler)
+            .WithName("CerrarTurno")
+            .WithSummary("Cierra un turno de caja calculando el balance de arqueo y asentando diferencias.")
+            .WithOpenApi();
+
+        group.MapPost("/cerrar-turno", CerrarTurnoHandler)
+            .WithName("CerrarTurnoAlias")
+            .WithSummary("Alias directo para cerrar turno de caja.")
+            .WithOpenApi();
     }
 }

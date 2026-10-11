@@ -5,8 +5,12 @@ namespace Dastik.Api.Features.Caja.CerrarTurno;
 
 public record CerrarTurnoCommand(
     int TurnoId,
-    decimal SaldoFinal
-) : IRequest<Result<CerrarTurnoResult>>;
+    decimal SaldoFinal,
+    decimal? MontoRealEfectivo = null
+) : IRequest<Result<CerrarTurnoResult>>
+{
+    public decimal SaldoFinalEfectivo => MontoRealEfectivo.HasValue && MontoRealEfectivo.Value > 0 ? MontoRealEfectivo.Value : SaldoFinal;
+}
 
 public record CerrarTurnoResult(
     int TurnoId,

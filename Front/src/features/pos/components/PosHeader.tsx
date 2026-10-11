@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, SignOut, Storefront, TestTube } from '@phosphor-icons/react';
+import { Archive, ShieldCheck, SignOut, Storefront, TestTube } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useTenantStore } from '../../../stores/useTenantStore';
@@ -7,9 +7,10 @@ import type { TurnoActivoDto } from '../api/cajaApi';
 
 interface PosHeaderProps {
   turnoActivo?: TurnoActivoDto | null;
+  onSolicitarCierreTurno?: () => void;
 }
 
-export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo }) => {
+export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCierreTurno }) => {
   const { usuario, logout } = useAuthStore();
   const { isSandboxMode, toggleSandboxMode } = useTenantStore();
 
@@ -59,6 +60,20 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo }) => {
             {turnoActivo ? `TURNO #${turnoActivo.turnoId}` : 'SIN TURNO'}
           </span>
         </div>
+
+        {/* Botón de Cierre de Turno (Arqueo) si hay turno activo */}
+        {turnoActivo && onSolicitarCierreTurno && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onSolicitarCierreTurno}
+            className="gap-1.5 text-[10px] tracking-wider py-1.5 border-amber-900/60 hover:border-amber-500 text-amber-300 hover:text-amber-200"
+            title="Realizar arqueo y cierre del turno actual"
+          >
+            <Archive size={15} weight="light" />
+            <span>CERRAR TURNO</span>
+          </Button>
+        )}
 
         {/* Tenant Selector (Producción vs Sandbox) */}
         <div className="border border-[#333333] bg-[#111111] px-3 py-1.5 flex items-center gap-2 text-xs font-sans">

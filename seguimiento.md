@@ -310,7 +310,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Rama `feature/frontend-caja-cobro` integrada exitosamente a `develop`.
 - Conexión Backend & Endpoints:
   - `GET /api/caja/turno-activo`: consulta reactiva de turno abierto del operador.
-  - `POST /api/caja/abrir-turno`: apertura de turno con asignación de saldo inicial en gaveta.
+  - `POST /api/caja/abrir-turno`: apertura de turno con asignación de saldo inicial en caja física.
   - `POST /api/caja/cobrar`: liquidación de órdenes con desglose de ítems, métodos de pago y descuento atómico de stock.
 - Modal de Apertura de Turno (`ModalAbrirTurno.tsx`):
   - Modal bloqueante flat que intercepta el POS si la terminal no tiene turno abierto.

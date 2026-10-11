@@ -6,6 +6,7 @@ import { PosBarcodeScanner } from '../components/PosBarcodeScanner';
 import { CatalogoGrid } from '../components/CatalogoGrid';
 import { ModalAbrirTurno } from '../components/ModalAbrirTurno';
 import { ModalPago } from '../components/ModalPago';
+import { ModalCerrarTurno } from '../components/ModalCerrarTurno';
 import { cajaApi } from '../api/cajaApi';
 import { useCartStore } from '../stores/useCartStore';
 import { Button } from '../../../components/ui/Button';
@@ -15,6 +16,7 @@ export const DashboardPos: React.FC = () => {
   const { items, removeItem, updateQuantity, clearCart, getTotal, getItemCount } = useCartStore();
 
   const [isModalPagoOpen, setIsModalPagoOpen] = useState(false);
+  const [isModalCerrarTurnoOpen, setIsModalCerrarTurnoOpen] = useState(false);
   const [ventaExitosa, setVentaExitosa] = useState<{
     ordenId: number;
     total: number;
@@ -45,7 +47,10 @@ export const DashboardPos: React.FC = () => {
   return (
     <div className="h-screen w-screen bg-[#000000] text-[#FAFAFA] flex flex-col overflow-hidden selection:bg-[#FAFAFA] selection:text-[#000000]">
       {/* 1. Header Superior Arquitectónico */}
-      <PosHeader turnoActivo={turnoActivo} />
+      <PosHeader
+        turnoActivo={turnoActivo}
+        onSolicitarCierreTurno={() => setIsModalCerrarTurnoOpen(true)}
+      />
 
       {/* 2. Banner de Venta Exitosa (Toast Discreto) */}
       {ventaExitosa && (
@@ -251,6 +256,13 @@ export const DashboardPos: React.FC = () => {
           // Refrescar inventario en la grilla para reflejar descuento atómico de stock
           queryClient.invalidateQueries({ queryKey: ['catalogo-pos'] });
         }}
+      />
+
+      {/* 6. Modal de Arqueo y Cierre de Turno */}
+      <ModalCerrarTurno
+        isOpen={isModalCerrarTurnoOpen}
+        onClose={() => setIsModalCerrarTurnoOpen(false)}
+        turnoId={turnoActivo?.turnoId ?? 0}
       />
     </div>
   );
