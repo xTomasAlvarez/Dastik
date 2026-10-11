@@ -6,6 +6,7 @@ using Dastik.Api.Features.Caja;
 using Dastik.Api.Features.Inventario.CrearProducto;
 using Dastik.Api.Infrastructure.Persistence;
 using Dastik.Api.Infrastructure.Security;
+using Dastik.Api.Infrastructure.Tenancy;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -17,10 +18,16 @@ DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection") 
-        ?? "Host=localhost;Database=dastik_erp;Username=postgres;Password=postgres"));
+// Multi-Tenancy & Modo Sandbox
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantService, TenantService>();
+
+// Resolución dinámica de base de datos por tenant / Modo Sandbox
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+{
+    var tenantService = sp.GetRequiredService<ITenantService>();
+    options.UseNpgsql(tenantService.GetConnectionString());
+});
 
 // CQRS con MediatR y FluentValidation
 builder.Services.AddMediatR(cfg =>
