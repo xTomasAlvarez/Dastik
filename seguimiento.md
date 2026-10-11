@@ -98,9 +98,9 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Cero Data Annotations, montos estrictos con `decimal` y propiedades de navegación relacionales.
 - Rama `feature/domain-caja` integrada a `develop`.
 
-**Paso 2: EF Core y Fluent API para Caja (En Progreso)**
+**Paso 2: EF Core y Fluent API para Caja (✅ COMPLETADO)**
 - Registro de `DbSet` correspondientes en `AppDbContext`.
 - Configuraciones Fluent API con `IEntityTypeConfiguration<T>` en `Infrastructure/Persistence/Configurations/` forzando tipos monetarios a `decimal(18,2)` y relaciones referenciales.
-- Generación de migración `AddCajaYOrdenes` y actualización de la base de datos PostgreSQL.
-- Rama `feature/efcore-caja`.
+- Generación de migración `AddCajaYOrdenes` y esquema listo para PostgreSQL.
+- Rama `feature/efcore-caja` integrada a `develop`.
 
