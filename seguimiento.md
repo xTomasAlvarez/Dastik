@@ -201,6 +201,17 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Suite de pruebas unitarias ampliada: 56 tests en verde (3 nuevos tests en `TenantServiceTests.cs`).
 - Rama `feature/sandbox-tenant` integrada exitosamente a `develop`.
 
+**Paso 5: Seeder del Modo Sandbox (✅ COMPLETADO)**
+- Rama `feature/sandbox-seeder` creada desde `develop`.
+- Implementación de `SandboxDataSeeder.cs` en `Infrastructure/Persistence/`:
+  - Guardia estricta de seguridad: Valida `EsBaseDeDatosSandbox` inspeccionando la cadena de conexión para impedir categóricamente la inyección de datos ficticios en la base de datos de producción (`dastik_erp`).
+  - Sembrado de entidades padre requeridas si no existen (`UnidadNegocio`, `Marca`, `Categoria`, `Proveedor`).
+  - Sembrado de 2 productos de la unidad "Dastik" ("Remera Oversize Básica" y "Pantalón Cargo") con variantes XS a XL, códigos EAN-13 válidos y stock físico simulado.
+  - Sembrado de 2 productos de la unidad "Hidden Sneakers" ("Nike Dunk Low Panda" y "Adidas Yeezy Slide") con variantes de calzado US 8 a US 11, códigos EAN-13 y stock físico simulado.
+  - Sembrado de usuario de prueba para cajeros (`cajero.sandbox@dastik.com` / `Dastik2026!`, `DebeCambiarPassword = false`) para entrenamiento inmediato.
+- Registro en `Program.cs`: Ejecución protegida en entorno de desarrollo (`app.Environment.IsDevelopment()`).
+- Suite de pruebas unitarias ampliada: 59 tests en verde (3 nuevos tests en `SandboxDataSeederTests.cs` cubriendo creación de catálogo simulado, guardia de seguridad contra producción y prevención de duplicados).
+
 
 
 

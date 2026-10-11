@@ -140,4 +140,17 @@ catch (Exception ex)
     app.Logger.LogWarning(ex, "No se pudo ejecutar el DataSeeder inicial (¿base de datos desconectada?).");
 }
 
+// Seeder de catálogo de prueba para Modo Sandbox (exclusivo para desarrollo)
+if (app.Environment.IsDevelopment())
+{
+    try
+    {
+        await SandboxDataSeeder.SeedSandboxDataAsync(app.Services);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "No se pudo ejecutar el SandboxDataSeeder (¿base de datos sandbox desconectada?).");
+    }
+}
+
 app.Run();
