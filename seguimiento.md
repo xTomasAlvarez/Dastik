@@ -289,21 +289,47 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 
 ### Fase 1 Frontend - Próximos Pasos
 
-**Paso 3: Dashboard POS - Terminal de Ventas y Grilla de Productos (UI/UX) (Pendiente)**
-- Rama `feature/frontend-pos-dashboard` desde `develop`.
+**Paso 3: Dashboard POS - Terminal de Ventas y Grilla de Productos (UI/UX) (Completado)**
+- Rama `feature/frontend-pos-dashboard` integrada exitosamente a `develop`.
 - Header Arquitectónico POS (`PosHeader.tsx`):
-  - Estado de turno de caja (Abierto/Cerrado con badge y arqueo).
+  - Estado de turno de caja (Abierto/Cerrado con badge reactivo y número de turno).
   - Selector dinámico de Tenant (`PRODUCCIÓN` vs `SANDBOX`).
   - Perfil del operador logueado y botón de cierre de sesión.
 - Lector de Código de Barras y Búsqueda (`PosBarcodeScanner.tsx`):
-  - Input con auto-focus constante para pistola láser EAN-13.
-  - Búsqueda reactiva por texto (nombre de prenda, talle, marca).
+  - Input con auto-focus continuo permanente para pistola láser EAN-13 con re-enfoque inteligente ante clics externos.
+  - Detección inmediata de prendas y feedback visual con vibración sutil (`shake`) en caso de código inválido o sin stock.
 - Grilla de Catálogo Retail (`CatalogoGrid.tsx` y `ProductCard.tsx`):
-  - Cards planas 1px de alto impacto visual.
-  - Selector interactivo de variantes (Talles `XS-XL` / `US 8-11` y Colores) con badge de stock físico en vivo.
+  - Conexión con TanStack Query (`useQuery`) consumiendo `inventarioApi.obtenerProductos` (`GET /api/productos`).
+  - Cards planas 1px de alto impacto visual con diseño Avant-Garde (`Design_Base.md`).
+  - Selector interactivo de variantes (Talles `XS-XL` / `US 8-11` y Colores) con badge de stock físico en vivo y tachado de agotados.
   - Formato monetario estricto `$ XX.XXX,00`.
-- Carrito de Cobro POS (`PosCart.tsx` con Zustand):
-  - Ticket en vivo con agregado atómico, modificación de unidades y subtotal.
+- Carrito de Cobro POS en split-screen 70/30 (`useCartStore.ts` con Zustand):
+  - Ticket en vivo con agregado atómico, incremento/decremento de unidades limitado por stock físico y cálculo de totales.
+
+**Paso 4: Flujo de Caja y Modal de Cobro (Completado)**
+- Rama `feature/frontend-caja-cobro` integrada exitosamente a `develop`.
+- Conexión Backend & Endpoints:
+  - `GET /api/caja/turno-activo`: consulta reactiva de turno abierto del operador.
+  - `POST /api/caja/abrir-turno`: apertura de turno con asignación de saldo inicial en gaveta.
+  - `POST /api/caja/cobrar`: liquidación de órdenes con desglose de ítems, métodos de pago y descuento atómico de stock.
+- Modal de Apertura de Turno (`ModalAbrirTurno.tsx`):
+  - Modal bloqueante flat que intercepta el POS si la terminal no tiene turno abierto.
+  - Solicitud de Fondo de Caja Inicial en ARS con accesos rápidos ($0, $10.000, $20.000, $50.000) y confirmación reactiva.
+- Modal de Cobro en Mostrador (`ModalPago.tsx`):
+  - Disparado desde el botón "COBRAR ORDEN" del ticket.
+  - Display gigante del total a liquidar.
+  - Selector de método de pago (Efectivo y Tarjeta).
+  - Cálculo instantáneo de vuelto en vivo para pagos en efectivo con accesos rápidos para billetes.
+  - Validación de dinero insuficiente.
+  - Venta atómica con reseteo de ticket en Zustand e invalidación de caché en catálogo.
+
+---
+
+### Próximos Pasos Disponibles
+
+- **Opción A (Completar Frontend POS):** Arqueo y Cierre de Turno de Caja (`ModalCerrarTurno.tsx` / balance de arqueo en efectivo vs tarjeta, diferencias de caja y cierre formal del turno).
+- **Opción B (Fase 6 Backend):** Integración real con Tiendanube (Cliente HTTP con tokens de producción/sandbox y procesamiento activo de eventos en `OutboxMessageProcessor`).
+
 
 
 
