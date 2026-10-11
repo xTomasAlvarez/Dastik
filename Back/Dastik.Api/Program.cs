@@ -1,6 +1,6 @@
 using Dastik.Api.Domain.Services;
 using Dastik.Api.Features.Inventario.CrearProducto;
-using Dastik.Api.Features.Caja.CobrarOrden;
+using Dastik.Api.Features.Caja;
 using Dastik.Api.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +43,6 @@ app.UseHttpsRedirection();
 
 // Endpoints (Vertical Slices)
 app.MapCrearProductoEndpoint();
-app.MapCobrarOrdenEndpoint();
+app.MapCajaEndpoints();
 
 app.Run();
