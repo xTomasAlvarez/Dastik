@@ -268,6 +268,15 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Captura y manejo global de 401 Unauthorized con logout y redirección.
 - Stores globales en Zustand: `useAuthStore.ts` (con persistencia y flag `debeCambiarPassword`) y `useTenantStore.ts` (toggle reactivo de Sandbox).
 - Build verificado: `tsc -b && vite build` completado exitosamente en 902ms.
+- Rama `feature/frontend-scaffolding` integrada exitosamente a `develop`.
+
+**Paso 2: Pantalla de Login y Flujo de Reseteo Obligatorio (UI/UX) (Pendiente)**
+- Rama `feature/frontend-login` desde `develop`.
+- Componentes de autenticación en `src/features/auth/components/`:
+  - `LoginForm.tsx`: Entrada de credenciales, feedback de errores (RFC 7807), botón flat de alto contraste.
+  - `CambiarPasswordModal.tsx`: Modal bloqueante para primer inicio de sesión cuando `debeCambiarPassword === true`.
+- Página `LoginPage.tsx` en `src/features/auth/pages/`.
+- Configuración de rutas y guardas en `App.tsx` con `react-router-dom`.
 
 
 
