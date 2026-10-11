@@ -1,6 +1,6 @@
 namespace Dastik.Api.Domain.Services;
 
-public class CalculadoraComisiones
+public class CalculadoraComisiones : ICalculadoraComisiones
 {
     private const decimal UmbralMontoSabado = 120_000.00m;
     private const decimal PorcentajeComisionSabado = 0.05m;
