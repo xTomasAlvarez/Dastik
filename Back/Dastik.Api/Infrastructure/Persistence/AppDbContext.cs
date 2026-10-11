@@ -15,6 +15,10 @@ public class AppDbContext : DbContext
     public DbSet<Proveedor> Proveedores => Set<Proveedor>();
     public DbSet<Producto> Productos => Set<Producto>();
     public DbSet<Variante> Variantes => Set<Variante>();
+    public DbSet<Turno> Turnos => Set<Turno>();
+    public DbSet<Orden> Ordenes => Set<Orden>();
+    public DbSet<DetalleOrden> DetallesOrden => Set<DetalleOrden>();
+    public DbSet<Pago> Pagos => Set<Pago>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

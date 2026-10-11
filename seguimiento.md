@@ -87,3 +87,20 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Endpoint Minimal API expuesto en `POST /api/productos` vía `CrearProductoEndpoint.cs`.
 - Validación preventiva con FluentValidation (retorno RFC 7807 `ValidationProblem`) y dispatch desacoplado con `ISender`.
 - Rama `feature/endpoint-crear-producto` integrada a `develop`.
+
+---
+
+### Plan de Ejecución (Fase 3: Motor Financiero y Punto de Venta)
+
+**Paso 1: Entidades de Dominio de Caja (✅ COMPLETADO)**
+- Enums de dominio creados en `Domain/Entities`: `EstadoTurno`, `EstadoOrden`, `MetodoPago`.
+- Entidades POCOs puras creadas en `Domain/Entities`: `Turno`, `Orden`, `DetalleOrden`, `Pago`.
+- Cero Data Annotations, montos estrictos con `decimal` y propiedades de navegación relacionales.
+- Rama `feature/domain-caja` integrada a `develop`.
+
+**Paso 2: EF Core y Fluent API para Caja (En Progreso)**
+- Registro de `DbSet` correspondientes en `AppDbContext`.
+- Configuraciones Fluent API con `IEntityTypeConfiguration<T>` en `Infrastructure/Persistence/Configurations/` forzando tipos monetarios a `decimal(18,2)` y relaciones referenciales.
+- Generación de migración `AddCajaYOrdenes` y actualización de la base de datos PostgreSQL.
+- Rama `feature/efcore-caja`.
+

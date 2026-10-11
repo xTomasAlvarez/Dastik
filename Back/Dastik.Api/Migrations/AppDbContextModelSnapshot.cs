@@ -59,6 +59,38 @@ namespace Dastik.Api.Migrations
                     b.ToTable("Categorias", (string)null);
                 });
 
+            modelBuilder.Entity("Dastik.Api.Domain.Entities.DetalleOrden", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OrdenId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("PrecioUnitario")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("VarianteId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdenId");
+
+                    b.HasIndex("VarianteId");
+
+                    b.ToTable("DetallesOrden", (string)null);
+                });
+
             modelBuilder.Entity("Dastik.Api.Domain.Entities.Marca", b =>
                 {
                     b.Property<int>("Id")
@@ -75,6 +107,59 @@ namespace Dastik.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Marcas", (string)null);
+                });
+
+            modelBuilder.Entity("Dastik.Api.Domain.Entities.Orden", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TurnoId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Fecha");
+
+                    b.HasIndex("TurnoId");
+
+                    b.ToTable("Ordenes", (string)null);
+                });
+
+            modelBuilder.Entity("Dastik.Api.Domain.Entities.Pago", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MetodoPago")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("OrdenId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdenId");
+
+                    b.ToTable("Pagos", (string)null);
                 });
 
             modelBuilder.Entity("Dastik.Api.Domain.Entities.Producto", b =>
@@ -162,6 +247,41 @@ namespace Dastik.Api.Migrations
                     b.ToTable("Proveedores", (string)null);
                 });
 
+            modelBuilder.Entity("Dastik.Api.Domain.Entities.Turno", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EmpleadoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("FechaApertura")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FechaCierre")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("SaldoFinal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SaldoInicial")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpleadoId");
+
+                    b.HasIndex("FechaApertura");
+
+                    b.ToTable("Turnos", (string)null);
+                });
+
             modelBuilder.Entity("Dastik.Api.Domain.Entities.UnidadNegocio", b =>
                 {
                     b.Property<int>("Id")
@@ -246,6 +366,47 @@ namespace Dastik.Api.Migrations
                     b.Navigation("CategoriaPadre");
                 });
 
+            modelBuilder.Entity("Dastik.Api.Domain.Entities.DetalleOrden", b =>
+                {
+                    b.HasOne("Dastik.Api.Domain.Entities.Orden", "Orden")
+                        .WithMany("Detalles")
+                        .HasForeignKey("OrdenId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Dastik.Api.Domain.Entities.Variante", "Variante")
+                        .WithMany()
+                        .HasForeignKey("VarianteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Orden");
+
+                    b.Navigation("Variante");
+                });
+
+            modelBuilder.Entity("Dastik.Api.Domain.Entities.Orden", b =>
+                {
+                    b.HasOne("Dastik.Api.Domain.Entities.Turno", "Turno")
+                        .WithMany("Ordenes")
+                        .HasForeignKey("TurnoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Turno");
+                });
+
+            modelBuilder.Entity("Dastik.Api.Domain.Entities.Pago", b =>
+                {
+                    b.HasOne("Dastik.Api.Domain.Entities.Orden", "Orden")
+                        .WithMany("Pagos")
+                        .HasForeignKey("OrdenId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Orden");
+                });
+
             modelBuilder.Entity("Dastik.Api.Domain.Entities.Producto", b =>
                 {
                     b.HasOne("Dastik.Api.Domain.Entities.Categoria", "Categoria")
@@ -304,6 +465,13 @@ namespace Dastik.Api.Migrations
                     b.Navigation("Productos");
                 });
 
+            modelBuilder.Entity("Dastik.Api.Domain.Entities.Orden", b =>
+                {
+                    b.Navigation("Detalles");
+
+                    b.Navigation("Pagos");
+                });
+
             modelBuilder.Entity("Dastik.Api.Domain.Entities.Producto", b =>
                 {
                     b.Navigation("Variantes");
@@ -312,6 +480,11 @@ namespace Dastik.Api.Migrations
             modelBuilder.Entity("Dastik.Api.Domain.Entities.Proveedor", b =>
                 {
                     b.Navigation("Productos");
+                });
+
+            modelBuilder.Entity("Dastik.Api.Domain.Entities.Turno", b =>
+                {
+                    b.Navigation("Ordenes");
                 });
 
             modelBuilder.Entity("Dastik.Api.Domain.Entities.UnidadNegocio", b =>
