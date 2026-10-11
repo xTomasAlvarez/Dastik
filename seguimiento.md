@@ -73,9 +73,10 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Fase RED verificada (4 pruebas fallando sobre el stub `GeneradorEan13.cs`).
 - Commit: `test: agregar pruebas unitarias para generacion y validacion de EAN-13 (RED)`.
 
-**Paso 3: TDD - Generador EAN-13 (Feat & Refactor)**
-- Escribir la implementación de `GeneradorEan13` en `Dastik.Api` (`Domain/Services`) para que el test del Paso 2 pase.
-- Mensaje de commit sugerido.
+**Paso 3: TDD - Generador EAN-13 (✅ COMPLETADO - GREEN)**
+- Servicio `GeneradorEan13` implementado con prefijo in-store (`20...`) y algoritmo GS1 Módulo 10.
+- 10/10 pruebas unitarias superadas en verde.
+- Rama `feature/ean13-generator` integrada a `develop`.
 
 **Paso 4: Vertical Slice - Crear Producto (Feat)**
 - Instrucciones para crear la rama `feature/slice-crear-producto`.
