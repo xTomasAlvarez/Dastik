@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dastik.Api.Common;
 using Dastik.Api.Domain.Entities;
 using Dastik.Api.Domain.Services;
@@ -46,6 +47,8 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
         // 3. Obtener variantes involucradas para validar stock suficiente
         var varianteIds = request.Items.Select(i => i.VarianteId).Distinct().ToList();
         var variantes = await _context.Variantes
+            .Include(v => v.Producto)
+                .ThenInclude(p => p.UnidadNegocio)
             .Where(v => varianteIds.Contains(v.Id))
             .ToDictionaryAsync(v => v.Id, cancellationToken);
 
@@ -110,7 +113,35 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
 
             _context.Ordenes.Add(orden);
 
-            // E. Guardar todo en una única transacción de EF Core
+            // E. Intercepción de Omnicanalidad: Transactional Outbox Pattern para Tiendanube
+            foreach (var detalle in orden.Detalles)
+            {
+                var variante = variantes[detalle.VarianteId];
+                var esHiddenSneakers = variante.Producto?.UnidadNegocio != null &&
+                    (string.Equals(variante.Producto.UnidadNegocio.Nombre, UnidadNegocio.HiddenSneakers, StringComparison.OrdinalIgnoreCase)
+                     || variante.Producto.UnidadNegocio.TieneTiendaNube);
+
+                if (esHiddenSneakers)
+                {
+                    var outboxMessage = new OutboxMessage
+                    {
+                        Id = Guid.NewGuid(),
+                        TipoEvento = "StockReducidoEnPOS",
+                        ContenidoJson = JsonSerializer.Serialize(new
+                        {
+                            detalle.VarianteId,
+                            CantidadDescontada = detalle.Cantidad
+                        }),
+                        FechaOcurrenciaUtc = fechaActual,
+                        FechaProcesadoUtc = null,
+                        Intentos = 0
+                    };
+
+                    _context.OutboxMessages.Add(outboxMessage);
+                }
+            }
+
+            // F. Guardar todo en una única transacción atómica de EF Core
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 

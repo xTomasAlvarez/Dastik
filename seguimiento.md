@@ -227,6 +227,15 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Migración EF Core generada: `20261011161004_AddOutboxMessages.cs` con snapshot actualizado.
 - Suite de pruebas unitarias ampliada: 61 tests en verde (2 nuevos tests en `OutboxMessagePersistenceTests.cs` validando persistencia con defaults y filtrado indexado de pendientes).
 
+**Paso 2: Integración del Outbox en CobrarOrdenCommandHandler (✅ COMPLETADO)**
+- Lógica de intercepción de omnicanalidad agregada en `CobrarOrdenCommandHandler.cs`:
+  - Eager loading de `Producto` y `UnidadNegocio` en la consulta de variantes vendidas.
+  - Creación condicional de `OutboxMessage` si el producto pertenece a "Hidden Sneakers" (`UnidadNegocio.HiddenSneakers` o `TieneTiendaNube == true`).
+  - Evento `StockReducidoEnPOS` con payload serializado `{ VarianteId, CantidadDescontada }`.
+  - Persistencia dentro de la misma transacción ACID atómica de EF Core (`BeginTransactionAsync` / `SaveChangesAsync` / `CommitAsync`), garantizando latencia cero en mostrador (<10ms).
+- Constantes de dominio `UnidadNegocio.Dastik` y `UnidadNegocio.HiddenSneakers` añadidas a `UnidadNegocio.cs`.
+- Suite de pruebas unitarias ampliada: 63 tests en verde (2 nuevos tests en `CajaHandlersTests.cs` verificando generación de OutboxMessage para ventas de Hidden Sneakers y cero registros para ventas de Dastik).
+
 
 
 
