@@ -1,6 +1,8 @@
 import React from 'react';
-import { Barcode, Receipt, ShoppingCart, Trash } from '@phosphor-icons/react';
+import { Receipt, ShoppingCart, Trash } from '@phosphor-icons/react';
 import { PosHeader } from '../components/PosHeader';
+import { PosBarcodeScanner } from '../components/PosBarcodeScanner';
+import { CatalogoGrid } from '../components/CatalogoGrid';
 import { useCartStore } from '../stores/useCartStore';
 import { Button } from '../../../components/ui/Button';
 
@@ -29,55 +31,11 @@ export const DashboardPos: React.FC = () => {
         {/* PANEL IZQUIERDO (70%): Búsqueda, Scanner y Grilla Retail */}
         {/* ======================================================== */}
         <main className="w-full lg:w-[70%] flex-1 flex flex-col overflow-y-auto p-4 md:p-6 gap-6">
-          {/* Zona de Scanner y Búsqueda Rápida (Estructura Base para Paso 3.2) */}
-          <section className="border border-[#333333] bg-[#090909] p-4 flex flex-col md:flex-row items-center gap-4 justify-between">
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <div className="border border-[#222222] bg-[#111111] p-2 text-[#FAFAFA] shrink-0">
-                <Barcode size={24} weight="light" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-sans block">
-                  LECTOR ÓPTICO EAN-13 & BÚSQUEDA
-                </span>
-                <span className="text-xs font-heading font-bold text-[#FAFAFA]">
-                  ESCANEAR PRENDA O BUSCAR POR MODELO / TALLE
-                </span>
-              </div>
-            </div>
+          {/* 1. Lector Óptico de Código de Barras (EAN-13) */}
+          <PosBarcodeScanner />
 
-            {/* Input placeholder de scanner */}
-            <div className="w-full md:w-96 flex items-center border border-[#333333] bg-[#111111] px-3 py-2 text-xs font-sans text-[#71717A]">
-              <span className="font-mono text-green-400 mr-2">&gt;</span>
-              <span className="italic">Pistola lectora en espera (Paso 3.2)...</span>
-            </div>
-          </section>
-
-          {/* Zona de Catálogo de Productos (Estructura Base para Paso 3.2) */}
-          <section className="flex-1 border border-[#333333] bg-[#090909] p-6 flex flex-col">
-            <div className="flex items-center justify-between border-b border-[#222222] pb-4 mb-6">
-              <div>
-                <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-sans block">
-                  CATÁLOGO RETAIL EN TIEMPO REAL
-                </span>
-                <h2 className="text-base font-heading font-extrabold text-[#FAFAFA] tracking-tight">
-                  PRENDAS & SNEAKERS DISPONIBLES
-                </h2>
-              </div>
-              <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-mono border border-[#222222] px-2.5 py-1">
-                GRILLA DE ALTO RENDIMIENTO
-              </span>
-            </div>
-
-            {/* Placeholder arquitectónico mientras se integra CatalogoGrid */}
-            <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-[#222222] p-12 text-center">
-              <span className="text-xs font-heading font-bold tracking-wider text-[#FAFAFA] mb-2 uppercase">
-                Área reservada para CatalogoGrid.tsx & ProductCard.tsx
-              </span>
-              <p className="text-xs font-sans text-[#71717A] max-w-md leading-relaxed">
-                Aquí se renderizarán los 4 productos sembrados por el backend (Remera Oversize, Pantalón Cargo, Nike Dunk Low y Adidas Yeezy Slide) con selección directa de talles y stock físico.
-              </p>
-            </div>
-          </section>
+          {/* 2. Catálogo Retail y Grilla de Variantes */}
+          <CatalogoGrid />
         </main>
 
         {/* ======================================================== */}
