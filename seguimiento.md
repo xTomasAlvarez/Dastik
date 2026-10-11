@@ -217,10 +217,35 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 
 ### Plan de Ejecución (Fase 5: Integración Omnicanal con Tiendanube y Outbox Pattern)
 
-**Paso 1: Outbox Pattern y Entidades de Sincronización (Pendiente)**
-- Entidad `OutboxMessage` en `Domain/Entities/` (`Id`, `TipoEvento`, `ContenidoJson`, `FechaCreacion`, `FechaProcesado`, `Error`, `Intentos`).
-- Mapeo Fluent API en `OutboxMessageConfiguration.cs` y migración EF Core.
-- Desacoplamiento de eventos de dominio para sincronización de stock asíncrona y resiliente.
+**Paso 1: Entidad de Persistencia Outbox (✅ COMPLETADO)**
+- Rama `feature/outbox-pattern` creada desde `develop`.
+- Entidad POCO creada en `Domain/Entities/OutboxMessage.cs`: `Id` (Guid), `TipoEvento` (string), `ContenidoJson` (string), `FechaOcurrenciaUtc` (DateTime), `FechaProcesadoUtc` (DateTime?), `Error` (string?), `Intentos` (int, default 0).
+- Configuración Fluent API en `Infrastructure/Persistence/Configurations/OutboxMessageConfiguration.cs`:
+  - `ToTable("OutboxMessages")`, tipos estrictos (`text` para el payload JSON, `maxLength(200)` para TipoEvento, `maxLength(2000)` para Error).
+  - Índice optimizado sobre `FechaProcesadoUtc` para consultas de alta velocidad del worker de procesamiento.
+- `DbSet<OutboxMessage> OutboxMessages` registrado en `AppDbContext.cs`.
+- Migración EF Core generada: `20261011161004_AddOutboxMessages.cs` con snapshot actualizado.
+- Suite de pruebas unitarias ampliada: 61 tests en verde (2 nuevos tests en `OutboxMessagePersistenceTests.cs` validando persistencia con defaults y filtrado indexado de pendientes).
+
+**Paso 2: Integración del Outbox en CobrarOrdenCommandHandler (✅ COMPLETADO)**
+- Lógica de intercepción de omnicanalidad agregada en `CobrarOrdenCommandHandler.cs`:
+  - Eager loading de `Producto` y `UnidadNegocio` en la consulta de variantes vendidas.
+  - Creación condicional de `OutboxMessage` si el producto pertenece a "Hidden Sneakers" (`UnidadNegocio.HiddenSneakers` o `TieneTiendaNube == true`).
+  - Evento `StockReducidoEnPOS` con payload serializado `{ VarianteId, CantidadDescontada }`.
+  - Persistencia dentro de la misma transacción ACID atómica de EF Core (`BeginTransactionAsync` / `SaveChangesAsync` / `CommitAsync`), garantizando latencia cero en mostrador (<10ms).
+- Constantes de dominio `UnidadNegocio.Dastik` y `UnidadNegocio.HiddenSneakers` añadidas a `UnidadNegocio.cs`.
+- Suite de pruebas unitarias ampliada: 63 tests en verde (2 nuevos tests en `CajaHandlersTests.cs` verificando generación de OutboxMessage para ventas de Hidden Sneakers y cero registros para ventas de Dastik).
+
+**Paso 3: Background Worker para Procesar Outbox Messages (✅ COMPLETADO)**
+- Implementación de `OutboxMessageProcessor` en `Infrastructure/BackgroundServices/`:
+  - Servicio alojado que hereda de `BackgroundService` en .NET 8.
+  - Creación periódica de `IServiceScope` para resolver `AppDbContext` de manera segura (desacoplado del ciclo de vida Singleton).
+  - Consulta y despacho en lotes (`Take(20)`) de mensajes donde `FechaProcesadoUtc == null` ordenados por `FechaOcurrenciaUtc`.
+  - Deserialización segura del payload JSON y simulación de sincronización con Tiendanube vía `ILogger.LogInformation`.
+  - Actualización atómica de `FechaProcesadoUtc = DateTime.UtcNow`.
+  - Manejo resiliente de excepciones: Incremento de `Intentos` y captura de `Error` individualmente por mensaje sin interrumpir el ciclo del worker.
+- Registro en `Program.cs`: `builder.Services.AddHostedService<OutboxMessageProcessor>();`.
+- Suite de pruebas unitarias ampliada: 66 tests en verde (3 nuevos tests en `OutboxMessageProcessorTests.cs` evaluando procesamiento exitoso, captura de errores de formato y ejecución con bandeja vacía).
 
 
 

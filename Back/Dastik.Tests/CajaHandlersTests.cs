@@ -276,6 +276,129 @@ public class CajaHandlersTests : IDisposable
     }
 
     [Fact]
+    public async Task CobrarOrden_CuandoArticuloEsDeHiddenSneakers_DeberiaGenerarOutboxMessage()
+    {
+        // Arrange
+        var turno = new Turno
+        {
+            EmpleadoId = 1,
+            FechaApertura = DateTime.UtcNow,
+            SaldoInicial = 10_000.00m,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turno);
+
+        var unidadHidden = new UnidadNegocio { Nombre = UnidadNegocio.HiddenSneakers, TieneTiendaNube = true };
+        var categoria = new Categoria { Nombre = "Calzado" };
+        var marca = new Marca { Nombre = "Nike" };
+        var proveedor = new Proveedor { Nombre = "Importadora" };
+        _context.UnidadesNegocio.Add(unidadHidden);
+        _context.Categorias.Add(categoria);
+        _context.Marcas.Add(marca);
+        _context.Proveedores.Add(proveedor);
+
+        var producto = new Producto
+        {
+            UnidadNegocio = unidadHidden,
+            Categoria = categoria,
+            Marca = marca,
+            Proveedor = proveedor,
+            Nombre = "Nike Dunk Low Panda",
+            CostoBase = 80_000.00m,
+            MarkupAplicado = 1.6m,
+            PrecioVenta = 128_000.00m,
+            Activo = true
+        };
+        var variante = new Variante
+        {
+            Producto = producto,
+            Talle = "US 10",
+            Color = "Black/White",
+            CodigoBarras = "2000000000099",
+            StockFisico = 5
+        };
+        _context.Variantes.Add(variante);
+        await _context.SaveChangesAsync();
+
+        var handler = new CobrarOrdenCommandHandler(_context, _calculadoraComisiones);
+        var command = new CobrarOrdenCommand(
+            TurnoId: turno.Id,
+            Items: new List<ItemCobroDto> { new(VarianteId: variante.Id, Cantidad: 2, PrecioUnitario: 128_000.00m) },
+            Pagos: new List<PagoCobroDto> { new(MetodoPago.Tarjeta, 256_000.00m) }
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+
+        var outboxMessages = await _context.OutboxMessages.ToListAsync();
+        outboxMessages.Should().ContainSingle();
+
+        var outbox = outboxMessages.Single();
+        outbox.TipoEvento.Should().Be("StockReducidoEnPOS");
+        outbox.FechaProcesadoUtc.Should().BeNull();
+        outbox.Intentos.Should().Be(0);
+        outbox.ContenidoJson.Should().Contain($"\"VarianteId\":{variante.Id}");
+        outbox.ContenidoJson.Should().Contain("\"CantidadDescontada\":2");
+    }
+
+    [Fact]
+    public async Task CobrarOrden_CuandoArticuloEsDeDastik_NoDebeGenerarOutboxMessage()
+    {
+        // Arrange
+        var turno = new Turno
+        {
+            EmpleadoId = 1,
+            FechaApertura = DateTime.UtcNow,
+            SaldoInicial = 10_000.00m,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turno);
+
+        var (unidadDastik, categoria, marca, proveedor) = CrearDependenciasCatalogo();
+        var producto = new Producto
+        {
+            UnidadNegocio = unidadDastik,
+            Categoria = categoria,
+            Marca = marca,
+            Proveedor = proveedor,
+            Nombre = "Remera Oversize Básica",
+            CostoBase = 15_000.00m,
+            MarkupAplicado = 1.5m,
+            PrecioVenta = 22_500.00m,
+            Activo = true
+        };
+        var variante = new Variante
+        {
+            Producto = producto,
+            Talle = "L",
+            Color = "Negro",
+            CodigoBarras = "2000000000088",
+            StockFisico = 10
+        };
+        _context.Variantes.Add(variante);
+        await _context.SaveChangesAsync();
+
+        var handler = new CobrarOrdenCommandHandler(_context, _calculadoraComisiones);
+        var command = new CobrarOrdenCommand(
+            TurnoId: turno.Id,
+            Items: new List<ItemCobroDto> { new(VarianteId: variante.Id, Cantidad: 1, PrecioUnitario: 22_500.00m) },
+            Pagos: new List<PagoCobroDto> { new(MetodoPago.Efectivo, 22_500.00m) }
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+
+        var outboxMessages = await _context.OutboxMessages.ToListAsync();
+        outboxMessages.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task CerrarTurno_ArqueoExacto_DeberiaCalcularDiferenciaCero()
     {
         // Arrange

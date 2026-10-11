@@ -2,6 +2,9 @@ namespace Dastik.Api.Domain.Entities;
 
 public class UnidadNegocio
 {
+    public const string Dastik = "Dastik";
+    public const string HiddenSneakers = "Hidden Sneakers";
+
     public int Id { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public bool TieneTiendaNube { get; set; }
