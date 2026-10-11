@@ -5,9 +5,9 @@ using Dastik.Api.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Dastik.Api.Features.Ventas.CobrarOrden;
+namespace Dastik.Api.Features.Caja.CobrarOrden;
 
-public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Result<CobrarOrdenResponse>>
+public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Result<CobrarOrdenResult>>
 {
     private readonly AppDbContext _context;
     private readonly ICalculadoraComisiones _calculadoraComisiones;
@@ -18,32 +18,32 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
         _calculadoraComisiones = calculadoraComisiones;
     }
 
-    public async Task<Result<CobrarOrdenResponse>> Handle(CobrarOrdenCommand request, CancellationToken cancellationToken)
+    public async Task<Result<CobrarOrdenResult>> Handle(CobrarOrdenCommand request, CancellationToken cancellationToken)
     {
-        // 1. Validar existencia y estado del turno de caja
+        // 1. Validar que el Turno exista y esté Abierto
         var turno = await _context.Turnos
             .FirstOrDefaultAsync(t => t.Id == request.TurnoId, cancellationToken);
 
         if (turno == null)
         {
-            return Result<CobrarOrdenResponse>.Failure($"El turno con ID {request.TurnoId} no existe.");
+            return Result<CobrarOrdenResult>.Failure($"El turno con ID {request.TurnoId} no existe.");
         }
 
         if (turno.Estado != EstadoTurno.Abierto)
         {
-            return Result<CobrarOrdenResponse>.Failure("No se pueden registrar ventas en un turno que se encuentra cerrado.");
+            return Result<CobrarOrdenResult>.Failure("No se pueden registrar ventas en un turno que se encuentra cerrado.");
         }
 
-        // 2. Validar coincidencia de montos (Items vs Pagos)
+        // 2. Validar que la suma de los Pagos coincida exactamente con la suma de los Subtotales de los items (usando decimal)
         decimal totalItems = request.Items.Sum(i => i.Cantidad * i.PrecioUnitario);
         decimal totalPagos = request.Pagos.Sum(p => p.Monto);
 
         if (totalItems != totalPagos)
         {
-            return Result<CobrarOrdenResponse>.Failure("La suma de los pagos no coincide con el total de la orden.");
+            return Result<CobrarOrdenResult>.Failure("La suma de los pagos no coincide con el total de los subtotales de los ítems.");
         }
 
-        // 3. Obtener variantes involucradas para validar y descontar stock
+        // 3. Obtener variantes involucradas para validar stock suficiente
         var varianteIds = request.Items.Select(i => i.VarianteId).Distinct().ToList();
         var variantes = await _context.Variantes
             .Where(v => varianteIds.Contains(v.Id))
@@ -53,30 +53,30 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
         {
             if (!variantes.TryGetValue(item.VarianteId, out var variante))
             {
-                return Result<CobrarOrdenResponse>.Failure($"La variante con ID {item.VarianteId} no existe en el catálogo.");
+                return Result<CobrarOrdenResult>.Failure($"La variante con ID {item.VarianteId} no existe en el catálogo.");
             }
 
             if (variante.StockFisico < item.Cantidad)
             {
-                return Result<CobrarOrdenResponse>.Failure(
+                return Result<CobrarOrdenResult>.Failure(
                     $"Stock insuficiente para la variante ID {variante.Id} ({variante.Talle} / {variante.Color}). " +
                     $"Stock disponible: {variante.StockFisico}, requerido: {item.Cantidad}.");
             }
         }
 
-        // 4. Iniciar transacción atómica ACID (skill_efcore_transacciones.md)
+        // 4. Persistencia Transaccional ESTRICTAMENTE ACID (skill_efcore_transacciones.md)
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            // A. Descontar stock físico de cada variante
+            // A. Descontar el stock físico de cada variante vendida
             foreach (var item in request.Items)
             {
                 var variante = variantes[item.VarianteId];
                 variante.StockFisico -= item.Cantidad;
             }
 
-            // B. Instanciar la Orden
+            // B. Crear la Orden
             var fechaActual = DateTime.UtcNow;
             var orden = new Orden
             {
@@ -86,7 +86,7 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
                 Estado = EstadoOrden.Pagada
             };
 
-            // C. Agregar Detalles de la Orden
+            // C. Crear sus DetalleOrden
             foreach (var item in request.Items)
             {
                 orden.Detalles.Add(new DetalleOrden
@@ -98,7 +98,7 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
                 });
             }
 
-            // D. Agregar Pagos registrados
+            // D. Crear sus Pagos
             foreach (var pago in request.Pagos)
             {
                 orden.Pagos.Add(new Pago
@@ -110,14 +110,14 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
 
             _context.Ordenes.Add(orden);
 
-            // E. Persistir cambios y confirmar transacción ACID
+            // E. Guardar todo en una única transacción de EF Core
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
             // 5. Calcular comisión del vendedor para la orden registrada
             decimal comision = _calculadoraComisiones.Calcular(fechaActual, orden.Total);
 
-            var response = new CobrarOrdenResponse(
+            var resultado = new CobrarOrdenResult(
                 OrdenId: orden.Id,
                 TurnoId: orden.TurnoId,
                 Fecha: orden.Fecha,
@@ -126,7 +126,7 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
                 CantidadItems: orden.Detalles.Count
             );
 
-            return Result<CobrarOrdenResponse>.Success(response);
+            return Result<CobrarOrdenResult>.Success(resultado);
         }
         catch (Exception)
         {

@@ -2,13 +2,13 @@ using Dastik.Api.Common;
 using Dastik.Api.Domain.Entities;
 using MediatR;
 
-namespace Dastik.Api.Features.Ventas.CobrarOrden;
+namespace Dastik.Api.Features.Caja.CobrarOrden;
 
 public record CobrarOrdenCommand(
     int TurnoId,
     List<ItemCobroDto> Items,
     List<PagoCobroDto> Pagos
-) : IRequest<Result<CobrarOrdenResponse>>;
+) : IRequest<Result<CobrarOrdenResult>>;
 
 public record ItemCobroDto(
     int VarianteId,
@@ -21,7 +21,7 @@ public record PagoCobroDto(
     decimal Monto
 );
 
-public record CobrarOrdenResponse(
+public record CobrarOrdenResult(
     int OrdenId,
     int TurnoId,
     DateTime Fecha,

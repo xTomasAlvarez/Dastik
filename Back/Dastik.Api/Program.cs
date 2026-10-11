@@ -1,6 +1,6 @@
 using Dastik.Api.Domain.Services;
 using Dastik.Api.Features.Inventario.CrearProducto;
-using Dastik.Api.Features.Ventas.CobrarOrden;
+using Dastik.Api.Features.Caja.CobrarOrden;
 using Dastik.Api.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;

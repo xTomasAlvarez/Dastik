@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Dastik.Api.Features.Ventas.CobrarOrden;
+namespace Dastik.Api.Features.Caja.CobrarOrden;
 
 public class CobrarOrdenCommandValidator : AbstractValidator<CobrarOrdenCommand>
 {
@@ -52,6 +52,6 @@ public class CobrarOrdenCommandValidator : AbstractValidator<CobrarOrdenCommand>
                 decimal totalPagos = cmd.Pagos.Sum(p => p.Monto);
                 return totalItems == totalPagos;
             })
-            .WithMessage("La suma de los pagos debe coincidir exactamente con el total de los ítems de la orden.");
+            .WithMessage("La suma de los pagos debe coincidir exactamente con la suma de los subtotales de los ítems.");
     }
 }

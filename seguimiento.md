@@ -111,20 +111,21 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Registro de dependencia desacoplada en `Program.cs` (`AddTransient<ICalculadoraComisiones, CalculadoraComisiones>()`).
 - Rama `refactor/comisiones-di` integrada a `develop`.
 
-**Paso 5: Vertical Slice - Cobrar Orden (✅ COMPLETADO)**
-- Implementación de Vertical Slice en `Features/Ventas/CobrarOrden/`: `CobrarOrdenCommand`, `CobrarOrdenCommandValidator`, `CobrarOrdenCommandHandler` y `CobrarOrdenEndpoint`.
-- Regla de validación preventiva: Suma de métodos de pago igual al total de la orden.
-- Transacción ACID atómica con `BeginTransactionAsync`, `CommitAsync`, `RollbackAsync` en EF Core.
-- Descuento de stock en `Variantes`, persistencia de orden/detalles/pagos, y cálculo de comisiones inyectado.
-- Adopción de Result Pattern (`Result<T>`) sin excepciones para control de flujo lógico.
-- Rama `feature/slice-cobrar-orden` integrada a `develop`.
-
 **Paso 6: Vertical Slice - Abrir Turno (✅ COMPLETADO)**
 - Implementación de Vertical Slice en `Features/Caja/AbrirTurno/`: `AbrirTurnoCommand`, `AbrirTurnoCommandValidator`, `AbrirTurnoCommandHandler`.
 - Regla de negocio: Validación de turno único abierto por empleado mediante `AnyAsync`.
 - Persistencia de entidad `Turno` en PostgreSQL con `FechaApertura` UTC y estado `Abierto`.
 - Adopción de Result Pattern (`Result<AbrirTurnoResult>`).
 - Rama `feature/slice-abrir-turno` integrada a `develop`.
+
+**Paso 7: Vertical Slice - Cobrar Orden (✅ COMPLETADO)**
+- Implementación de Vertical Slice en `Features/Caja/CobrarOrden/`: `CobrarOrdenCommand`, `CobrarOrdenCommandValidator`, `CobrarOrdenCommandHandler` y `CobrarOrdenEndpoint`.
+- Regla de validación preventiva: Suma de métodos de pago igual al total de subtotales de los ítems.
+- Transacción ACID atómica con `BeginTransactionAsync`, `CommitAsync`, `RollbackAsync` en EF Core.
+- Descuento de stock en `Variantes`, persistencia de orden/detalles/pagos, y cálculo de comisiones inyectado.
+- Adopción de Result Pattern (`Result<CobrarOrdenResult>`) sin excepciones para control de flujo lógico.
+- Rama `feature/slice-cobrar-orden` integrada a `develop`.
+
 
 
 
