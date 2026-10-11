@@ -33,5 +33,23 @@ public static class DataSeeder
             context.Usuarios.Add(adminUser);
             await context.SaveChangesAsync();
         }
+
+        // Si el usuario cajero de entrenamiento no existe, lo sembramos
+        if (!await context.Usuarios.AnyAsync(u => u.Email == "cajero.sandbox@dastik.com"))
+        {
+            var cajeroUser = new Usuario
+            {
+                Nombre = "Cajero Sandbox Entrenado",
+                Email = "cajero.sandbox@dastik.com",
+                PasswordHash = hasher.Hash("Dastik2026!"),
+                Rol = RolUsuario.Empleado,
+                DebeCambiarPassword = false,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow
+            };
+
+            context.Usuarios.Add(cajeroUser);
+            await context.SaveChangesAsync();
+        }
     }
 }

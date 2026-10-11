@@ -11,6 +11,7 @@ export interface UsuarioDto {
 export interface LoginRequest {
   email: string;
   password: string;
+  isSandboxMode?: boolean;
 }
 
 export interface LoginResponse {
