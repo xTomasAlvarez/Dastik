@@ -146,7 +146,17 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - `CrearProductoHandlerTests`: 3 tests de persistencia, generación in-store de EAN-13 y preservación de códigos de fábrica.
   - `CommandValidatorsTests`: 10 tests validando reglas de FluentValidation para Fase 2 y Fase 3.
   - `CajaHandlersTests`: 8 tests cubriendo apertura única de turno, cobro atómico ACID con descuento de stock y arqueo de caja con faltante/sobrante.
-- Rama `feature/endpoints-caja` lista para mergear a `develop`.
+- Rama `feature/endpoints-caja` integrada a `develop`.
+
+---
+
+## Estado Actual del Proyecto
+- **Fase 1 (Arquitectura Base & DI Comisiones):** ✅ Completada y testeada.
+- **Fase 2 (Catálogo e Inventario):** ✅ Completada, persistencia y validadores cubiertos con tests unitarios.
+- **Fase 3 (Motor Financiero y Punto de Venta):** ✅ Completada en su totalidad con Minimal APIs (`/api/caja`), transacciones ACID de cobro, apertura/cierre de turnos y arqueos.
+- **Suite de Pruebas Unitarias:** 31 tests pasando al 100% en verde.
+- **Rama activa:** `develop` (al día y limpia).
+
 
 
 
