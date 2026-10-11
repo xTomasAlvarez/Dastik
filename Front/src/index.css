@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Syne', sans-serif;
+  --font-display: 'Syne', sans-serif;
+
+  --color-black-pure: #000000;
+  --color-black-card: #111111;
+  --color-black-asphalt: #1A1A1A;
+  --color-border-dark: #333333;
+  --color-border-light: #E5E5E5;
+  --color-white-pure: #FFFFFF;
+  --color-white-ice: #FAFAFA;
+  --color-gray-stone: #71717A;
+}
+
+/* Reglas Estrictas Avant-Garde / High-End Streetwear (Design_Base.md) */
+* {
+  box-sizing: border-box;
+  box-shadow: none !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: #000000;
+  color: #FAFAFA;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+/* Líneas divisorias ultrafinas (1px) */
+.border-subtle {
+  border-width: 1px;
+  border-color: #333333;
+}
+
+/* Transiciones secas y rápidas (75ms a 150ms) */
+.transition-fast {
+  transition-duration: 100ms;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
