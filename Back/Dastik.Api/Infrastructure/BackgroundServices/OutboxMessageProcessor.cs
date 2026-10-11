@@ -31,6 +31,16 @@ public class OutboxMessageProcessor : BackgroundService
     {
         _logger.LogInformation("Iniciando OutboxMessageProcessor worker...");
 
+        // Espera inicial breve para permitir que la aplicación arranque completamente
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -39,7 +49,7 @@ public class OutboxMessageProcessor : BackgroundService
             }
             catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogError(ex, "Ocurrió una excepción al procesar mensajes en OutboxMessageProcessor.");
+                _logger.LogWarning("OutboxMessageProcessor: no se pudo consultar la base de datos (¿PostgreSQL desconectado?): {Message}", ex.Message);
             }
 
             try

@@ -32,8 +32,19 @@ public static class SandboxDataSeeder
             ?? TenantService.SandboxConnectionFallback;
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        optionsBuilder.UseNpgsql(sandboxConn);
+        if (sandboxConn.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase) || sandboxConn.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+        {
+            optionsBuilder.UseSqlite(sandboxConn);
+        }
+        else
+        {
+            optionsBuilder.UseNpgsql(sandboxConn);
+        }
         using var sandboxContext = new AppDbContext(optionsBuilder.Options);
+        if (sandboxContext.Database.IsSqlite())
+        {
+            await sandboxContext.Database.EnsureCreatedAsync();
+        }
 
         await SeedAsync(sandboxContext, eanGenerator, hasher, logger);
     }
