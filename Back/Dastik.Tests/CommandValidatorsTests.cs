@@ -196,4 +196,38 @@ public class CommandValidatorsTests
 
         result.IsValid.Should().BeTrue();
     }
+
+    // ==========================================
+    // 6. CambiarPasswordCommandValidator (Fase 4)
+    // ==========================================
+    [Theory]
+    [InlineData(0, "OldPass123!", "NewPass123!", "identificador")]          // UsuarioId invalido
+    [InlineData(1, "", "NewPass123!", "actual")]                             // PasswordActual vacio
+    [InlineData(1, "OldPass123!", "short1A", "8 caracteres")]               // Menos de 8 caracteres
+    [InlineData(1, "OldPass123!", "sinmayuscula123!", "mayúscula")]         // Sin mayúscula
+    [InlineData(1, "OldPass123!", "SinNumeroTotal!", "número")]             // Sin número
+    [InlineData(1, "MismaClave123!", "MismaClave123!", "igual a la contraseña actual")] // Clave igual a anterior
+    public void CambiarPasswordValidator_ConDatosInvalidos_DebeRetornarError(
+        int usuarioId, string actual, string nuevo, string mensajeEsperado)
+    {
+        var validator = new Dastik.Api.Features.Auth.CambiarPassword.CambiarPasswordCommandValidator();
+        var command = new Dastik.Api.Features.Auth.CambiarPassword.CambiarPasswordCommand(usuarioId, actual, nuevo);
+
+        var result = validator.Validate(command);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains(mensajeEsperado));
+    }
+
+    [Fact]
+    public void CambiarPasswordValidator_ConDatosValidos_DebeAprobar()
+    {
+        var validator = new Dastik.Api.Features.Auth.CambiarPassword.CambiarPasswordCommandValidator();
+        var command = new Dastik.Api.Features.Auth.CambiarPassword.CambiarPasswordCommand(
+            1, "ClaveVieja123!", "ClaveNuevaSegura2027!");
+
+        var result = validator.Validate(command);
+
+        result.IsValid.Should().BeTrue();
+    }
 }
