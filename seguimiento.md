@@ -236,6 +236,17 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Constantes de dominio `UnidadNegocio.Dastik` y `UnidadNegocio.HiddenSneakers` añadidas a `UnidadNegocio.cs`.
 - Suite de pruebas unitarias ampliada: 63 tests en verde (2 nuevos tests en `CajaHandlersTests.cs` verificando generación de OutboxMessage para ventas de Hidden Sneakers y cero registros para ventas de Dastik).
 
+**Paso 3: Background Worker para Procesar Outbox Messages (✅ COMPLETADO)**
+- Implementación de `OutboxMessageProcessor` en `Infrastructure/BackgroundServices/`:
+  - Servicio alojado que hereda de `BackgroundService` en .NET 8.
+  - Creación periódica de `IServiceScope` para resolver `AppDbContext` de manera segura (desacoplado del ciclo de vida Singleton).
+  - Consulta y despacho en lotes (`Take(20)`) de mensajes donde `FechaProcesadoUtc == null` ordenados por `FechaOcurrenciaUtc`.
+  - Deserialización segura del payload JSON y simulación de sincronización con Tiendanube vía `ILogger.LogInformation`.
+  - Actualización atómica de `FechaProcesadoUtc = DateTime.UtcNow`.
+  - Manejo resiliente de excepciones: Incremento de `Intentos` y captura de `Error` individualmente por mensaje sin interrumpir el ciclo del worker.
+- Registro en `Program.cs`: `builder.Services.AddHostedService<OutboxMessageProcessor>();`.
+- Suite de pruebas unitarias ampliada: 66 tests en verde (3 nuevos tests en `OutboxMessageProcessorTests.cs` evaluando procesamiento exitoso, captura de errores de formato y ejecución con bandeja vacía).
+
 
 
 

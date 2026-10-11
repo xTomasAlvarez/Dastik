@@ -4,6 +4,7 @@ using Dastik.Api.Domain.Services;
 using Dastik.Api.Features.Auth;
 using Dastik.Api.Features.Caja;
 using Dastik.Api.Features.Inventario.CrearProducto;
+using Dastik.Api.Infrastructure.BackgroundServices;
 using Dastik.Api.Infrastructure.Persistence;
 using Dastik.Api.Infrastructure.Security;
 using Dastik.Api.Infrastructure.Tenancy;
@@ -41,6 +42,9 @@ builder.Services.AddSingleton<GeneradorEan13>();
 builder.Services.AddTransient<ICalculadoraComisiones, CalculadoraComisiones>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<IJwtProvider, JwtProvider>();
+
+// Background Worker para Transactional Outbox Pattern
+builder.Services.AddHostedService<OutboxMessageProcessor>();
 
 // Autenticación y Autorización JWT
 var jwtSecret = builder.Configuration["JWT_SECRET"]
