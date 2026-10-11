@@ -134,6 +134,23 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Adopción de Result Pattern (`Result<CerrarTurnoResult>`).
 - Rama `feature/slice-cerrar-turno` integrada a `develop`.
 
+**Paso 9: Endpoints Minimal API para Caja Completa (✅ COMPLETADO)**
+- Implementación de `CajaEndpoints.cs` agrupado bajo `/api/caja` con `MapGroup`.
+- Mapeo de `POST /api/caja/turnos/abrir` (`AbrirTurnoCommand`).
+- Mapeo de `POST /api/caja/ordenes/cobrar` (`CobrarOrdenCommand`).
+- Mapeo de `POST /api/caja/turnos/cerrar` (`CerrarTurnoCommand`).
+- Despacho desacoplado con `ISender` de MediatR y validación preventiva RFC 7807 (`ValidationProblem`).
+- Cobertura integral de pruebas unitarias con SQLite en memoria (31/31 tests pasando en verde):
+  - `GeneradorEan13Tests`: 7 tests de algoritmo EAN-13 y validación de dígitos.
+  - `CalculadoraComisionesTests`: 3 tests de comisiones por canal y vendedor.
+  - `CrearProductoHandlerTests`: 3 tests de persistencia, generación in-store de EAN-13 y preservación de códigos de fábrica.
+  - `CommandValidatorsTests`: 10 tests validando reglas de FluentValidation para Fase 2 y Fase 3.
+  - `CajaHandlersTests`: 8 tests cubriendo apertura única de turno, cobro atómico ACID con descuento de stock y arqueo de caja con faltante/sobrante.
+- Rama `feature/endpoints-caja` lista para mergear a `develop`.
+
+
+
+
 
 
 
