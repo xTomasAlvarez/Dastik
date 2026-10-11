@@ -1,6 +1,7 @@
 using System.Text;
 using Dastik.Api.Domain.Entities;
 using Dastik.Api.Domain.Services;
+using Dastik.Api.Features.Auth;
 using Dastik.Api.Features.Caja;
 using Dastik.Api.Features.Inventario.CrearProducto;
 using Dastik.Api.Infrastructure.Persistence;
@@ -31,6 +32,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 // Servicios de Dominio e Infraestructura
 builder.Services.AddSingleton<GeneradorEan13>();
 builder.Services.AddTransient<ICalculadoraComisiones, CalculadoraComisiones>();
+builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<IJwtProvider, JwtProvider>();
 
 // Autenticación y Autorización JWT
@@ -117,7 +119,18 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Endpoints (Vertical Slices)
+app.MapAuthEndpoints();
 app.MapCrearProductoEndpoint();
 app.MapCajaEndpoints();
+
+// Seeder de datos iniciales (Usuario Fundador)
+try
+{
+    await DataSeeder.SeedInitialDataAsync(app.Services);
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "No se pudo ejecutar el DataSeeder inicial (¿base de datos desconectada?).");
+}
 
 app.Run();

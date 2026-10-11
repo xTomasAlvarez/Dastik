@@ -174,6 +174,15 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Claim `DebeCambiarPassword` incorporado en el payload del JWT mediante `JwtProvider`.
 - Pruebas unitarias actualizadas y 34/34 tests superados al 100%.
 
+**Paso 2: Migración, Seeder inicial y Endpoint de Login (✅ COMPLETADO)**
+- Migración EF Core: `20261011152403_AddUsuarios.cs` generada con tabla `Usuarios`, índice único en `Email`, y tipos estrictos.
+- Hashing de contraseñas: Servicio `IPasswordHasher` / `PasswordHasher` con BCrypt (`BCrypt.Net-Next`).
+- Data Seeder: `DataSeeder.cs` sembrando automáticamente `admin@dastik.com` (`Rol.Admin`, contraseña default `Dastik2026!`, `DebeCambiarPassword = true`) al inicializar la app.
+- Vertical Slice Login: Implementado en `Features/Auth/Login/`: `LoginCommand`, `LoginCommandValidator`, `LoginCommandHandler` con Result Pattern y mitigación de enumeración de usuarios.
+- Minimal API: `AuthEndpoints.cs` mapeando `POST /api/auth/login` con acceso anónimo (`AllowAnonymous`).
+- Suite de pruebas unitarias ampliada: 43 tests en verde (5 nuevos tests en `LoginCommandHandlerTests` y 4 nuevos tests en `CommandValidatorsTests`).
+
+
 
 
 
