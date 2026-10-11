@@ -152,7 +152,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 
 ### Plan de Ejecución (Fase 4: Autenticación, Roles y Modo Sandbox)
 
-**Paso 1: Entidades de Seguridad y Configuración JWT (En Progreso)**
+**Paso 1: Entidades de Seguridad y Configuración JWT (✅ COMPLETADO)**
 - Rama `feature/auth-sandbox` creada desde `develop`.
 - Instalación de `Microsoft.AspNetCore.Authentication.JwtBearer` (8.0.11).
 - Entidades de Dominio creadas en `Domain/Entities/`:
