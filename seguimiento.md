@@ -248,6 +248,27 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Suite de pruebas unitarias ampliada: 66 tests en verde (3 nuevos tests en `OutboxMessageProcessorTests.cs` evaluando procesamiento exitoso, captura de errores de formato y ejecución con bandeja vacía).
 - Rama `feature/outbox-pattern` integrada exitosamente a `develop`.
 
+---
+
+### Plan de Ejecución (Frontend: PWA POS React + Vite)
+
+**Paso 1: Scaffolding y Arquitectura Base PWA (✅ COMPLETADO)**
+- Rama `feature/frontend-scaffolding` creada desde `develop`.
+- Scaffolding de aplicación React + Vite + TypeScript en `Front/`.
+- Instalación de dependencias de producción: `axios`, `@tanstack/react-query`, `zustand`, `react-router-dom`, `@phosphor-icons/react`.
+- Configuración de Tailwind CSS v4 con `@tailwindcss/vite` y directivas en `src/index.css`.
+- Directrices de diseño Avant-Garde / High-End Streetwear (`Design_Base.md`):
+  - 100% Flat Design, sin sombras difuminadas, bordes rectos (`rounded-none`).
+  - Tipografías Google Fonts: `Syne` (Headings) y `Space Grotesk` (Data / UI).
+  - Iconos finos con `Phosphor Icons` (`weight="light"`).
+- Screaming Architecture estructurada en `src/features/` (`auth`, `pos`, `caja`, `inventario`).
+- Interceptor de Axios (`src/lib/axios/apiClient.ts`):
+  - Inyección de cabecera `Authorization: Bearer <token>`.
+  - Inyección de cabecera `X-Sandbox-Mode` para multi-tenant dinámico.
+  - Captura y manejo global de 401 Unauthorized con logout y redirección.
+- Stores globales en Zustand: `useAuthStore.ts` (con persistencia y flag `debeCambiarPassword`) y `useTenantStore.ts` (toggle reactivo de Sandbox).
+- Build verificado: `tsc -b && vite build` completado exitosamente en 902ms.
+
 
 
 
