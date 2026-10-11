@@ -182,6 +182,15 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Minimal API: `AuthEndpoints.cs` mapeando `POST /api/auth/login` con acceso anónimo (`AllowAnonymous`).
 - Suite de pruebas unitarias ampliada: 43 tests en verde (5 nuevos tests en `LoginCommandHandlerTests` y 4 nuevos tests en `CommandValidatorsTests`).
 
+**Paso 3: Vertical Slice - Cambio de Contraseña (✅ COMPLETADO)**
+- Rama `feature/auth-cambiar-password` creada desde `develop`.
+- Implementación de Vertical Slice en `Features/Auth/CambiarPassword/`:
+  - `CambiarPasswordRequest` (payload del cliente seguro sin ID) y `CambiarPasswordCommand` (enrutado con ID autenticado del token).
+  - `CambiarPasswordCommandValidator` validando mínimo 8 caracteres, al menos una mayúscula, al menos un número y regla de disimilitud con la clave anterior.
+  - `CambiarPasswordCommandHandler` verificando contraseña actual, generando nuevo hash con BCrypt y seteando críticamente `DebeCambiarPassword = false`.
+- Endpoint protegido en `AuthEndpoints.cs`: `POST /api/auth/cambiar-password` con `.RequireAuthorization()`.
+- Suite de pruebas unitarias ampliada: 53 tests en verde (3 nuevos tests en `CambiarPasswordCommandHandlerTests` y 7 nuevos tests en `CommandValidatorsTests`).
+
 
 
 
