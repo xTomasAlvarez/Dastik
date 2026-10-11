@@ -270,13 +270,40 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Build verificado: `tsc -b && vite build` completado exitosamente en 902ms.
 - Rama `feature/frontend-scaffolding` integrada exitosamente a `develop`.
 
-**Paso 2: Pantalla de Login y Flujo de Reseteo Obligatorio (UI/UX) (Pendiente)**
-- Rama `feature/frontend-login` desde `develop`.
-- Componentes de autenticación en `src/features/auth/components/`:
-  - `LoginForm.tsx`: Entrada de credenciales, feedback de errores (RFC 7807), botón flat de alto contraste.
-  - `CambiarPasswordModal.tsx`: Modal bloqueante para primer inicio de sesión cuando `debeCambiarPassword === true`.
-- Página `LoginPage.tsx` en `src/features/auth/pages/`.
-- Configuración de rutas y guardas en `App.tsx` con `react-router-dom`.
+**Paso 2: Pantalla de Login y Flujo de Reseteo Obligatorio (UI/UX) (✅ COMPLETADO)**
+- Rama `feature/frontend-login` creada y desarrollada.
+- Estilo estricto *Avant-Garde / High-End Streetwear* (`Design_Base.md`):
+  - 100% Flat Design, bordes 1px (`#333333`), fondos oscuros `#000000`/`#090909`/`#111111`, cero sombras difuminadas.
+  - Tipografías Google Fonts `Syne` (Headings) y `Space Grotesk` (Data/UI).
+  - Iconografía `@phosphor-icons/react` (`weight="light"`).
+- Componentes implementados en `src/features/auth/components/`:
+  - `LoginForm.tsx`: Manejo de credenciales, feedback de errores dismissible con botón `X`, selector de modo Sandbox reactivo.
+  - `CambiarPasswordModal.tsx`: Modal bloqueante para primer inicio (`debeCambiarPassword === true`), validación en tiempo real de reglas de complejidad (8 chars, mayúscula, número, match) y botón de salida/cancelar con `logout()`.
+- Componente `Input.tsx`: Soporte nativo de alternancia de contraseña (ojito con `Eye` y `EyeSlash`).
+- Página `LoginPage.tsx` y terminal autenticada `DashboardPos.tsx`.
+- Enrutamiento con `react-router-dom` y guarda `RutaProtegida` en `App.tsx`.
+- Soporte dual para base de datos local (SQLite para desarrollo ágil / PostgreSQL para producción) en backend `Dastik.Api`.
+- Rama `feature/frontend-login` integrada exitosamente a `develop`.
+
+---
+
+### Fase 1 Frontend - Próximos Pasos
+
+**Paso 3: Dashboard POS - Terminal de Ventas y Grilla de Productos (UI/UX) (Pendiente)**
+- Rama `feature/frontend-pos-dashboard` desde `develop`.
+- Header Arquitectónico POS (`PosHeader.tsx`):
+  - Estado de turno de caja (Abierto/Cerrado con badge y arqueo).
+  - Selector dinámico de Tenant (`PRODUCCIÓN` vs `SANDBOX`).
+  - Perfil del operador logueado y botón de cierre de sesión.
+- Lector de Código de Barras y Búsqueda (`PosBarcodeScanner.tsx`):
+  - Input con auto-focus constante para pistola láser EAN-13.
+  - Búsqueda reactiva por texto (nombre de prenda, talle, marca).
+- Grilla de Catálogo Retail (`CatalogoGrid.tsx` y `ProductCard.tsx`):
+  - Cards planas 1px de alto impacto visual.
+  - Selector interactivo de variantes (Talles `XS-XL` / `US 8-11` y Colores) con badge de stock físico en vivo.
+  - Formato monetario estricto `$ XX.XXX,00`.
+- Carrito de Cobro POS (`PosCart.tsx` con Zustand):
+  - Ticket en vivo con agregado atómico, modificación de unidades y subtotal.
 
 
 
