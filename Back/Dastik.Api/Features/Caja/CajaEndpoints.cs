@@ -11,7 +11,8 @@ public static class CajaEndpoints
     public static void MapCajaEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/caja")
-            .WithTags("Caja y POS");
+            .WithTags("Caja y POS")
+            .RequireAuthorization("OperadorCaja");
 
         // 1. Apertura de Turno
         group.MapPost("/turnos/abrir", async (

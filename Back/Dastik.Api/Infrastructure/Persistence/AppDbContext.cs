@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<Orden> Ordenes => Set<Orden>();
     public DbSet<DetalleOrden> DetallesOrden => Set<DetalleOrden>();
     public DbSet<Pago> Pagos => Set<Pago>();
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
