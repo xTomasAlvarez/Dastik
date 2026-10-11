@@ -104,3 +104,11 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Generación de migración `AddCajaYOrdenes` y esquema listo para PostgreSQL.
 - Rama `feature/efcore-caja` integrada a `develop`.
 
+**Paso 3 y 4: Inyección de Dependencias para Comisiones (Refactor)**
+- Lógica de dominio y suite de pruebas unitarias xUnit confirmadas desde Fase 1.
+- Extracción de contrato `ICalculadoraComisiones` en `Domain/Services/`.
+- `CalculadoraComisiones` implementa `ICalculadoraComisiones`.
+- Registro de dependencia desacoplada en `Program.cs` (`AddTransient<ICalculadoraComisiones, CalculadoraComisiones>()`).
+- Rama `refactor/comisiones-di`.
+
+

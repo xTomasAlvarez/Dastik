@@ -23,6 +23,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
 // Servicios de Dominio
 builder.Services.AddSingleton<GeneradorEan13>();
+builder.Services.AddTransient<ICalculadoraComisiones, CalculadoraComisiones>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
