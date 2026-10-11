@@ -190,6 +190,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - `CambiarPasswordCommandHandler` verificando contraseña actual, generando nuevo hash con BCrypt y seteando críticamente `DebeCambiarPassword = false`.
 - Endpoint protegido en `AuthEndpoints.cs`: `POST /api/auth/cambiar-password` con `.RequireAuthorization()`.
 - Suite de pruebas unitarias ampliada: 53 tests en verde (3 nuevos tests en `CambiarPasswordCommandHandlerTests` y 7 nuevos tests en `CommandValidatorsTests`).
+- Rama `feature/auth-cambiar-password` integrada a `develop`.
 
 
 
