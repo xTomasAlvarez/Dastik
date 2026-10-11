@@ -192,6 +192,14 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Suite de pruebas unitarias ampliada: 53 tests en verde (3 nuevos tests en `CambiarPasswordCommandHandlerTests` y 7 nuevos tests en `CommandValidatorsTests`).
 - Rama `feature/auth-cambiar-password` integrada a `develop`.
 
+**Paso 4: Infraestructura Multi-Tenant para Sandbox (✅ COMPLETADO)**
+- Rama `feature/sandbox-tenant` creada desde `develop`.
+- Abstracción de Tenancy: `ITenantService` en `Domain/Services/` e implementación `TenantService` en `Infrastructure/Tenancy/`.
+- Detección reactiva del claim `IsSandboxMode` a través de `IHttpContextAccessor`.
+- Registro dinámico en `Program.cs`: `AddDbContext<AppDbContext>` resuelve dinámicamente la conexión por request (`SandboxConnection` vs `DefaultConnection`).
+- Cadenas configuradas en `appsettings.json`, `Back/.env.example` y `Back/.env`.
+- Suite de pruebas unitarias ampliada: 56 tests en verde (3 nuevos tests en `TenantServiceTests.cs`).
+
 
 
 
