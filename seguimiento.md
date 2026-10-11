@@ -78,11 +78,10 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - 10/10 pruebas unitarias superadas en verde.
 - Rama `feature/ean13-generator` integrada a `develop`.
 
-**Paso 4: Vertical Slice - Crear Producto (Feat)**
-- Instrucciones para crear la rama `feature/slice-crear-producto`.
-- Crear estructura en `Features/Inventario/CrearProducto/` (`Command`, `Validator`, `Handler`).
-- Handler crea `Producto` con sus `Variantes`, generando EAN-13 si falta código de barras. Persistencia en `AppDbContext`.
-- Mensaje de commit sugerido.
+**Paso 4: Vertical Slice - Crear Producto (✅ COMPLETADO)**
+- Vertical Slice implementado en `Features/Inventario/CrearProducto/`: `CrearProductoCommand`, `CrearProductoCommandValidator`, `CrearProductoCommandHandler`.
+- Inyección de `GeneradorEan13` para generación automática de códigos de barra faltantes.
+- Rama `feature/slice-crear-producto` integrada a `develop`.
 
 **Paso 5: Endpoint Crear Producto (Feat)**
 - Exponer el caso de uso a través de Endpoint Minimal API inyectando `ISender`.
