@@ -119,5 +119,13 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Adopción de Result Pattern (`Result<T>`) sin excepciones para control de flujo lógico.
 - Rama `feature/slice-cobrar-orden` integrada a `develop`.
 
+**Paso 6: Vertical Slice - Abrir Turno (✅ COMPLETADO)**
+- Implementación de Vertical Slice en `Features/Caja/AbrirTurno/`: `AbrirTurnoCommand`, `AbrirTurnoCommandValidator`, `AbrirTurnoCommandHandler`.
+- Regla de negocio: Validación de turno único abierto por empleado mediante `AnyAsync`.
+- Persistencia de entidad `Turno` en PostgreSQL con `FechaApertura` UTC y estado `Abierto`.
+- Adopción de Result Pattern (`Result<AbrirTurnoResult>`).
+- Rama `feature/slice-abrir-turno` integrada a `develop`.
+
+
 
 
