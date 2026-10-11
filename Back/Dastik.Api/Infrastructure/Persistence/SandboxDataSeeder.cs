@@ -86,6 +86,21 @@ public static class SandboxDataSeeder
             });
         }
 
+        // 1.b Usuario Admin fundador en Sandbox (si no existe)
+        if (!await context.Usuarios.AnyAsync(u => u.Email == DataSeeder.AdminEmailDefault))
+        {
+            context.Usuarios.Add(new Usuario
+            {
+                Nombre = "Admin Fundador (Sandbox)",
+                Email = DataSeeder.AdminEmailDefault,
+                PasswordHash = passwordHasher.Hash(DataSeeder.AdminDefaultPassword),
+                Rol = RolUsuario.Admin,
+                DebeCambiarPassword = false,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow
+            });
+        }
+
         // 2. Unidades de Negocio
         var unidadDastik = await context.UnidadesNegocio.FirstOrDefaultAsync(u => u.Nombre == "Dastik");
         if (unidadDastik is null)

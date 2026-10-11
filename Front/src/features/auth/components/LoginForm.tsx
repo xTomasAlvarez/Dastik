@@ -4,6 +4,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { authApi } from '../api/authApi';
 import { useAuthStore } from '../../../stores/useAuthStore';
+import { useTenantStore } from '../../../stores/useTenantStore';
 import type { AxiosError } from 'axios';
 
 interface LoginFormProps {
@@ -27,12 +28,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       return;
     }
 
-    setIsLoading(true);
+    const isSandboxMode = useTenantStore.getState().isSandboxMode;
 
     try {
       const response = await authApi.login({
         email: email.trim(),
         password,
+        isSandboxMode,
       });
 
       setAuth(response);
@@ -50,12 +52,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full text-left">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 w-full text-left">
       {errorMessage && (
-        <div className="border border-red-900 bg-red-950/40 p-3.5 text-red-200 text-xs font-sans flex items-start justify-between gap-3">
-          <div className="flex items-start gap-2.5">
-            <WarningCircle size={18} weight="light" className="shrink-0 text-red-400 mt-0.5" />
-            <span className="leading-relaxed">{errorMessage}</span>
+        <div className="border border-red-900 bg-red-950/40 p-2.5 text-red-200 text-xs font-sans flex items-start justify-between gap-2.5">
+          <div className="flex items-start gap-2">
+            <WarningCircle size={16} weight="light" className="shrink-0 text-red-400 mt-0.5" />
+            <span className="leading-snug">{errorMessage}</span>
           </div>
           <button
             type="button"
@@ -64,12 +66,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             aria-label="Cerrar advertencia"
             title="Cerrar mensaje"
           >
-            <X size={16} weight="light" />
+            <X size={15} weight="light" />
           </button>
         </div>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         <Input
           id="email"
           label="CORREO ELECTRÓNICO"
@@ -96,19 +98,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         />
       </div>
 
-      <div className="pt-2">
+      <div className="pt-1">
         <Button
           type="submit"
           variant="primary"
-          size="lg"
-          className="w-full justify-between"
+          size="md"
+          className="w-full justify-between py-2.5"
           disabled={isLoading}
         >
           <span className="flex items-center gap-2">
-            <LockKey size={18} weight="light" />
+            <LockKey size={17} weight="light" />
             {isLoading ? 'VERIFICANDO CREDENCIALES...' : 'INGRESAR AL SISTEMA'}
           </span>
-          <ArrowRight size={18} weight="light" />
+          <ArrowRight size={17} weight="light" />
         </Button>
       </div>
     </form>

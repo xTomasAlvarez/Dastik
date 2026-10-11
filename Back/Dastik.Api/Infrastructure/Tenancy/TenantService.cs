@@ -22,14 +22,31 @@ public class TenantService : ITenantService
     {
         get
         {
-            var user = _httpContextAccessor.HttpContext?.User;
-            if (user is null || user.Identity?.IsAuthenticated != true)
+            var context = _httpContextAccessor.HttpContext;
+            if (context is not null)
             {
-                return false;
+                // 1. Cabecera HTTP X-Sandbox-Mode (enviada por el frontend en todas las peticiones, incluido el login)
+                if (context.Request.Headers.TryGetValue("X-Sandbox-Mode", out var sandboxHeader))
+                {
+                    if (bool.TryParse(sandboxHeader.ToString(), out var isSandboxFromHeader))
+                    {
+                        return isSandboxFromHeader;
+                    }
+                }
+
+                // 2. Claim en token JWT para usuarios ya autenticados
+                var user = context.User;
+                if (user?.Identity?.IsAuthenticated == true)
+                {
+                    var claim = user.FindFirst("IsSandboxMode");
+                    if (claim is not null && bool.TryParse(claim.Value, out var isSandbox) && isSandbox)
+                    {
+                        return true;
+                    }
+                }
             }
 
-            var claim = user.FindFirst("IsSandboxMode");
-            return claim is not null && bool.TryParse(claim.Value, out var isSandbox) && isSandbox;
+            return false;
         }
     }
 
