@@ -126,6 +126,15 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Adopción de Result Pattern (`Result<CobrarOrdenResult>`) sin excepciones para control de flujo lógico.
 - Rama `feature/slice-cobrar-orden` integrada a `develop`.
 
+**Paso 8: Vertical Slice - Cerrar Turno / Arqueo de Caja (✅ COMPLETADO)**
+- Implementación de Vertical Slice en `Features/Caja/CerrarTurno/`: `CerrarTurnoCommand`, `CerrarTurnoCommandValidator`, `CerrarTurnoCommandHandler`.
+- Regla de negocio: Validación de turno existente y en estado `Abierto`.
+- Cálculo de arqueo: Total en efectivo acumulado (`SaldoInicial` + pagos en efectivo de órdenes pagadas), balance esperado y cálculo de diferencia (faltante o sobrante).
+- Cierre formal del turno con `FechaCierre` UTC, `SaldoFinal`, y estado `Cerrado`.
+- Adopción de Result Pattern (`Result<CerrarTurnoResult>`).
+- Rama `feature/slice-cerrar-turno` integrada a `develop`.
+
+
 
 
 
