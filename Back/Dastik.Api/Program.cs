@@ -23,11 +23,30 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantService, TenantService>();
 
+// CORS para Frontend React + Vite (skill_dotnet_arquitectura.md)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 // Resolución dinámica de base de datos por tenant / Modo Sandbox
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
 {
     var tenantService = sp.GetRequiredService<ITenantService>();
-    options.UseNpgsql(tenantService.GetConnectionString());
+    var conn = tenantService.GetConnectionString();
+    if (conn.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase) || conn.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlite(conn);
+    }
+    else
+    {
+        options.UseNpgsql(conn);
+    }
 });
 
 // CQRS con MediatR y FluentValidation
@@ -126,6 +145,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("FrontendPolicy");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -137,6 +158,14 @@ app.MapCajaEndpoints();
 // Seeder de datos iniciales (Usuario Fundador)
 try
 {
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        if (db.Database.IsSqlite())
+        {
+            await db.Database.EnsureCreatedAsync();
+        }
+    }
     await DataSeeder.SeedInitialDataAsync(app.Services);
 }
 catch (Exception ex)

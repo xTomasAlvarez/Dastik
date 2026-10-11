@@ -1,14 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-heading: 'Syne', sans-serif;
-  --font-display: 'Syne', sans-serif;
 
   --color-black-pure: #000000;
-  --color-black-card: #111111;
+  --color-black-card: #090909;
+  --color-black-panel: #111111;
   --color-black-asphalt: #1A1A1A;
   --color-border-dark: #333333;
+  --color-border-subtle: #222222;
   --color-border-light: #E5E5E5;
   --color-white-pure: #FFFFFF;
   --color-white-ice: #FAFAFA;
@@ -36,13 +38,6 @@ h1, h2, h3, h4, .font-heading {
   letter-spacing: -0.02em;
 }
 
-/* Líneas divisorias ultrafinas (1px) */
-.border-subtle {
-  border-width: 1px;
-  border-color: #333333;
-}
-
-/* Transiciones secas y rápidas (75ms a 150ms) */
 .transition-fast {
   transition-duration: 100ms;
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1);

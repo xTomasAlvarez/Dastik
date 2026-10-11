@@ -3,7 +3,7 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5031';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5185';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
