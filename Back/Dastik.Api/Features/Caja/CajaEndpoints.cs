@@ -1,8 +1,12 @@
+using System.Security.Claims;
+using Dastik.Api.Domain.Entities;
 using Dastik.Api.Features.Caja.AbrirTurno;
 using Dastik.Api.Features.Caja.CerrarTurno;
 using Dastik.Api.Features.Caja.CobrarOrden;
+using Dastik.Api.Infrastructure.Persistence;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Dastik.Api.Features.Caja;
 
@@ -14,13 +18,56 @@ public static class CajaEndpoints
             .WithTags("Caja y POS")
             .RequireAuthorization("OperadorCaja");
 
-        // 1. Apertura de Turno
-        group.MapPost("/turnos/abrir", async (
-            AbrirTurnoCommand command,
-            ISender sender,
-            IValidator<AbrirTurnoCommand> validator,
+        // 0. Consultar Turno Activo (GET /api/caja/turno-activo)
+        group.MapGet("/turno-activo", async (
+            ClaimsPrincipal user,
+            AppDbContext context,
             CancellationToken ct) =>
         {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? user.FindFirst("sub")?.Value;
+
+            int.TryParse(userIdClaim, out var empleadoId);
+
+            var turno = await context.Turnos
+                .AsNoTracking()
+                .Where(t => t.Estado == EstadoTurno.Abierto && (empleadoId == 0 || t.EmpleadoId == empleadoId))
+                .OrderByDescending(t => t.FechaApertura)
+                .Select(t => new
+                {
+                    turnoId = t.Id,
+                    empleadoId = t.EmpleadoId,
+                    fechaApertura = t.FechaApertura,
+                    saldoInicial = t.SaldoInicial,
+                    estado = t.Estado.ToString()
+                })
+                .FirstOrDefaultAsync(ct);
+
+            return Results.Ok(turno);
+        })
+        .WithName("ConsultarTurnoActivo")
+        .WithSummary("Consulta si el operador actual tiene un turno de caja activo.")
+        .WithOpenApi();
+
+        // 1. Apertura de Turno (Soporta /turnos/abrir y /abrir-turno)
+        async Task<IResult> AbrirTurnoHandler(
+            AbrirTurnoCommand command,
+            ClaimsPrincipal user,
+            ISender sender,
+            IValidator<AbrirTurnoCommand> validator,
+            CancellationToken ct)
+        {
+            // Si no viene EmpleadoId explícito, inferir del token JWT
+            if (command.EmpleadoId <= 0)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                    ?? user.FindFirst("sub")?.Value;
+                if (int.TryParse(userIdClaim, out var claimId))
+                {
+                    command = command with { EmpleadoId = claimId };
+                }
+            }
+
             var validationResult = await validator.ValidateAsync(command, ct);
             if (!validationResult.IsValid)
             {
@@ -34,17 +81,24 @@ public static class CajaEndpoints
             }
 
             return Results.Created($"/api/caja/turnos/{result.Value!.TurnoId}", result.Value);
-        })
-        .WithName("AbrirTurno")
-        .WithSummary("Abre un nuevo turno de caja para un empleado con saldo inicial.")
-        .WithOpenApi();
+        }
 
-        // 2. Cobro de Orden
-        group.MapPost("/ordenes/cobrar", async (
+        group.MapPost("/turnos/abrir", AbrirTurnoHandler)
+            .WithName("AbrirTurno")
+            .WithSummary("Abre un nuevo turno de caja para un empleado con saldo inicial.")
+            .WithOpenApi();
+
+        group.MapPost("/abrir-turno", AbrirTurnoHandler)
+            .WithName("AbrirTurnoAlias")
+            .WithSummary("Alias directo para abrir turno de caja.")
+            .WithOpenApi();
+
+        // 2. Cobro de Orden (Soporta /ordenes/cobrar y /cobrar)
+        async Task<IResult> CobrarOrdenHandler(
             CobrarOrdenCommand command,
             ISender sender,
             IValidator<CobrarOrdenCommand> validator,
-            CancellationToken ct) =>
+            CancellationToken ct)
         {
             var validationResult = await validator.ValidateAsync(command, ct);
             if (!validationResult.IsValid)
@@ -59,10 +113,17 @@ public static class CajaEndpoints
             }
 
             return Results.Created($"/api/caja/ordenes/{result.Value!.OrdenId}", result.Value);
-        })
-        .WithName("CobrarOrden")
-        .WithSummary("Registra el cobro de una orden en caja con pagos múltiples y descuento de stock atómico.")
-        .WithOpenApi();
+        }
+
+        group.MapPost("/ordenes/cobrar", CobrarOrdenHandler)
+            .WithName("CobrarOrden")
+            .WithSummary("Registra el cobro de una orden en caja con pagos múltiples y descuento de stock atómico.")
+            .WithOpenApi();
+
+        group.MapPost("/cobrar", CobrarOrdenHandler)
+            .WithName("CobrarOrdenAlias")
+            .WithSummary("Alias directo para cobrar orden en caja.")
+            .WithOpenApi();
 
         // 3. Cierre de Turno (Arqueo)
         group.MapPost("/turnos/cerrar", async (

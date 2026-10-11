@@ -3,8 +3,13 @@ import { ShieldCheck, SignOut, Storefront, TestTube } from '@phosphor-icons/reac
 import { Button } from '../../../components/ui/Button';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useTenantStore } from '../../../stores/useTenantStore';
+import type { TurnoActivoDto } from '../api/cajaApi';
 
-export const PosHeader: React.FC = () => {
+interface PosHeaderProps {
+  turnoActivo?: TurnoActivoDto | null;
+}
+
+export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo }) => {
   const { usuario, logout } = useAuthStore();
   const { isSandboxMode, toggleSandboxMode } = useTenantStore();
 
@@ -33,10 +38,26 @@ export const PosHeader: React.FC = () => {
       {/* Controles del Operador y Estado */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Indicador de Estado de Turno */}
-        <div className="border border-[#222222] bg-[#111111] px-3 py-1.5 flex items-center gap-2 text-xs font-sans">
-          <span className="inline-block w-2 h-2 rounded-none bg-green-400 animate-pulse"></span>
+        <div
+          className={`px-3 py-1.5 flex items-center gap-2 text-xs font-sans border ${
+            turnoActivo
+              ? 'border-[#222222] bg-[#111111]'
+              : 'border-amber-900/60 bg-amber-950/20'
+          }`}
+        >
+          <span
+            className={`inline-block w-2 h-2 rounded-none ${
+              turnoActivo ? 'bg-green-400 animate-pulse' : 'bg-amber-400'
+            }`}
+          />
           <span className="text-[10px] uppercase tracking-widest text-[#71717A]">CAJA:</span>
-          <span className="text-xs font-semibold tracking-wider text-[#FAFAFA]">OPERANDO</span>
+          <span
+            className={`text-xs font-semibold tracking-wider ${
+              turnoActivo ? 'text-[#FAFAFA]' : 'text-amber-300'
+            }`}
+          >
+            {turnoActivo ? `TURNO #${turnoActivo.turnoId}` : 'SIN TURNO'}
+          </span>
         </div>
 
         {/* Tenant Selector (Producción vs Sandbox) */}
