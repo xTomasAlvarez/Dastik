@@ -1,13 +1,13 @@
 using FluentValidation;
 using MediatR;
 
-namespace Dastik.Api.Features.Ventas.CobrarOrden;
+namespace Dastik.Api.Features.Caja.CobrarOrden;
 
 public static class CobrarOrdenEndpoint
 {
     public static void MapCobrarOrdenEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/ordenes/cobrar", async (
+        app.MapPost("/api/caja/ordenes/cobrar", async (
             CobrarOrdenCommand command,
             ISender sender,
             IValidator<CobrarOrdenCommand> validator,
@@ -25,7 +25,7 @@ public static class CobrarOrdenEndpoint
                 return Results.BadRequest(new { error = result.Error });
             }
 
-            return Results.Created($"/api/ordenes/{result.Value!.OrdenId}", result.Value);
+            return Results.Created($"/api/caja/ordenes/{result.Value!.OrdenId}", result.Value);
         })
         .WithName("CobrarOrden")
         .WithSummary("Registra el cobro de una orden de venta en caja con pagos múltiples y descuento de stock atómico.")
