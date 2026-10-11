@@ -168,4 +168,32 @@ public class CommandValidatorsTests
         // Assert
         result.IsValid.Should().BeTrue();
     }
+
+    // ==========================================
+    // 5. LoginCommandValidator (Fase 4)
+    // ==========================================
+    [Theory]
+    [InlineData("", "Password123!")]
+    [InlineData("email-invalido", "Password123!")]
+    [InlineData("admin@dastik.com", "")]
+    public void LoginValidator_ConDatosInvalidos_DebeRetornarErrores(string email, string password)
+    {
+        var validator = new Dastik.Api.Features.Auth.Login.LoginCommandValidator();
+        var command = new Dastik.Api.Features.Auth.Login.LoginCommand(email, password);
+
+        var result = validator.Validate(command);
+
+        result.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void LoginValidator_ConDatosValidos_DebeAprobar()
+    {
+        var validator = new Dastik.Api.Features.Auth.Login.LoginCommandValidator();
+        var command = new Dastik.Api.Features.Auth.Login.LoginCommand("admin@dastik.com", "Dastik2026!");
+
+        var result = validator.Validate(command);
+
+        result.IsValid.Should().BeTrue();
+    }
 }

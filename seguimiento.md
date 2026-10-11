@@ -150,12 +150,39 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 
 ---
 
-## Estado Actual del Proyecto
-- **Fase 1 (Arquitectura Base & DI Comisiones):** ✅ Completada y testeada.
-- **Fase 2 (Catálogo e Inventario):** ✅ Completada, persistencia y validadores cubiertos con tests unitarios.
-- **Fase 3 (Motor Financiero y Punto de Venta):** ✅ Completada en su totalidad con Minimal APIs (`/api/caja`), transacciones ACID de cobro, apertura/cierre de turnos y arqueos.
-- **Suite de Pruebas Unitarias:** 31 tests pasando al 100% en verde.
-- **Rama activa:** `develop` (al día y limpia).
+### Plan de Ejecución (Fase 4: Autenticación, Roles y Modo Sandbox)
+
+**Paso 1: Entidades de Seguridad y Configuración JWT (En Progreso)**
+- Rama `feature/auth-sandbox` creada desde `develop`.
+- Instalación de `Microsoft.AspNetCore.Authentication.JwtBearer` (8.0.11).
+- Entidades de Dominio creadas en `Domain/Entities/`:
+  - `RolUsuario`: Enum (`Admin`, `Empleado`).
+  - `Usuario`: `Id`, `Nombre`, `Email`, `PasswordHash`, `Rol`, `Activo`, `FechaCreacion`.
+- Configuración Fluent API en `UsuarioConfiguration.cs` y registro `DbSet<Usuario> Usuarios` en `AppDbContext.cs`.
+- Servicio `JwtProvider` (`IJwtProvider`) implementado con `JsonWebTokenHandler` de .NET 8:
+  - Generación de token JWT firmado con HMAC-SHA256 (`SymmetricSecurityKey`).
+  - Claims incluidos: `sub` (Id), `NameIdentifier`, `Name`, `email`, `role` (`RolUsuario`), y claim multi-tenant `IsSandboxMode` ("true"/"false").
+- Configuración de Autenticación y Autorización en `Program.cs` (`AddAuthentication`, `AddJwtBearer`, `AddAuthorization`, middleware `UseAuthentication`/`UseAuthorization`).
+- Soporte para Bearer Token en Swagger/OpenAPI.
+- Protección de endpoints de caja: `CajaEndpoints.cs` asegurado con `.RequireAuthorization()`.
+- Variables de entorno en `Back/.env` y plantilla creada en `Back/.env.example`.
+- Suite de pruebas unitarias ampliada: 34 tests en verde (3 nuevos tests en `JwtProviderTests.cs` validando generación, claims de rol y sandbox, y fallo por firma inválida).
+
+**Paso 1.1: Refactor de Reglas de Seguridad (✅ COMPLETADO)**
+- Regla A (Jerarquía de Roles): Política de autorización `OperadorCaja` configurada en `Program.cs` (`policy.RequireRole("Admin", "Empleado")`) y aplicada a los endpoints de caja (`CajaEndpoints.cs`), garantizando que el Dueño/Admin pueda operar la caja heredando permisos.
+- Regla B (Reseteo Obligatorio): Propiedad `DebeCambiarPassword` (bool, default `true`) agregada a `Usuario` y mapeada en `UsuarioConfiguration.cs`.
+- Claim `DebeCambiarPassword` incorporado en el payload del JWT mediante `JwtProvider`.
+- Pruebas unitarias actualizadas y 34/34 tests superados al 100%.
+
+**Paso 2: Migración, Seeder inicial y Endpoint de Login (✅ COMPLETADO)**
+- Migración EF Core: `20261011152403_AddUsuarios.cs` generada con tabla `Usuarios`, índice único en `Email`, y tipos estrictos.
+- Hashing de contraseñas: Servicio `IPasswordHasher` / `PasswordHasher` con BCrypt (`BCrypt.Net-Next`).
+- Data Seeder: `DataSeeder.cs` sembrando automáticamente `admin@dastik.com` (`Rol.Admin`, contraseña default `Dastik2026!`, `DebeCambiarPassword = true`) al inicializar la app.
+- Vertical Slice Login: Implementado en `Features/Auth/Login/`: `LoginCommand`, `LoginCommandValidator`, `LoginCommandHandler` con Result Pattern y mitigación de enumeración de usuarios.
+- Minimal API: `AuthEndpoints.cs` mapeando `POST /api/auth/login` con acceso anónimo (`AllowAnonymous`).
+- Suite de pruebas unitarias ampliada: 43 tests en verde (5 nuevos tests en `LoginCommandHandlerTests` y 4 nuevos tests en `CommandValidatorsTests`).
+
+
 
 
 
