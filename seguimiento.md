@@ -211,6 +211,16 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Sembrado de usuario de prueba para cajeros (`cajero.sandbox@dastik.com` / `Dastik2026!`, `DebeCambiarPassword = false`) para entrenamiento inmediato.
 - Registro en `Program.cs`: Ejecución protegida en entorno de desarrollo (`app.Environment.IsDevelopment()`).
 - Suite de pruebas unitarias ampliada: 59 tests en verde (3 nuevos tests en `SandboxDataSeederTests.cs` cubriendo creación de catálogo simulado, guardia de seguridad contra producción y prevención de duplicados).
+- Rama `feature/sandbox-seeder` integrada exitosamente a `develop`.
+
+---
+
+### Plan de Ejecución (Fase 5: Integración Omnicanal con Tiendanube y Outbox Pattern)
+
+**Paso 1: Outbox Pattern y Entidades de Sincronización (Pendiente)**
+- Entidad `OutboxMessage` en `Domain/Entities/` (`Id`, `TipoEvento`, `ContenidoJson`, `FechaCreacion`, `FechaProcesado`, `Error`, `Intentos`).
+- Mapeo Fluent API en `OutboxMessageConfiguration.cs` y migración EF Core.
+- Desacoplamiento de eventos de dominio para sincronización de stock asíncrona y resiliente.
 
 
 
