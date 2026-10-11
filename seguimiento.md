@@ -217,10 +217,15 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 
 ### Plan de Ejecución (Fase 5: Integración Omnicanal con Tiendanube y Outbox Pattern)
 
-**Paso 1: Outbox Pattern y Entidades de Sincronización (Pendiente)**
-- Entidad `OutboxMessage` en `Domain/Entities/` (`Id`, `TipoEvento`, `ContenidoJson`, `FechaCreacion`, `FechaProcesado`, `Error`, `Intentos`).
-- Mapeo Fluent API en `OutboxMessageConfiguration.cs` y migración EF Core.
-- Desacoplamiento de eventos de dominio para sincronización de stock asíncrona y resiliente.
+**Paso 1: Entidad de Persistencia Outbox (✅ COMPLETADO)**
+- Rama `feature/outbox-pattern` creada desde `develop`.
+- Entidad POCO creada en `Domain/Entities/OutboxMessage.cs`: `Id` (Guid), `TipoEvento` (string), `ContenidoJson` (string), `FechaOcurrenciaUtc` (DateTime), `FechaProcesadoUtc` (DateTime?), `Error` (string?), `Intentos` (int, default 0).
+- Configuración Fluent API en `Infrastructure/Persistence/Configurations/OutboxMessageConfiguration.cs`:
+  - `ToTable("OutboxMessages")`, tipos estrictos (`text` para el payload JSON, `maxLength(200)` para TipoEvento, `maxLength(2000)` para Error).
+  - Índice optimizado sobre `FechaProcesadoUtc` para consultas de alta velocidad del worker de procesamiento.
+- `DbSet<OutboxMessage> OutboxMessages` registrado en `AppDbContext.cs`.
+- Migración EF Core generada: `20261011161004_AddOutboxMessages.cs` con snapshot actualizado.
+- Suite de pruebas unitarias ampliada: 61 tests en verde (2 nuevos tests en `OutboxMessagePersistenceTests.cs` validando persistencia con defaults y filtrado indexado de pendientes).
 
 
 
