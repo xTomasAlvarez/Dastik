@@ -199,6 +199,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Registro dinámico en `Program.cs`: `AddDbContext<AppDbContext>` resuelve dinámicamente la conexión por request (`SandboxConnection` vs `DefaultConnection`).
 - Cadenas configuradas en `appsettings.json`, `Back/.env.example` y `Back/.env`.
 - Suite de pruebas unitarias ampliada: 56 tests en verde (3 nuevos tests en `TenantServiceTests.cs`).
+- Rama `feature/sandbox-tenant` integrada exitosamente a `develop`.
 
 
 
