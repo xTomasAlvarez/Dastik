@@ -104,11 +104,20 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Generación de migración `AddCajaYOrdenes` y esquema listo para PostgreSQL.
 - Rama `feature/efcore-caja` integrada a `develop`.
 
-**Paso 3 y 4: Inyección de Dependencias para Comisiones (Refactor)**
+**Paso 3 y 4: Inyección de Dependencias para Comisiones (✅ COMPLETADO)**
 - Lógica de dominio y suite de pruebas unitarias xUnit confirmadas desde Fase 1.
 - Extracción de contrato `ICalculadoraComisiones` en `Domain/Services/`.
 - `CalculadoraComisiones` implementa `ICalculadoraComisiones`.
 - Registro de dependencia desacoplada en `Program.cs` (`AddTransient<ICalculadoraComisiones, CalculadoraComisiones>()`).
-- Rama `refactor/comisiones-di`.
+- Rama `refactor/comisiones-di` integrada a `develop`.
+
+**Paso 5: Vertical Slice - Cobrar Orden (✅ COMPLETADO)**
+- Implementación de Vertical Slice en `Features/Ventas/CobrarOrden/`: `CobrarOrdenCommand`, `CobrarOrdenCommandValidator`, `CobrarOrdenCommandHandler` y `CobrarOrdenEndpoint`.
+- Regla de validación preventiva: Suma de métodos de pago igual al total de la orden.
+- Transacción ACID atómica con `BeginTransactionAsync`, `CommitAsync`, `RollbackAsync` en EF Core.
+- Descuento de stock en `Variantes`, persistencia de orden/detalles/pagos, y cálculo de comisiones inyectado.
+- Adopción de Result Pattern (`Result<T>`) sin excepciones para control de flujo lógico.
+- Rama `feature/slice-cobrar-orden` integrada a `develop`.
+
 
 
