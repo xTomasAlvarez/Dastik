@@ -34,9 +34,10 @@ public class GeneradorEan13Tests
     }
 
     [Theory]
-    // Pruebas determinísticas con prefijos conocidos de 12 dígitos y su dígito verificador estándar
-    [InlineData("779123456789", 1)] // (7*1 + 7*3 + 9*1 + 1*3 + 2*1 + 3*3 + 4*1 + 5*3 + 6*1 + 7*3 + 8*1 + 9*3) = 119 -> (10 - 9) = 1
-    [InlineData("200000000001", 3)] // Prefijo interno común
+    // Pruebas determinísticas con prefijos conocidos de 12 dígitos y su dígito verificador estándar EAN-13
+    [InlineData("779123456789", 8)] // Suma = 132 -> (10 - (132 % 10)) = 8
+    [InlineData("200000000001", 5)] // Suma = 5 -> (10 - (5 % 10)) = 5
+    [InlineData("400638133393", 1)] // Suma = 89 -> (10 - (89 % 10)) = 1
     public void CalcularDigitoVerificador_ConPrefijoConocido_DebeRetornarDigitoCorrecto(string prefijo12, int digitoEsperado)
     {
         // Act
