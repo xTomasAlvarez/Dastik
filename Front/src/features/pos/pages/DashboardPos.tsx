@@ -1,13 +1,35 @@
-import React from 'react';
-import { Receipt, ShoppingCart, Trash } from '@phosphor-icons/react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Receipt, ShoppingCart, Trash, CheckCircle, X } from '@phosphor-icons/react';
 import { PosHeader } from '../components/PosHeader';
 import { PosBarcodeScanner } from '../components/PosBarcodeScanner';
 import { CatalogoGrid } from '../components/CatalogoGrid';
+import { ModalAbrirTurno } from '../components/ModalAbrirTurno';
+import { ModalPago } from '../components/ModalPago';
+import { cajaApi } from '../api/cajaApi';
 import { useCartStore } from '../stores/useCartStore';
 import { Button } from '../../../components/ui/Button';
+import { queryClient } from '../../../lib/react-query/queryClient';
 
 export const DashboardPos: React.FC = () => {
   const { items, removeItem, updateQuantity, clearCart, getTotal, getItemCount } = useCartStore();
+
+  const [isModalPagoOpen, setIsModalPagoOpen] = useState(false);
+  const [ventaExitosa, setVentaExitosa] = useState<{
+    ordenId: number;
+    total: number;
+    vuelto: number;
+  } | null>(null);
+
+  // 1. Consulta Reactiva del Turno Activo de Caja
+  const {
+    data: turnoActivo,
+    isLoading: isLoadingTurno,
+    refetch: refetchTurno,
+  } = useQuery({
+    queryKey: ['turno-activo'],
+    queryFn: cajaApi.obtenerTurnoActivo,
+  });
 
   const total = getTotal();
   const itemCount = getItemCount();
@@ -23,18 +45,48 @@ export const DashboardPos: React.FC = () => {
   return (
     <div className="h-screen w-screen bg-[#000000] text-[#FAFAFA] flex flex-col overflow-hidden selection:bg-[#FAFAFA] selection:text-[#000000]">
       {/* 1. Header Superior Arquitectónico */}
-      <PosHeader />
+      <PosHeader turnoActivo={turnoActivo} />
 
-      {/* 2. Área Principal Dividida 70% / 30% */}
+      {/* 2. Banner de Venta Exitosa (Toast Discreto) */}
+      {ventaExitosa && (
+        <div className="bg-[#0B150F] border-b border-emerald-600/80 px-6 py-3 flex items-center justify-between text-xs font-mono transition-fast">
+          <div className="flex items-center gap-3">
+            <CheckCircle size={20} weight="light" className="text-emerald-400 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold block">
+                VENTA ASENTADA // ORDEN #{ventaExitosa.ordenId}
+              </span>
+              <span className="text-xs font-heading font-bold text-[#FAFAFA]">
+                Monto cobrado: {formatearDinero(ventaExitosa.total)}
+                {ventaExitosa.vuelto > 0 && (
+                  <span className="text-emerald-300 ml-2">
+                    (Vuelto entregado: {formatearDinero(ventaExitosa.vuelto)})
+                  </span>
+                )}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setVentaExitosa(null)}
+            className="text-[#71717A] hover:text-[#FAFAFA] p-1 cursor-pointer"
+            title="Descartar aviso"
+          >
+            <X size={16} weight="light" />
+          </button>
+        </div>
+      )}
+
+      {/* 3. Área Principal Dividida 70% / 30% */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* ======================================================== */}
         {/* PANEL IZQUIERDO (70%): Búsqueda, Scanner y Grilla Retail */}
         {/* ======================================================== */}
         <main className="w-full lg:w-[70%] flex-1 flex flex-col overflow-y-auto p-4 md:p-6 gap-6">
-          {/* 1. Lector Óptico de Código de Barras (EAN-13) */}
+          {/* Lector Óptico de Código de Barras (EAN-13) */}
           <PosBarcodeScanner />
 
-          {/* 2. Catálogo Retail y Grilla de Variantes */}
+          {/* Catálogo Retail y Grilla de Variantes */}
           <CatalogoGrid />
         </main>
 
@@ -166,13 +218,40 @@ export const DashboardPos: React.FC = () => {
               variant="primary"
               size="lg"
               className="w-full mt-2 font-heading font-bold tracking-wider"
-              disabled={items.length === 0}
+              disabled={items.length === 0 || !turnoActivo}
+              onClick={() => setIsModalPagoOpen(true)}
             >
-              COBRAR ORDEN {items.length > 0 && `(${formatearDinero(total)})`}
+              {!turnoActivo
+                ? 'TURNO DE CAJA CERRADO'
+                : `COBRAR ORDEN ${items.length > 0 ? `(${formatearDinero(total)})` : ''}`}
             </Button>
           </div>
         </aside>
       </div>
+
+      {/* 4. Modal Bloqueante de Apertura de Turno (Si no hay turno activo) */}
+      <ModalAbrirTurno
+        isOpen={!isLoadingTurno && !turnoActivo}
+        onTurnoAbierto={() => {
+          refetchTurno();
+        }}
+      />
+
+      {/* 5. Modal de Cobro y Métodos de Pago */}
+      <ModalPago
+        isOpen={isModalPagoOpen}
+        onClose={() => setIsModalPagoOpen(false)}
+        turnoId={turnoActivo?.turnoId ?? 0}
+        onVentaExitosa={(res, vuelto) => {
+          setVentaExitosa({
+            ordenId: res.ordenId,
+            total: res.total,
+            vuelto,
+          });
+          // Refrescar inventario en la grilla para reflejar descuento atómico de stock
+          queryClient.invalidateQueries({ queryKey: ['catalogo-pos'] });
+        }}
+      />
     </div>
   );
 };
