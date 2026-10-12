@@ -412,6 +412,17 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Conectado directamente al botón superior "NUEVO PRODUCTO".
   - Invalida las queries de TanStack Query (`productos-inventario` y `productos`) al guardar para refrescar automáticamente la tabla sin recargar la página.
 
+**Paso 3: Botón de Sincronización de Catálogo en el Frontend (Completado)**
+- Rama `feature/frontend-admin-sincronizar-tiendanube` creada desde `develop`.
+- **`inventarioApi.ts`:**
+  - Definición de interfaz `SincronizarCatalogoResponse` (`totalProductosImportados`, `totalVariantesImportadas`, `productosNuevos`, `productosActualizados`, `mensaje`).
+  - Método `sincronizarTiendanube()` apuntando a `POST /api/inventario/sincronizar-tiendanube`.
+- **`InventarioPage.tsx`:**
+  - Botón secundario "SINCRONIZAR NUBE" ubicado al lado de "NUEVO PRODUCTO", con ícono Phosphor `CloudArrowDown` (estilo acento ámbar).
+  - Manejo de estado de carga con micro-animación `animate-bounce` y desactivación de doble clic (`disabled={isSyncing}`).
+  - Banner Avant-Garde dismissible de feedback con resumen detallado (`productosNuevos`, `productosActualizados` o error).
+  - Invalidación automática de caché de TanStack Query (`productos-inventario` y `productos`) para actualizar la tabla en vivo.
+
 ---
 
 ### Configuración de Credenciales de Testing y Usuario Admin (`tomiDev`)

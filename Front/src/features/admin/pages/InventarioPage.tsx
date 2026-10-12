@@ -7,7 +7,10 @@ import {
   WarningCircle,
   Package,
   SlidersHorizontal,
-  Barcode
+  Barcode,
+  CloudArrowDown,
+  CheckCircle,
+  X
 } from '@phosphor-icons/react';
 import { inventarioApi, type ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 import { Button } from '../../../components/ui/Button';
@@ -73,6 +76,8 @@ export const InventarioPage: React.FC = () => {
 
   const queryClient = useQueryClient();
   const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<{ tipo: 'ok' | 'error'; mensaje: string } | null>(null);
 
   const handleNuevoProducto = () => {
     setIsModalCrearOpen(true);
@@ -81,6 +86,31 @@ export const InventarioPage: React.FC = () => {
   const handleCreacionExitosa = () => {
     queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
     queryClient.invalidateQueries({ queryKey: ['productos'] });
+  };
+
+  const handleSincronizarTiendanube = async () => {
+    setIsSyncing(true);
+    setSyncFeedback(null);
+    try {
+      const res = await inventarioApi.sincronizarTiendanube();
+      queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
+      queryClient.invalidateQueries({ queryKey: ['productos'] });
+      setSyncFeedback({
+        tipo: 'ok',
+        mensaje: res.mensaje || `Sincronización exitosa: ${res.productosNuevos} productos nuevos, ${res.productosActualizados} actualizados.`
+      });
+    } catch (err: unknown) {
+      const mensaje =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+          : 'Error al sincronizar catálogo desde Tiendanube.';
+      setSyncFeedback({
+        tipo: 'error',
+        mensaje: mensaje || 'No se pudo sincronizar el catálogo con Tiendanube.'
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
@@ -101,29 +131,73 @@ export const InventarioPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Botón Principal: NUEVO PRODUCTO */}
-        <div className="flex items-center gap-3">
+        {/* Botones de Acción */}
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => refetch()}
-            disabled={isFetching}
+            disabled={isFetching || isSyncing}
             className="p-2.5 border border-[#333333] bg-[#111111] hover:bg-[#1A1A1A] hover:border-[#555555] text-[#FAFAFA] transition-fast cursor-pointer disabled:opacity-50"
-            title="Refrescar catálogo"
+            title="Refrescar catálogo local"
           >
             <ArrowClockwise size={16} weight="light" className={isFetching ? 'animate-spin' : ''} />
           </button>
 
           <Button
+            variant="secondary"
+            size="md"
+            onClick={handleSincronizarTiendanube}
+            disabled={isSyncing || isFetching}
+            className="gap-2 px-4 py-2.5 font-heading font-semibold tracking-wider text-xs border-[#333333] hover:border-[#555555]"
+            title="Importar catálogo y actualizar stock desde Tiendanube"
+          >
+            <CloudArrowDown
+              size={17}
+              weight={isSyncing ? 'bold' : 'light'}
+              className={isSyncing ? 'animate-bounce text-amber-400' : 'text-amber-400'}
+            />
+            <span>{isSyncing ? 'SINCRONIZANDO...' : 'SINCRONIZAR NUBE'}</span>
+          </Button>
+
+          <Button
             variant="primary"
             size="md"
             onClick={handleNuevoProducto}
-            className="gap-2 px-5 py-2.5 font-bold tracking-widest"
+            className="gap-2 px-5 py-2.5 font-bold tracking-widest text-xs"
           >
             <Plus size={16} weight="bold" />
             <span>NUEVO PRODUCTO</span>
           </Button>
         </div>
       </div>
+
+      {/* Banner de Feedback de Sincronización */}
+      {syncFeedback && (
+        <div
+          className={`border p-3.5 flex items-center justify-between gap-3 text-xs font-sans transition-fast ${
+            syncFeedback.tipo === 'ok'
+              ? 'border-emerald-900/80 bg-emerald-950/30 text-emerald-300'
+              : 'border-red-900/80 bg-red-950/30 text-red-300'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {syncFeedback.tipo === 'ok' ? (
+              <CheckCircle size={18} weight="light" className="text-emerald-400 shrink-0" />
+            ) : (
+              <WarningCircle size={18} weight="light" className="text-red-400 shrink-0" />
+            )}
+            <span>{syncFeedback.mensaje}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSyncFeedback(null)}
+            className="text-inherit hover:opacity-75 cursor-pointer p-0.5"
+            title="Cerrar notificación"
+          >
+            <X size={15} weight="light" />
+          </button>
+        </div>
+      )}
 
       {/* 2. Tarjetas de Resumen Rápido (Estilo Flat Avant-Garde) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
