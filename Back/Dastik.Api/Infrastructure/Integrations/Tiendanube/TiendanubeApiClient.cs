@@ -48,7 +48,8 @@ public class TiendanubeApiClient : ITiendanubeApiClient
         using var request = new HttpRequestMessage(HttpMethod.Put, endpointUrl);
 
         // Header obligatorio de Tiendanube: "Authentication: bearer {token}"
-        request.Headers.TryAddWithoutValidation("Authentication", $"bearer {accessToken.Trim()}");
+        var tokenLimpio = TiendanubeTokenHelper.NormalizarToken(accessToken)?.Trim() ?? accessToken.Trim();
+        request.Headers.TryAddWithoutValidation("Authentication", $"bearer {tokenLimpio}");
 
         var payload = JsonSerializer.Serialize(new { stock = nuevoStock });
         request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
@@ -105,7 +106,8 @@ public class TiendanubeApiClient : ITiendanubeApiClient
         var endpointUrl = $"{storeId}/products?per_page=200";
         using var request = new HttpRequestMessage(HttpMethod.Get, endpointUrl);
 
-        request.Headers.TryAddWithoutValidation("Authentication", $"bearer {accessToken.Trim()}");
+        var tokenLimpio = TiendanubeTokenHelper.NormalizarToken(accessToken)?.Trim() ?? accessToken.Trim();
+        request.Headers.TryAddWithoutValidation("Authentication", $"bearer {tokenLimpio}");
 
         try
         {
@@ -325,10 +327,11 @@ public class TiendanubeApiClient : ITiendanubeApiClient
 
     private static bool EsModoMock(string storeId, string accessToken)
     {
+        var tokenLimpio = TiendanubeTokenHelper.NormalizarToken(accessToken);
         return string.IsNullOrWhiteSpace(storeId)
-            || string.IsNullOrWhiteSpace(accessToken)
+            || string.IsNullOrWhiteSpace(tokenLimpio)
             || storeId.StartsWith("sandbox", StringComparison.OrdinalIgnoreCase)
             || storeId.StartsWith("mock", StringComparison.OrdinalIgnoreCase)
-            || accessToken.StartsWith("mock", StringComparison.OrdinalIgnoreCase);
+            || tokenLimpio.StartsWith("mock", StringComparison.OrdinalIgnoreCase);
     }
 }

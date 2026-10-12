@@ -73,6 +73,9 @@ public class TiendanubeSyncServiceTests : IDisposable
         public bool DebeFallar { get; set; }
         public List<TiendanubeProductResponse> ProductosARetornar { get; set; } = new();
 
+        public string? UltimoStoreId { get; private set; }
+        public string? UltimoAccessToken { get; private set; }
+
         public Task<Result<TiendanubeVariantResponse>> ActualizarStockVarianteAsync(
             string storeId, string accessToken, string productId, string variantId, int nuevoStock, CancellationToken ct = default)
         {
@@ -82,6 +85,9 @@ public class TiendanubeSyncServiceTests : IDisposable
         public Task<Result<List<TiendanubeProductResponse>>> ObtenerProductosAsync(
             string storeId, string accessToken, CancellationToken ct = default)
         {
+            UltimoStoreId = storeId;
+            UltimoAccessToken = accessToken;
+
             if (DebeFallar)
             {
                 return Task.FromResult(Result<List<TiendanubeProductResponse>>.Failure("Error de conexión 500"));
@@ -259,5 +265,25 @@ public class TiendanubeSyncServiceTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("500");
+    }
+
+    [Fact]
+    public async Task SincronizarCatalogoAsync_DebeLeerCredencialesDeUnidadNegocioDastikYEnviarAlCliente()
+    {
+        // Arrange
+        _unidadDastik.TiendanubeStoreId = "5686318";
+        _unidadDastik.TiendanubeAccessToken = "b0b1c5f8e482ed372168badfe114d2cf97254bd5";
+        await _context.SaveChangesAsync();
+
+        var mockClient = new MockTiendanubeClient();
+        var service = new TiendanubeSyncService(_context, mockClient, _generadorEan13, NullLogger<TiendanubeSyncService>.Instance);
+
+        // Act
+        var result = await service.SincronizarCatalogoAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        mockClient.UltimoStoreId.Should().Be("5686318");
+        mockClient.UltimoAccessToken.Should().Be("b0b1c5f8e482ed372168badfe114d2cf97254bd5");
     }
 }

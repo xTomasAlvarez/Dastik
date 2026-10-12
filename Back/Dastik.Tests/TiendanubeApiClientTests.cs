@@ -266,4 +266,48 @@ public class TiendanubeApiClientTests
         result.Value!.Should().HaveCountGreaterThanOrEqualTo(2);
         result.Value[0].Variantes.Should().NotBeEmpty();
     }
+
+    [Theory]
+    [InlineData("https://shared.tiendanube.com/share/api-key/b8d9b3970a7e7977fe1ca7a29102f4dda9bc6b43ec5e100d0bc7ea8c4cf1994e", "b0b1c5f8e482ed372168badfe114d2cf97254bd5")]
+    [InlineData("b0b1c5f8e482ed372168badfe114d2cf97254bd5", "b0b1c5f8e482ed372168badfe114d2cf97254bd5")]
+    [InlineData("https://shared.tiendanube.com/share/api-key/abc123xyz", "abc123xyz")]
+    [InlineData("  token-con-espacios  ", "token-con-espacios")]
+    public void TiendanubeTokenHelper_NormalizarToken_DebeResolverCorrectamente(string entrada, string esperado)
+    {
+        var normalizado = TiendanubeTokenHelper.NormalizarToken(entrada);
+        normalizado.Should().Be(esperado);
+    }
+
+    [Fact]
+    public async Task ObtenerProductosAsync_CuandoTokenEsEnlaceDeCompartir_DebeEnviarTokenNormalizadoEnHeader()
+    {
+        // Arrange
+        HttpRequestMessage? requestCapturado = null;
+        var mockResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("[]", System.Text.Encoding.UTF8, "application/json")
+        };
+
+        var handler = new MockHttpMessageHandler(req =>
+        {
+            requestCapturado = req;
+            return mockResponse;
+        });
+
+        var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.tiendanube.com/v1/")
+        };
+
+        var client = new TiendanubeApiClient(httpClient, NullLogger<TiendanubeApiClient>.Instance);
+        const string enlaceCompartir = "https://shared.tiendanube.com/share/api-key/b8d9b3970a7e7977fe1ca7a29102f4dda9bc6b43ec5e100d0bc7ea8c4cf1994e";
+
+        // Act
+        var result = await client.ObtenerProductosAsync("5686318", enlaceCompartir);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        requestCapturado.Should().NotBeNull();
+        requestCapturado!.Headers.GetValues("Authentication").Should().Contain("bearer b0b1c5f8e482ed372168badfe114d2cf97254bd5");
+    }
 }

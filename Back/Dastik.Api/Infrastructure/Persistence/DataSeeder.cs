@@ -81,15 +81,58 @@ public static class DataSeeder
             await context.SaveChangesAsync();
         }
 
-        // Sembrar Unidades de Negocio si no existen
-        if (!await context.UnidadesNegocio.AnyAsync())
+        // Sembrar o actualizar Unidades de Negocio con credenciales de Tiendanube desde variables de entorno
+        var configuration = scope.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
+        var envStoreId = configuration?["TIENDANUBE_STORE_ID"]
+            ?? Environment.GetEnvironmentVariable("TIENDANUBE_STORE_ID");
+        var envAccessToken = configuration?["TIENDANUBE_ACCESS_TOKEN"]
+            ?? Environment.GetEnvironmentVariable("TIENDANUBE_ACCESS_TOKEN");
+
+        var cleanStoreId = !string.IsNullOrWhiteSpace(envStoreId) ? envStoreId.Trim() : null;
+        var cleanToken = Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeTokenHelper.NormalizarToken(envAccessToken);
+
+        var dastikUnidad = await context.UnidadesNegocio
+            .FirstOrDefaultAsync(u => u.Nombre == UnidadNegocio.Dastik);
+
+        if (dastikUnidad is null)
         {
-            context.UnidadesNegocio.AddRange(
-                new UnidadNegocio { Nombre = "Dastik", TieneTiendaNube = true },
-                new UnidadNegocio { Nombre = "Hidden Sneakers", TieneTiendaNube = false }
-            );
-            await context.SaveChangesAsync();
+            dastikUnidad = new UnidadNegocio
+            {
+                Nombre = UnidadNegocio.Dastik,
+                TieneTiendaNube = true,
+                TiendanubeStoreId = cleanStoreId,
+                TiendanubeAccessToken = cleanToken
+            };
+            context.UnidadesNegocio.Add(dastikUnidad);
         }
+        else
+        {
+            dastikUnidad.TieneTiendaNube = true;
+            if (!string.IsNullOrWhiteSpace(cleanStoreId))
+            {
+                dastikUnidad.TiendanubeStoreId = cleanStoreId;
+            }
+            if (!string.IsNullOrWhiteSpace(cleanToken))
+            {
+                dastikUnidad.TiendanubeAccessToken = cleanToken;
+            }
+        }
+
+        var hiddenSneakersUnidad = await context.UnidadesNegocio
+            .FirstOrDefaultAsync(u => u.Nombre == UnidadNegocio.HiddenSneakers);
+
+        if (hiddenSneakersUnidad is null)
+        {
+            context.UnidadesNegocio.Add(new UnidadNegocio
+            {
+                Nombre = UnidadNegocio.HiddenSneakers,
+                TieneTiendaNube = false,
+                TiendanubeStoreId = null,
+                TiendanubeAccessToken = null
+            });
+        }
+
+        await context.SaveChangesAsync();
 
         // Sembrar Categorías si no existen
         if (!await context.Categorias.AnyAsync())

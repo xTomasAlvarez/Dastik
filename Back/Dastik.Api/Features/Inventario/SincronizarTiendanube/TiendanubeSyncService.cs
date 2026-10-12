@@ -47,12 +47,18 @@ public class TiendanubeSyncService : ITiendanubeSyncService
         }
 
         var finalStoreId = !string.IsNullOrWhiteSpace(storeId)
-            ? storeId
-            : unidadDastik.TiendanubeStoreId ?? "sandbox-dastik";
+            ? storeId.Trim()
+            : (!string.IsNullOrWhiteSpace(unidadDastik.TiendanubeStoreId)
+                ? unidadDastik.TiendanubeStoreId.Trim()
+                : Environment.GetEnvironmentVariable("TIENDANUBE_STORE_ID")?.Trim() ?? "sandbox-dastik");
 
-        var finalAccessToken = !string.IsNullOrWhiteSpace(accessToken)
-            ? accessToken
-            : unidadDastik.TiendanubeAccessToken ?? "mock-token-dastik";
+        var rawAccessToken = !string.IsNullOrWhiteSpace(accessToken)
+            ? accessToken.Trim()
+            : (!string.IsNullOrWhiteSpace(unidadDastik.TiendanubeAccessToken)
+                ? unidadDastik.TiendanubeAccessToken.Trim()
+                : Environment.GetEnvironmentVariable("TIENDANUBE_ACCESS_TOKEN")?.Trim() ?? "mock-token-dastik");
+
+        var finalAccessToken = TiendanubeTokenHelper.NormalizarToken(rawAccessToken) ?? "mock-token-dastik";
 
         // 2. Obtener productos desde la API de Tiendanube
         var responseApi = await _apiClient.ObtenerProductosAsync(finalStoreId, finalAccessToken, ct);
