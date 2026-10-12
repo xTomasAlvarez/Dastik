@@ -361,7 +361,12 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Resolución dinámica de credenciales por tenant/unidad (`TiendanubeStoreId`, `TiendanubeAccessToken`).
   - Manejo de fallos con incremento de `Intentos`, registro de error y persistencia en base de datos para reintento automático.
   - Omitido seguro para unidades sin tienda en la nube (marcado automático como procesado).
-- **Cobertura TDD Estricta (72 pruebas superadas, 0 fallos):**
+- **Tenant Guard & Aislamiento Multi-Tienda (Regla de Negocio Crítica):**
+  - **Dastik:** Unidad con ecommerce activo en Tiendanube (`TieneTiendaNube == true`, store ID y token). Al registrarse una venta en POS, se emite el evento en Outbox (`StockReducidoEnPOS`) y el procesador ejecuta la actualización HTTP real contra la nube.
+  - **Hidden Sneakers:** Unidad que opera de manera exclusivamente física en el local (`TieneTiendaNube == false`). Al registrarse una venta en POS, descuenta stock físico local atómicamente en PostgreSQL/SQLite, pero el Tenant Guard suprime la emisión de mensajes de Outbox para Tiendanube.
+  - **Defensa en Profundidad en OutboxProcessor:** Si por cualquier eventualidad un mensaje llegara para una variante física, `OutboxMessageProcessor` verifica `TieneTiendaNube`, omite la llamada externa, registra un log informativo y marca el mensaje como procesado.
+- **Cobertura TDD Estricta (73 pruebas superadas, 0 fallos):**
   - Pruebas unitarias de `TiendanubeApiClientTests` (código 200 con headers correctos, 404 manejado como Failure, modo mock seguro).
-  - Pruebas de integración de `OutboxMessageProcessorTests` (flujo exitoso para Hidden Sneakers, reintentos/errores ante fallo de API externa, bypass para productos solo físicos).
+  - Pruebas de integración de `OutboxMessageProcessorTests` (flujo exitoso para Dastik con Tiendanube, reintentos/errores ante fallo de API externa, bypass para Hidden Sneakers físico).
+  - Pruebas de cobranza con Tenant Guard en `CajaHandlersTests` (`CobrarOrden_CuandoArticuloEsDeDastikConTiendanube_DeberiaGenerarOutboxMessage`, `CobrarOrden_CuandoArticuloEsDeHiddenSneakersFisico_NoDebeGenerarOutboxMessage`, `CobrarOrden_VentaMixtaDastikYHiddenSneakers_DebeGenerarOutboxSoloParaArticuloDeDastik`).
 

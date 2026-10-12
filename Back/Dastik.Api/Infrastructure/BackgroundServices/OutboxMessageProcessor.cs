@@ -136,6 +136,12 @@ public class OutboxMessageProcessor : BackgroundService
                             }
                         }
                     }
+                    else if (variante != null && variante.Producto?.UnidadNegocio?.TieneTiendaNube == false)
+                    {
+                        _logger.LogInformation(
+                            "Tenant Guard Outbox: La variante {VarianteId} pertenece a '{UnidadNegocio}' (comercio físico exclusivo). Se omite sincronización con Tiendanube y se marca como procesado.",
+                            varianteId, variante.Producto?.UnidadNegocio?.Nombre ?? "Física");
+                    }
                 }
 
                 _logger.LogInformation(

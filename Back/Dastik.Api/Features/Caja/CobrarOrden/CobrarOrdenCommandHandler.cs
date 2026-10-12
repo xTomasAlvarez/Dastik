@@ -113,15 +113,17 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
 
             _context.Ordenes.Add(orden);
 
-            // E. Intercepción de Omnicanalidad: Transactional Outbox Pattern para Tiendanube
+            // E. Intercepción de Omnicanalidad: Transactional Outbox Pattern con Tenant Guard
+            // Regla de Negocio: Solo las unidades de negocio con ecommerce activo en Tiendanube (ej. Dastik)
+            // deben emitir eventos de Outbox para sincronizar stock online.
+            // Las unidades exclusivamente físicas (ej. Hidden Sneakers) solo descuentan stock local en base de datos.
             foreach (var detalle in orden.Detalles)
             {
                 var variante = variantes[detalle.VarianteId];
-                var esHiddenSneakers = variante.Producto?.UnidadNegocio != null &&
-                    (string.Equals(variante.Producto.UnidadNegocio.Nombre, UnidadNegocio.HiddenSneakers, StringComparison.OrdinalIgnoreCase)
-                     || variante.Producto.UnidadNegocio.TieneTiendaNube);
+                var requiereSincronizacionTiendanube = variante.Producto?.UnidadNegocio != null &&
+                    variante.Producto.UnidadNegocio.TieneTiendaNube;
 
-                if (esHiddenSneakers)
+                if (requiereSincronizacionTiendanube)
                 {
                     var outboxMessage = new OutboxMessage
                     {

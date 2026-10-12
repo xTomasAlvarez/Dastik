@@ -276,7 +276,7 @@ public class CajaHandlersTests : IDisposable
     }
 
     [Fact]
-    public async Task CobrarOrden_CuandoArticuloEsDeHiddenSneakers_DeberiaGenerarOutboxMessage()
+    public async Task CobrarOrden_CuandoArticuloEsDeDastikConTiendanube_DeberiaGenerarOutboxMessage()
     {
         // Arrange
         var turno = new Turno
@@ -288,7 +288,86 @@ public class CajaHandlersTests : IDisposable
         };
         _context.Turnos.Add(turno);
 
-        var unidadHidden = new UnidadNegocio { Nombre = UnidadNegocio.HiddenSneakers, TieneTiendaNube = true };
+        var unidadDastik = new UnidadNegocio
+        {
+            Nombre = UnidadNegocio.Dastik,
+            TieneTiendaNube = true,
+            TiendanubeStoreId = "998877",
+            TiendanubeAccessToken = "token-secret-dastik"
+        };
+        var categoria = new Categoria { Nombre = "Indumentaria" };
+        var marca = new Marca { Nombre = "Dastik" };
+        var proveedor = new Proveedor { Nombre = "Textil Central" };
+        _context.UnidadesNegocio.Add(unidadDastik);
+        _context.Categorias.Add(categoria);
+        _context.Marcas.Add(marca);
+        _context.Proveedores.Add(proveedor);
+
+        var producto = new Producto
+        {
+            UnidadNegocio = unidadDastik,
+            Categoria = categoria,
+            Marca = marca,
+            Proveedor = proveedor,
+            Nombre = "Remera Oversize Básica",
+            CostoBase = 15_000.00m,
+            MarkupAplicado = 1.5m,
+            PrecioVenta = 22_500.00m,
+            Activo = true
+        };
+        var variante = new Variante
+        {
+            Producto = producto,
+            Talle = "L",
+            Color = "Negro",
+            CodigoBarras = "2000000000088",
+            StockFisico = 10
+        };
+        _context.Variantes.Add(variante);
+        await _context.SaveChangesAsync();
+
+        var handler = new CobrarOrdenCommandHandler(_context, _calculadoraComisiones);
+        var command = new CobrarOrdenCommand(
+            TurnoId: turno.Id,
+            Items: new List<ItemCobroDto> { new(VarianteId: variante.Id, Cantidad: 2, PrecioUnitario: 22_500.00m) },
+            Pagos: new List<PagoCobroDto> { new(MetodoPago.Tarjeta, 45_000.00m) }
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+
+        var outboxMessages = await _context.OutboxMessages.ToListAsync();
+        outboxMessages.Should().ContainSingle();
+
+        var outbox = outboxMessages.Single();
+        outbox.TipoEvento.Should().Be("StockReducidoEnPOS");
+        outbox.FechaProcesadoUtc.Should().BeNull();
+        outbox.Intentos.Should().Be(0);
+        outbox.ContenidoJson.Should().Contain($"\"VarianteId\":{variante.Id}");
+        outbox.ContenidoJson.Should().Contain("\"CantidadDescontada\":2");
+    }
+
+    [Fact]
+    public async Task CobrarOrden_CuandoArticuloEsDeHiddenSneakersFisico_NoDebeGenerarOutboxMessage()
+    {
+        // Arrange: Hidden Sneakers opera exclusivamente en local físico (TieneTiendaNube == false)
+        var turno = new Turno
+        {
+            EmpleadoId = 1,
+            FechaApertura = DateTime.UtcNow,
+            SaldoInicial = 10_000.00m,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turno);
+
+        var unidadHidden = new UnidadNegocio
+        {
+            Nombre = UnidadNegocio.HiddenSneakers,
+            TieneTiendaNube = false
+        };
         var categoria = new Categoria { Nombre = "Calzado" };
         var marca = new Marca { Nombre = "Nike" };
         var proveedor = new Proveedor { Nombre = "Importadora" };
@@ -323,8 +402,8 @@ public class CajaHandlersTests : IDisposable
         var handler = new CobrarOrdenCommandHandler(_context, _calculadoraComisiones);
         var command = new CobrarOrdenCommand(
             TurnoId: turno.Id,
-            Items: new List<ItemCobroDto> { new(VarianteId: variante.Id, Cantidad: 2, PrecioUnitario: 128_000.00m) },
-            Pagos: new List<PagoCobroDto> { new(MetodoPago.Tarjeta, 256_000.00m) }
+            Items: new List<ItemCobroDto> { new(VarianteId: variante.Id, Cantidad: 1, PrecioUnitario: 128_000.00m) },
+            Pagos: new List<PagoCobroDto> { new(MetodoPago.Efectivo, 128_000.00m) }
         );
 
         // Act
@@ -333,19 +412,17 @@ public class CajaHandlersTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeTrue();
 
-        var outboxMessages = await _context.OutboxMessages.ToListAsync();
-        outboxMessages.Should().ContainSingle();
+        // 1. Descuenta stock físico local
+        var varianteEnBd = await _context.Variantes.FindAsync(variante.Id);
+        varianteEnBd!.StockFisico.Should().Be(4);
 
-        var outbox = outboxMessages.Single();
-        outbox.TipoEvento.Should().Be("StockReducidoEnPOS");
-        outbox.FechaProcesadoUtc.Should().BeNull();
-        outbox.Intentos.Should().Be(0);
-        outbox.ContenidoJson.Should().Contain($"\"VarianteId\":{variante.Id}");
-        outbox.ContenidoJson.Should().Contain("\"CantidadDescontada\":2");
+        // 2. Tenant Guard: NO genera OutboxMessage para Tiendanube
+        var outboxMessages = await _context.OutboxMessages.ToListAsync();
+        outboxMessages.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task CobrarOrden_CuandoArticuloEsDeDastik_NoDebeGenerarOutboxMessage()
+    public async Task CobrarOrden_VentaMixtaDastikYHiddenSneakers_DebeGenerarOutboxSoloParaArticuloDeDastik()
     {
         // Arrange
         var turno = new Turno
@@ -357,35 +434,65 @@ public class CajaHandlersTests : IDisposable
         };
         _context.Turnos.Add(turno);
 
-        var (unidadDastik, categoria, marca, proveedor) = CrearDependenciasCatalogo();
-        var producto = new Producto
+        var unidadDastik = new UnidadNegocio { Nombre = UnidadNegocio.Dastik, TieneTiendaNube = true };
+        var unidadHidden = new UnidadNegocio { Nombre = UnidadNegocio.HiddenSneakers, TieneTiendaNube = false };
+        var categoria = new Categoria { Nombre = "General" };
+        var marca = new Marca { Nombre = "General" };
+        var proveedor = new Proveedor { Nombre = "General" };
+
+        _context.UnidadesNegocio.AddRange(unidadDastik, unidadHidden);
+        _context.Categorias.Add(categoria);
+        _context.Marcas.Add(marca);
+        _context.Proveedores.Add(proveedor);
+
+        var prodDastik = new Producto
         {
             UnidadNegocio = unidadDastik,
             Categoria = categoria,
             Marca = marca,
             Proveedor = proveedor,
-            Nombre = "Remera Oversize Básica",
-            CostoBase = 15_000.00m,
-            MarkupAplicado = 1.5m,
-            PrecioVenta = 22_500.00m,
-            Activo = true
+            Nombre = "Remera Dastik",
+            PrecioVenta = 20_000m
         };
-        var variante = new Variante
+        var varDastik = new Variante
         {
-            Producto = producto,
-            Talle = "L",
+            Producto = prodDastik,
+            Talle = "M",
             Color = "Negro",
-            CodigoBarras = "2000000000088",
+            CodigoBarras = "1111111111111",
             StockFisico = 10
         };
-        _context.Variantes.Add(variante);
+
+        var prodHidden = new Producto
+        {
+            UnidadNegocio = unidadHidden,
+            Categoria = categoria,
+            Marca = marca,
+            Proveedor = proveedor,
+            Nombre = "Sneakers Dunk",
+            PrecioVenta = 100_000m
+        };
+        var varHidden = new Variante
+        {
+            Producto = prodHidden,
+            Talle = "US 9",
+            Color = "Panda",
+            CodigoBarras = "2222222222222",
+            StockFisico = 5
+        };
+
+        _context.Variantes.AddRange(varDastik, varHidden);
         await _context.SaveChangesAsync();
 
         var handler = new CobrarOrdenCommandHandler(_context, _calculadoraComisiones);
         var command = new CobrarOrdenCommand(
             TurnoId: turno.Id,
-            Items: new List<ItemCobroDto> { new(VarianteId: variante.Id, Cantidad: 1, PrecioUnitario: 22_500.00m) },
-            Pagos: new List<PagoCobroDto> { new(MetodoPago.Efectivo, 22_500.00m) }
+            Items: new List<ItemCobroDto>
+            {
+                new(VarianteId: varDastik.Id, Cantidad: 1, PrecioUnitario: 20_000m),
+                new(VarianteId: varHidden.Id, Cantidad: 1, PrecioUnitario: 100_000m)
+            },
+            Pagos: new List<PagoCobroDto> { new(MetodoPago.Efectivo, 120_000m) }
         );
 
         // Act
@@ -394,8 +501,16 @@ public class CajaHandlersTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeTrue();
 
+        // Ambos descuentan stock físico
+        var varDastikBd = await _context.Variantes.FindAsync(varDastik.Id);
+        var varHiddenBd = await _context.Variantes.FindAsync(varHidden.Id);
+        varDastikBd!.StockFisico.Should().Be(9);
+        varHiddenBd!.StockFisico.Should().Be(4);
+
+        // Pero solo el producto de Dastik genera OutboxMessage para Tiendanube
         var outboxMessages = await _context.OutboxMessages.ToListAsync();
-        outboxMessages.Should().BeEmpty();
+        outboxMessages.Should().ContainSingle();
+        outboxMessages.Single().ContenidoJson.Should().Contain($"\"VarianteId\":{varDastik.Id}");
     }
 
     [Fact]

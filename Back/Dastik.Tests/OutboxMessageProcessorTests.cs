@@ -129,30 +129,30 @@ public class OutboxMessageProcessorTests : IDisposable
     }
 
     [Fact]
-    public async Task ProcessPendingMessagesAsync_ConVarianteHiddenSneakers_DebeLlamarATiendanubeYMarcarProcesado()
+    public async Task ProcessPendingMessagesAsync_ConVarianteDastik_DebeLlamarATiendanubeYMarcarProcesado()
     {
-        // Arrange
-        var unidadHidden = new UnidadNegocio
+        // Arrange: Dastik tiene TiendaNube activa
+        var unidadDastik = new UnidadNegocio
         {
-            Nombre = "Hidden Sneakers",
+            Nombre = UnidadNegocio.Dastik,
             TieneTiendaNube = true,
             TiendanubeStoreId = "998877",
             TiendanubeAccessToken = "token-secret-123"
         };
-        var categoria = new Categoria { Nombre = "Calzado", Temporada = "2026", EsquemaTalles = "US" };
-        var marca = new Marca { Nombre = "Nike" };
-        var proveedor = new Proveedor { Nombre = "Proveedor A", MarkupPorDefecto = 1.5m };
+        var categoria = new Categoria { Nombre = "Indumentaria", Temporada = "2026", EsquemaTalles = "XS-XL" };
+        var marca = new Marca { Nombre = "Dastik" };
+        var proveedor = new Proveedor { Nombre = "Proveedor Textil", MarkupPorDefecto = 1.5m };
 
-        _context.UnidadesNegocio.Add(unidadHidden);
+        _context.UnidadesNegocio.Add(unidadDastik);
         _context.Categorias.Add(categoria);
         _context.Marcas.Add(marca);
         _context.Proveedores.Add(proveedor);
 
         var producto = new Producto
         {
-            Nombre = "Dunk Low",
-            Descripcion = "Sneaker",
-            UnidadNegocio = unidadHidden,
+            Nombre = "Remera Oversize",
+            Descripcion = "Indumentaria Dastik",
+            UnidadNegocio = unidadDastik,
             Categoria = categoria,
             Marca = marca,
             Proveedor = proveedor,
@@ -164,8 +164,8 @@ public class OutboxMessageProcessorTests : IDisposable
         var variante = new Variante
         {
             Producto = producto,
-            Talle = "US 10",
-            Color = "Panda",
+            Talle = "L",
+            Color = "Negro",
             CodigoBarras = "7791234567890",
             StockFisico = 8,
             TiendanubeVariantId = "var-222"
@@ -223,27 +223,27 @@ public class OutboxMessageProcessorTests : IDisposable
     public async Task ProcessPendingMessagesAsync_CuandoTiendanubeFalla_DebeIncrementarIntentosYRegistrarError()
     {
         // Arrange
-        var unidadHidden = new UnidadNegocio
+        var unidadDastik = new UnidadNegocio
         {
-            Nombre = "Hidden Sneakers",
+            Nombre = UnidadNegocio.Dastik,
             TieneTiendaNube = true,
             TiendanubeStoreId = "998877",
             TiendanubeAccessToken = "token-secret-123"
         };
-        var categoria = new Categoria { Nombre = "Calzado", Temporada = "2026", EsquemaTalles = "US" };
-        var marca = new Marca { Nombre = "Nike" };
-        var proveedor = new Proveedor { Nombre = "Proveedor A", MarkupPorDefecto = 1.5m };
+        var categoria = new Categoria { Nombre = "Indumentaria", Temporada = "2026", EsquemaTalles = "XS-XL" };
+        var marca = new Marca { Nombre = "Dastik" };
+        var proveedor = new Proveedor { Nombre = "Proveedor Textil", MarkupPorDefecto = 1.5m };
 
-        _context.UnidadesNegocio.Add(unidadHidden);
+        _context.UnidadesNegocio.Add(unidadDastik);
         _context.Categorias.Add(categoria);
         _context.Marcas.Add(marca);
         _context.Proveedores.Add(proveedor);
 
         var producto = new Producto
         {
-            Nombre = "Dunk Low",
-            Descripcion = "Sneaker",
-            UnidadNegocio = unidadHidden,
+            Nombre = "Remera Oversize",
+            Descripcion = "Indumentaria Dastik",
+            UnidadNegocio = unidadDastik,
             Categoria = categoria,
             Marca = marca,
             Proveedor = proveedor,
@@ -255,8 +255,8 @@ public class OutboxMessageProcessorTests : IDisposable
         var variante = new Variante
         {
             Producto = producto,
-            Talle = "US 10",
-            Color = "Panda",
+            Talle = "M",
+            Color = "Blanco",
             CodigoBarras = "7791234567891",
             StockFisico = 4,
             TiendanubeVariantId = "var-222"
@@ -307,12 +307,12 @@ public class OutboxMessageProcessorTests : IDisposable
     }
 
     [Fact]
-    public async Task ProcessPendingMessagesAsync_ConVarianteSinTiendanube_NoDebeLlamarATiendanubeYDebeMarcarProcesado()
+    public async Task ProcessPendingMessagesAsync_ConVarianteHiddenSneakersFisico_NoDebeLlamarATiendanubeYDebeMarcarProcesado()
     {
-        // Arrange
+        // Arrange: Hidden Sneakers es venta física exclusiva (TieneTiendaNube == false)
         var unidadFisica = new UnidadNegocio
         {
-            Nombre = "Local Exclusivo Mostrador",
+            Nombre = UnidadNegocio.HiddenSneakers,
             TieneTiendaNube = false
         };
         var categoria = new Categoria { Nombre = "Accesorios", Temporada = "2026", EsquemaTalles = "UNICO" };
