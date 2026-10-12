@@ -436,9 +436,11 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 
 ### Refactor de Lenguaje de Dominio y UI del Local Físico - COMPLETADO
 
+> **ESTADO:** Merge realizado exitosamente hacia `develop` con `--no-ff`.
+
 **Objetivo:** Alinear pantallas de Caja (POS) y Administración con el vocabulario, dinámicas y reglas exactas del Documento de Requisitos de Negocio Original.
 
-- **Rama:** `refactor/domain-language` (creada a partir de `feature/frontend-admin-crud-producto`).
+- **Rama:** `refactor/domain-language` (mergeada hacia `develop`).
 - **1. Roles y Autenticación:**
   - Terminología genérica (Admin/Operador/Cajero) sustituida por **"Dueño"** y **"Empleado"** en toda la interfaz (`PosHeader.tsx`, `ModalAbrirTurno.tsx`, `ModalCerrarTurno.tsx`, `AdminLayout.tsx`, `LoginPage.tsx`).
   - Nomenclatura oficial de turnos: **"Turno Mañana"** (< 14:00 hs) y **"Turno Tarde"** (>= 14:00 hs), visible en badges de cabecera, apertura y arqueo.
