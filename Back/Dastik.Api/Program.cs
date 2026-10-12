@@ -5,6 +5,7 @@ using Dastik.Api.Domain.Services;
 using Dastik.Api.Features.Auth;
 using Dastik.Api.Features.Caja;
 using Dastik.Api.Features.Inventario.CrearProducto;
+using Dastik.Api.Features.Inventario.SincronizarTiendanube;
 using Dastik.Api.Infrastructure.BackgroundServices;
 using Dastik.Api.Infrastructure.Integrations.Tiendanube;
 using Dastik.Api.Infrastructure.Persistence;
@@ -63,6 +64,7 @@ builder.Services.AddSingleton<GeneradorEan13>();
 builder.Services.AddTransient<ICalculadoraComisiones, CalculadoraComisiones>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<IJwtProvider, JwtProvider>();
+builder.Services.AddScoped<ITiendanubeSyncService, TiendanubeSyncService>();
 
 // Cliente HTTP Tipado para Tiendanube con Políticas de Resiliencia (Polly)
 builder.Services.AddHttpClient<ITiendanubeApiClient, TiendanubeApiClient>(client =>

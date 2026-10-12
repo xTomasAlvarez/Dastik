@@ -86,6 +86,243 @@ public class TiendanubeApiClient : ITiendanubeApiClient
         }
     }
 
+    public async Task<Result<List<TiendanubeProductResponse>>> ObtenerProductosAsync(
+        string storeId,
+        string accessToken,
+        CancellationToken ct = default)
+    {
+        // 1. Guardia de Seguridad para Sandbox / Modo Mock: Simular catálogo de Tiendanube
+        if (EsModoMock(storeId, accessToken))
+        {
+            _logger.LogInformation(
+                "[Tiendanube MOCK] Catálogo obtenido de forma simulada para Store: {StoreId}",
+                storeId);
+
+            return Result<List<TiendanubeProductResponse>>.Success(GenerarCatalogoMock());
+        }
+
+        // 2. Request REST: GET https://api.tiendanube.com/v1/{store_id}/products?per_page=200
+        var endpointUrl = $"{storeId}/products?per_page=200";
+        using var request = new HttpRequestMessage(HttpMethod.Get, endpointUrl);
+
+        request.Headers.TryAddWithoutValidation("Authentication", $"bearer {accessToken.Trim()}");
+
+        try
+        {
+            var response = await _httpClient.SendAsync(request, ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogWarning(
+                    "Tiendanube API respondió con error {(int)StatusCode} {StatusCode} al obtener productos para Store {StoreId}: {ErrorBody}",
+                    (int)response.StatusCode, response.StatusCode, storeId, errorBody);
+
+                return Result<List<TiendanubeProductResponse>>.Failure(
+                    $"Tiendanube respondió con {(int)response.StatusCode}: {errorBody}");
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync(ct);
+            var productos = ParsearProductosJson(responseBody);
+
+            return Result<List<TiendanubeProductResponse>>.Success(productos);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Excepción de red al obtener productos de Tiendanube API para Store {StoreId}", storeId);
+            return Result<List<TiendanubeProductResponse>>.Failure($"Fallo de conexión con Tiendanube: {ex.Message}");
+        }
+    }
+
+    private static List<TiendanubeProductResponse> ParsearProductosJson(string json)
+    {
+        var lista = new List<TiendanubeProductResponse>();
+        if (string.IsNullOrWhiteSpace(json)) return lista;
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        var elementos = root.ValueKind == JsonValueKind.Array
+            ? root.EnumerateArray()
+            : Enumerable.Empty<JsonElement>();
+
+        foreach (var prodElem in elementos)
+        {
+            long id = prodElem.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0;
+            if (id == 0) continue;
+
+            string nombre = ExtraerTexto(prodElem, "name") ?? $"Producto {id}";
+            string? descripcion = ExtraerTexto(prodElem, "description");
+
+            // Imagen destacada
+            string? imagenUrl = null;
+            if (prodElem.TryGetProperty("images", out var imgProp) && imgProp.ValueKind == JsonValueKind.Array)
+            {
+                var primerImagen = imgProp.EnumerateArray().FirstOrDefault();
+                if (primerImagen.ValueKind == JsonValueKind.Object && primerImagen.TryGetProperty("src", out var srcProp))
+                {
+                    imagenUrl = srcProp.GetString();
+                }
+            }
+
+            // Variantes
+            var variantes = new List<TiendanubeProductVariantResponse>();
+            if (prodElem.TryGetProperty("variants", out var varProp) && varProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var vElem in varProp.EnumerateArray())
+                {
+                    long vId = vElem.TryGetProperty("id", out var vidProp) ? vidProp.GetInt64() : 0;
+                    long vPid = vElem.TryGetProperty("product_id", out var vpidProp) ? vpidProp.GetInt64() : id;
+                    decimal? precio = ExtraerDecimal(vElem, "price");
+                    decimal? costo = ExtraerDecimal(vElem, "cost");
+                    int? stock = ExtraerEntero(vElem, "stock");
+                    string? barcode = vElem.TryGetProperty("barcode", out var bcProp) && bcProp.ValueKind == JsonValueKind.String
+                        ? bcProp.GetString()
+                        : null;
+
+                    string? talle = null;
+                    string? color = null;
+
+                    if (vElem.TryGetProperty("values", out var valProp) && valProp.ValueKind == JsonValueKind.Array)
+                    {
+                        var valList = valProp.EnumerateArray().ToList();
+                        if (valList.Count > 0)
+                        {
+                            talle = ExtraerTextoDeElemento(valList[0]);
+                        }
+                        if (valList.Count > 1)
+                        {
+                            color = ExtraerTextoDeElemento(valList[1]);
+                        }
+                    }
+
+                    variantes.Add(new TiendanubeProductVariantResponse(
+                        vId,
+                        vPid,
+                        talle ?? "TU",
+                        color ?? "Único",
+                        barcode,
+                        precio,
+                        costo,
+                        stock
+                    ));
+                }
+            }
+
+            decimal? precioProducto = variantes.FirstOrDefault(v => v.Precio.HasValue)?.Precio;
+            decimal? costoProducto = variantes.FirstOrDefault(v => v.Costo.HasValue)?.Costo;
+
+            lista.Add(new TiendanubeProductResponse(
+                id,
+                nombre,
+                descripcion,
+                imagenUrl,
+                precioProducto,
+                costoProducto,
+                variantes
+            ));
+        }
+
+        return lista;
+    }
+
+    private static string? ExtraerTexto(JsonElement elem, string propName)
+    {
+        if (!elem.TryGetProperty(propName, out var p)) return null;
+        return ExtraerTextoDeElemento(p);
+    }
+
+    private static string? ExtraerTextoDeElemento(JsonElement p)
+    {
+        if (p.ValueKind == JsonValueKind.String)
+        {
+            return p.GetString();
+        }
+        if (p.ValueKind == JsonValueKind.Object)
+        {
+            if (p.TryGetProperty("es", out var esProp) && esProp.ValueKind == JsonValueKind.String)
+            {
+                return esProp.GetString();
+            }
+            foreach (var prop in p.EnumerateObject())
+            {
+                if (prop.Value.ValueKind == JsonValueKind.String)
+                {
+                    return prop.Value.GetString();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static decimal? ExtraerDecimal(JsonElement elem, string propName)
+    {
+        if (!elem.TryGetProperty(propName, out var p)) return null;
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetDecimal(out var d)) return d;
+        if (p.ValueKind == JsonValueKind.String &&
+            decimal.TryParse(p.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var d2))
+        {
+            return d2;
+        }
+        return null;
+    }
+
+    private static int? ExtraerEntero(JsonElement elem, string propName)
+    {
+        if (!elem.TryGetProperty(propName, out var p)) return null;
+        if (p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out var i)) return i;
+        if (p.ValueKind == JsonValueKind.String && int.TryParse(p.GetString(), out var i2)) return i2;
+        return null;
+    }
+
+    private static List<TiendanubeProductResponse> GenerarCatalogoMock()
+    {
+        return new List<TiendanubeProductResponse>
+        {
+            new(
+                Id: 101,
+                Nombre: "Remera Boxy Heavyweight Dastik",
+                Descripcion: "Remera corte boxy fit en algodón pesado 24/1 teñido artesanal",
+                ImagenUrl: "https://dastik.com/img/boxy-tee.jpg",
+                Precio: 24000m,
+                Costo: 15000m,
+                Variantes: new List<TiendanubeProductVariantResponse>
+                {
+                    new(1001, 101, "S", "Negro", "2010100100018", 24000m, 15000m, 8),
+                    new(1002, 101, "M", "Negro", "2010100100025", 24000m, 15000m, 14),
+                    new(1003, 101, "L", "Negro", "2010100100032", 24000m, 15000m, 10),
+                    new(1004, 101, "XL", "Negro", "2010100100049", 24000m, 15000m, 5)
+                }
+            ),
+            new(
+                Id: 102,
+                Nombre: "Hoodie Oversize Essential Dastik",
+                Descripcion: "Buzo canguro con frisa premium y capucha forrada",
+                ImagenUrl: "https://dastik.com/img/hoodie-black.jpg",
+                Precio: 45000m,
+                Costo: 28000m,
+                Variantes: new List<TiendanubeProductVariantResponse>
+                {
+                    new(1005, 102, "M", "Negro", "2010100200015", 45000m, 28000m, 6),
+                    new(1006, 102, "L", "Negro", "2010100200022", 45000m, 28000m, 9)
+                }
+            ),
+            new(
+                Id: 103,
+                Nombre: "Pantalón Parachute Ripstop Dastik",
+                Descripcion: "Pantalón técnico con ajuste regulable en botamanga",
+                ImagenUrl: "https://dastik.com/img/pant-ripstop.jpg",
+                Precio: 38000m,
+                Costo: 24000m,
+                Variantes: new List<TiendanubeProductVariantResponse>
+                {
+                    new(1007, 103, "40", "Gris", "2010100300012", 38000m, 24000m, 4),
+                    new(1008, 103, "42", "Gris", "2010100300029", 38000m, 24000m, 7)
+                }
+            )
+        };
+    }
+
     private static bool EsModoMock(string storeId, string accessToken)
     {
         return string.IsNullOrWhiteSpace(storeId)

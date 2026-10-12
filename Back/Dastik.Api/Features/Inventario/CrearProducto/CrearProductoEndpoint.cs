@@ -1,4 +1,5 @@
 using Dastik.Api.Features.Inventario.ListarProductos;
+using Dastik.Api.Features.Inventario.SincronizarTiendanube;
 using FluentValidation;
 using MediatR;
 
@@ -58,6 +59,25 @@ public static class CrearProductoEndpoint
         })
         .WithName("ListarProductos")
         .WithSummary("Lista todos los productos activos con sus variantes, talles, códigos de barra y stock físico para el POS.")
+        .WithOpenApi();
+
+        // 3. Sincronizar Catálogo desde Tiendanube
+        app.MapPost("/api/inventario/sincronizar-tiendanube", async (
+            ISender sender,
+            CancellationToken ct,
+            SincronizarCatalogoCommand? command = null) =>
+        {
+            var cmd = command ?? new SincronizarCatalogoCommand();
+            var result = await sender.Send(cmd, ct);
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { error = result.Error });
+            }
+
+            return Results.Ok(result.Value);
+        })
+        .WithName("SincronizarCatalogoTiendanube")
+        .WithSummary("Sincroniza e importa el catálogo de productos y variantes desde Tiendanube API asignándolo a Dastik.")
         .WithOpenApi();
     }
 }

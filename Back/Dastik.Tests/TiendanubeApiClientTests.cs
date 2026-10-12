@@ -136,4 +136,134 @@ public class TiendanubeApiClientTests
         httpEjecutado.Should().BeFalse(); // NUNCA debe tocar la red en modo sandbox mock
         result.Value!.Stock.Should().Be(20);
     }
+
+    [Fact]
+    public async Task ObtenerProductosAsync_CuandoResponde200_DebeRetornarListaDeProductosYHeadersCorrectos()
+    {
+        // Arrange
+        const string storeId = "123456";
+        const string accessToken = "test-token-abc";
+
+        var productosJson = @"[
+            {
+                ""id"": 991,
+                ""name"": { ""es"": ""Remera Boxy Street"" },
+                ""description"": { ""es"": ""100% Algodon"" },
+                ""images"": [
+                    { ""id"": 1, ""src"": ""https://cdn.tiendanube.com/img1.jpg"" }
+                ],
+                ""variants"": [
+                    {
+                        ""id"": 5001,
+                        ""product_id"": 991,
+                        ""price"": ""25000.00"",
+                        ""cost"": ""15000.00"",
+                        ""stock"": 10,
+                        ""barcode"": ""7791234567890"",
+                        ""values"": [
+                            { ""es"": ""M"" },
+                            { ""es"": ""Negro"" }
+                        ]
+                    }
+                ]
+            }
+        ]";
+
+        var mockResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(productosJson, System.Text.Encoding.UTF8, "application/json")
+        };
+
+        var handler = new MockHttpMessageHandler(_ => mockResponse);
+        var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.tiendanube.com/v1/")
+        };
+
+        var client = new TiendanubeApiClient(httpClient, NullLogger<TiendanubeApiClient>.Instance);
+
+        // Act
+        var result = await client.ObtenerProductosAsync(storeId, accessToken);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Should().HaveCount(1);
+
+        var prod = result.Value[0];
+        prod.Id.Should().Be(991);
+        prod.Nombre.Should().Be("Remera Boxy Street");
+        prod.Descripcion.Should().Be("100% Algodon");
+        prod.ImagenUrl.Should().Be("https://cdn.tiendanube.com/img1.jpg");
+        prod.Precio.Should().Be(25000.00m);
+        prod.Costo.Should().Be(15000.00m);
+        prod.Variantes.Should().HaveCount(1);
+
+        var v = prod.Variantes[0];
+        v.Id.Should().Be(5001);
+        v.ProductId.Should().Be(991);
+        v.Talle.Should().Be("M");
+        v.Color.Should().Be("Negro");
+        v.Barcode.Should().Be("7791234567890");
+        v.Stock.Should().Be(10);
+
+        handler.LastRequest.Should().NotBeNull();
+        handler.LastRequest!.Method.Should().Be(HttpMethod.Get);
+        handler.LastRequest.RequestUri!.ToString().Should().Be($"https://api.tiendanube.com/v1/{storeId}/products?per_page=200");
+        handler.LastRequest.Headers.GetValues("Authentication").Should().Contain($"bearer {accessToken}");
+    }
+
+    [Fact]
+    public async Task ObtenerProductosAsync_CuandoResponde401_DebeRetornarFalloConError()
+    {
+        // Arrange
+        var mockResponse = new HttpResponseMessage(HttpStatusCode.Unauthorized)
+        {
+            Content = new StringContent("{\"error\": \"Unauthorized\"}")
+        };
+
+        var handler = new MockHttpMessageHandler(_ => mockResponse);
+        var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.tiendanube.com/v1/")
+        };
+
+        var client = new TiendanubeApiClient(httpClient, NullLogger<TiendanubeApiClient>.Instance);
+
+        // Act
+        var result = await client.ObtenerProductosAsync("123", "token_invalido");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("401");
+    }
+
+    [Fact]
+    public async Task ObtenerProductosAsync_EnModoMock_DebeRetornarCatalogoSimuladoSinHttp()
+    {
+        // Arrange
+        bool httpLlamado = false;
+        var handler = new MockHttpMessageHandler(_ =>
+        {
+            httpLlamado = true;
+            return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+        });
+
+        var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.tiendanube.com/v1/")
+        };
+
+        var client = new TiendanubeApiClient(httpClient, NullLogger<TiendanubeApiClient>.Instance);
+
+        // Act
+        var result = await client.ObtenerProductosAsync("sandbox-dastik", "mock-token");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        httpLlamado.Should().BeFalse();
+        result.Value.Should().NotBeNull();
+        result.Value!.Should().HaveCountGreaterThanOrEqualTo(2);
+        result.Value[0].Variantes.Should().NotBeEmpty();
+    }
 }
