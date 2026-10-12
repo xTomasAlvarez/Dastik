@@ -484,5 +484,30 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 4. **Gestión de Cambios y Devoluciones:**
    - Módulo específico para cambios de talle/producto en mostrador físico manteniendo integridad del stock (entrada del ítem devuelto y salida del nuevo ítem con posible ajuste de saldo o nota de crédito).
 
+---
+
+### Fase 7: Importación de Catálogo desde Tiendanube (Backend) - COMPLETADA
+
+**Objetivo:** Desarrollar la infraestructura de integración HTTP y orquestación de dominio para importar el catálogo de Tiendanube al inventario local con lógica de Upsert y aislamiento de Tenant bajo metodología TDD.
+
+- **Rama:** `feature/backend-tiendanube-sync` (creada a partir de `develop`).
+- **1. Ampliación de `ITiendanubeApiClient`:**
+  - Definición de DTOs de dominio: `TiendanubeProductResponse`, `TiendanubeProductVariantResponse`.
+  - Método `ObtenerProductosAsync(storeId, accessToken, ct)`:
+    - Soporte nativo para modo Mock/Sandbox: genera catálogo representativo de indumentaria Dastik sin invocar la red.
+    - Soporte para API REST real Tiendanube v1: endpoint `GET {storeId}/products?per_page=200` con header `Authentication: bearer {token}` y deserialización JSON resiliente de nombres localizados, imágenes y atributos de variantes.
+- **2. Servicio de Aplicación `TiendanubeSyncService`:**
+  - Implementa `ITiendanubeSyncService` y se integra con MediatR mediante `SincronizarCatalogoCommand` / `SincronizarCatalogoCommandHandler`.
+  - **Regla de Negocio Crítica (Tenant Guard):** Todo producto y variante importado se asigna de manera forzosa a la Unidad de Negocio **"Dastik"** (`TieneTiendaNube == true`), garantizando que "Hidden Sneakers" conserve su aislamiento de inventario exclusivamente físico.
+  - **Lógica de Upsert Atómico:**
+    - Productos existentes (por `TiendanubeProductId`): actualiza nombre, descripción, precio de venta, costo, markup y actualiza/agrega variantes correspondientes (por `TiendanubeVariantId` o `CodigoBarras`).
+    - Productos nuevos: crea la entidad `Producto` con sus respectivas `Variante`s, asignando categorías y marcas predeterminadas, autogenerando códigos GS1 EAN-13 si la nube no provee código de barras.
+- **3. Endpoint de Sincronización Manual:**
+  - `POST /api/inventario/sincronizar-tiendanube` mapeado en `CrearProductoEndpoint.cs` (con alias disponible), retornando `SincronizarCatalogoResult` con conteos detallados de productos nuevos, actualizados y variantes totales.
+- **4. Cobertura TDD Estricta (82 pruebas superadas, 0 fallos):**
+  - `TiendanubeApiClientTests`: respuesta 200 con headers correctos, 401/404 manejados como `Failure`, y modo mock seguro.
+  - `TiendanubeSyncServiceTests`: creación de nuevos productos, actualización idempotente de productos existentes, verificación estricta de asignación a Dastik (nunca a Hidden Sneakers), y manejo de fallos de red.
+
+
 
 
