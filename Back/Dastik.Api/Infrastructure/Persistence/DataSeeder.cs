@@ -80,5 +80,46 @@ public static class DataSeeder
             tomiDevUser.Activo = true;
             await context.SaveChangesAsync();
         }
+
+        // Sembrar Unidades de Negocio si no existen
+        if (!await context.UnidadesNegocio.AnyAsync())
+        {
+            context.UnidadesNegocio.AddRange(
+                new UnidadNegocio { Nombre = "Dastik", TieneTiendaNube = true },
+                new UnidadNegocio { Nombre = "Hidden Sneakers", TieneTiendaNube = false }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // Sembrar Categorías si no existen
+        if (!await context.Categorias.AnyAsync())
+        {
+            context.Categorias.AddRange(
+                new Categoria { Nombre = "Indumentaria", Temporada = "Todo el año", EsquemaTalles = "XS-XL" },
+                new Categoria { Nombre = "Calzado", Temporada = "Todo el año", EsquemaTalles = "US 8-11" }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // Sembrar Marcas si no existen
+        if (!await context.Marcas.AnyAsync())
+        {
+            context.Marcas.AddRange(
+                new Marca { Nombre = "Dastik" },
+                new Marca { Nombre = "Nike" },
+                new Marca { Nombre = "Adidas" }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // Sembrar Proveedores si no existen
+        if (!await context.Proveedores.AnyAsync())
+        {
+            context.Proveedores.AddRange(
+                new Proveedor { Nombre = "Proveedor Textil Dastik", MarkupPorDefecto = 1.50m },
+                new Proveedor { Nombre = "Proveedor Sneakerheads", MarkupPorDefecto = 1.60m }
+            );
+            await context.SaveChangesAsync();
+        }
     }
 }

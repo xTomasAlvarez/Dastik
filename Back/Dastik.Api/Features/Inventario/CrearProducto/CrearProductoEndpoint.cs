@@ -28,6 +28,26 @@ public static class CrearProductoEndpoint
         .WithSummary("Crea un nuevo producto en el catálogo con sus variantes de inventario.")
         .WithOpenApi();
 
+        // 1.b Alias Crear Producto en /api/inventario
+        app.MapPost("/api/inventario", async (
+            CrearProductoCommand command,
+            ISender sender,
+            IValidator<CrearProductoCommand> validator,
+            CancellationToken ct) =>
+        {
+            var validationResult = await validator.ValidateAsync(command, ct);
+            if (!validationResult.IsValid)
+            {
+                return Results.ValidationProblem(validationResult.ToDictionary());
+            }
+
+            var result = await sender.Send(command, ct);
+            return Results.Created($"/api/productos/{result.ProductoId}", result);
+        })
+        .WithName("CrearProductoInventario")
+        .WithSummary("Crea un nuevo producto en el inventario.")
+        .WithOpenApi();
+
         // 2. Listar Catálogo para el POS
         app.MapGet("/api/productos", async (
             ISender sender,

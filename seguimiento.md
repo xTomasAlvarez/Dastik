@@ -393,6 +393,25 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Rutas anidadas protegidas para el Back-Office.
   - Acceso directo bidireccional desde `PosHeader.tsx` ("ADMIN").
 
+**Paso 2: Modal de Alta de Nuevo Producto y Variantes (CRUD) (Completado)**
+- Rama `feature/frontend-admin-crud-producto` creada desde `develop`.
+- **`inventarioApi.ts`:**
+  - Interfaces tipadas: `CrearVarianteItemRequest`, `CrearProductoRequest`, `CrearProductoResponse`.
+  - Método `crearProducto(data)` consumiendo `POST /api/inventario` (con alias activo en backend `/api/productos`).
+- **`ModalCrearProducto.tsx`:**
+  - Modal amplio con scroll interno estilizado en estética Avant-Garde Dark brutalista (`#090909`, bordes `#333333`, fondos `#111111`).
+  - **Selector de Unidad de Negocio:** Selector interactivo multi-tenant Dastik (Tiendanube + POS) vs Hidden Sneakers (Físico Exclusivo) con asignación automática de proveedor y marca sugerida.
+  - **Formulario Base:** Nombre, Marca (Dastik, Nike, Adidas), Categoría (Indumentaria, Calzado), Proveedor, Descripción y URL de imagen opcional.
+  - **Estructura Financiera:** Precio de costo, precio de venta, cálculo reactivo en tiempo real de porcentaje de margen y markup multiplicador, y botones de markup rápido (+50%, +60%, +100%).
+  - **Constructor Dinámico de Variantes ($N$ variantes):**
+    - Mini-formulario para agregar variantes temporales: Talle, Color, Stock físico y Código de barras.
+    - Presets rápidos de talles por categoría (XS - XXL para Indumentaria / US 8 - US 11 para Calzado).
+    - Algoritmo de autogeneración GS1 EAN-13 estándar (Módulo 10 con prefijo `20` de retail) en TypeScript si el usuario deja el campo vacío o hace clic en el botón de autogenerar.
+    - Tabla interactiva de variantes agregadas con visualización de talles, colores, stock total acumulado y botón de eliminación por fila.
+- **Integración con `InventarioPage.tsx`:**
+  - Conectado directamente al botón superior "NUEVO PRODUCTO".
+  - Invalida las queries de TanStack Query (`productos-inventario` y `productos`) al guardar para refrescar automáticamente la tabla sin recargar la página.
+
 ---
 
 ### Configuración de Credenciales de Testing y Usuario Admin (`tomiDev`)
