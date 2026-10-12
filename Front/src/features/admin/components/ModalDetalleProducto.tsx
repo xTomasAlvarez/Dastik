@@ -3,11 +3,14 @@ import {
   X,
   Image as ImageIcon,
   Barcode,
+  Tag,
   Package,
-  Tag
+  TrendUp,
+  CurrencyDollar,
+  Percent,
 } from '@phosphor-icons/react';
-import { type ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 import { Button } from '../../../components/ui/Button';
+import type { ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 
 interface ModalDetalleProductoProps {
   isOpen: boolean;
@@ -18,7 +21,7 @@ interface ModalDetalleProductoProps {
 export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
   isOpen,
   onClose,
-  producto
+  producto,
 }) => {
   // Manejo de tecla Escape para cerrar
   useEffect(() => {
@@ -27,57 +30,80 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
         onClose();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen || !producto) return null;
 
-  const stockTotal = producto.variantes?.reduce((acc, v) => acc + v.stockFisico, 0) || 0;
+  // Cálculos de Stock y Métricas Financieras
+  const stockTotal = producto.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
   const sinStockGlobal = stockTotal === 0;
+
+  // Costo y Markup con fallbacks consistentes con la regla de negocio
+  const costoBase = producto.costoBase && producto.costoBase > 0
+    ? producto.costoBase
+    : Math.round((producto.precioVenta / 1.5) * 100) / 100;
+
+  const markupCalculado = producto.markupAplicado && producto.markupAplicado > 0
+    ? producto.markupAplicado
+    : costoBase > 0
+    ? Math.round((producto.precioVenta / costoBase) * 100) / 100
+    : 1.5;
+
+  const margenPorcentaje = costoBase > 0
+    ? Math.round(((producto.precioVenta - costoBase) / producto.precioVenta) * 100)
+    : 33;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop con Blur Avant-Garde */}
+      {/* Backdrop con Blur y Oscuridad Avant-Garde */}
       <div
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
-        aria-hidden="true"
       />
 
-      {/* Slide-Over Drawer Container */}
-      <div className="relative w-full max-w-xl md:max-w-2xl bg-[#090909] border-l border-[#333333] h-full flex flex-col shadow-2xl z-10 overflow-hidden animate-in slide-in-from-right duration-200">
+      {/* Slide-Over Drawer Lateral */}
+      <div className="relative w-full max-w-xl bg-[#090909] border-l border-[#333333] flex flex-col h-full shadow-2xl z-10 animate-in slide-in-from-right duration-300">
         {/* 1. Header del Drawer */}
-        <div className="flex items-center justify-between p-5 border-b border-[#222222] bg-[#0C0C0C]">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717A]">
-              PANEL DE AUDITORÍA · DASTIK // INVENTARIO
+        <div className="p-5 border-b border-[#222222] bg-[#0C0C0C] flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold">
+              FICHA TÉCNICA DE PRODUCTO
             </span>
-            <span className="text-sm font-heading font-bold uppercase tracking-wider text-[#FAFAFA] mt-0.5">
-              DETALLE DE PRODUCTO #{producto.id}
-            </span>
+            <div className="flex items-center gap-2">
+              <h3 className="font-heading font-extrabold text-[#FAFAFA] text-base uppercase tracking-wider">
+                ID #{producto.id} — {producto.marca}
+              </h3>
+            </div>
           </div>
-
           <button
-            type="button"
             onClick={onClose}
-            className="p-2 border border-[#333333] bg-[#111111] hover:bg-[#1F1F1F] text-[#FAFAFA] transition-fast cursor-pointer"
-            title="Cerrar panel (Esc)"
+            className="p-2 border border-[#333333] bg-[#141414] hover:bg-[#222222] text-[#A1A1AA] hover:text-white transition-fast"
+            title="Cerrar (Esc)"
           >
-            <X size={16} weight="light" />
+            <X size={18} weight="light" />
           </button>
         </div>
 
-        {/* 2. Cuerpo Scrollable */}
+        {/* 2. Cuerpo Desplazable del Drawer */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Foto Destacada en Tamaño Grande */}
-          <div className="w-full h-72 md:h-80 border border-[#222222] bg-[#000000] flex items-center justify-center overflow-hidden relative">
+          {/* Imagen Grande con Fallback Gris Oscuro */}
+          <div className="w-full aspect-[4/3] border border-[#333333] bg-[#111111] overflow-hidden flex items-center justify-center relative">
             {producto.imagenUrl ? (
               <img
                 src={producto.imagenUrl}
                 alt={producto.nombre}
-                className="w-full h-full object-contain p-2"
-                loading="lazy"
+                className="w-full h-full object-contain p-2 bg-[#0E0E0E]"
+                loading="eager"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   const fb = e.currentTarget.parentElement?.querySelector('.drawer-img-fb');
@@ -90,14 +116,14 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
                 producto.imagenUrl ? 'hidden drawer-img-fb' : ''
               }`}
             >
-              <ImageIcon size={44} weight="light" />
+              <ImageIcon size={48} weight="light" />
               <span className="text-[10px] uppercase font-mono tracking-widest text-[#71717A]">
                 FOTO NO DISPONIBLE
               </span>
             </div>
           </div>
 
-          {/* Información Principal */}
+          {/* Información de Identificación y Tags */}
           <div className="border border-[#222222] bg-[#0C0C0C] p-5 space-y-4">
             {/* Badges de Unidad y Categoría */}
             <div className="flex flex-wrap items-center gap-2">
@@ -128,7 +154,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
               </span>
             </div>
 
-            {/* Marca y Nombre */}
+            {/* Nombre y Marca */}
             <div>
               <div className="text-xs font-mono uppercase tracking-widest text-amber-400 font-bold mb-1">
                 {producto.marca}
@@ -137,19 +163,54 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
                 {producto.nombre}
               </h2>
             </div>
+          </div>
 
-            {/* Precio de Venta */}
-            <div className="pt-2 border-t border-[#1C1C1C] flex items-baseline justify-between">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A]">
-                PRECIO AL PÚBLICO
+          {/* Métricas Financieras: Precio, Costo, Markup */}
+          <div className="grid grid-cols-3 gap-2.5">
+            {/* Precio al Público */}
+            <div className="border border-[#333333] bg-[#0D0D0D] p-3.5 flex flex-col justify-between">
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1">
+                <CurrencyDollar size={12} weight="light" className="text-emerald-400" />
+                PRECIO VENTA
               </span>
-              <span className="text-2xl md:text-3xl font-heading font-black text-[#FAFAFA]">
+              <span className="text-lg md:text-xl font-heading font-black text-[#FAFAFA] mt-2">
                 ${producto.precioVenta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="text-[8px] font-mono uppercase text-[#555555] mt-1">
+                PÚBLICO FINAL
+              </span>
+            </div>
+
+            {/* Costo Base */}
+            <div className="border border-[#333333] bg-[#0D0D0D] p-3.5 flex flex-col justify-between">
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1">
+                <TrendUp size={12} weight="light" className="text-amber-400" />
+                COSTO BASE
+              </span>
+              <span className="text-lg md:text-xl font-heading font-black text-[#D4D4D8] mt-2">
+                ${costoBase.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="text-[8px] font-mono uppercase text-[#555555] mt-1">
+                VALOR REPOSICIÓN
+              </span>
+            </div>
+
+            {/* Markup y Margen */}
+            <div className="border border-[#333333] bg-[#0D0D0D] p-3.5 flex flex-col justify-between">
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1">
+                <Percent size={12} weight="light" className="text-blue-400" />
+                MARKUP / MARGEN
+              </span>
+              <span className="text-lg md:text-xl font-heading font-black text-amber-400 mt-2">
+                {markupCalculado.toFixed(2)}x
+              </span>
+              <span className="text-[8px] font-mono uppercase text-emerald-400/90 mt-1">
+                MARGEN: {margenPorcentaje}%
               </span>
             </div>
           </div>
 
-          {/* Descripción Limpia */}
+          {/* Descripción Limpia (Texto Plano) */}
           <div className="space-y-2">
             <span className="text-[10px] font-sans uppercase tracking-[0.2em] text-[#71717A] font-semibold flex items-center gap-1.5">
               <Tag size={13} weight="light" />
@@ -164,7 +225,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
             </div>
           </div>
 
-          {/* Lista de Variantes y Stock */}
+          {/* Curva Completa de Variantes (Talles y Colores) con Stock Físico */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-sans uppercase tracking-[0.2em] text-[#71717A] font-semibold flex items-center gap-1.5">
@@ -253,7 +314,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
             onClick={onClose}
             className="px-6 text-xs font-heading font-semibold tracking-wider border-[#333333]"
           >
-            CERRAR VISTA
+            CERRAR FICHA
           </Button>
         </div>
       </div>

@@ -267,10 +267,10 @@ public class TiendanubeSyncService : ITiendanubeSyncService
             " ",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        // 2. Eliminar todas las etiquetas HTML <.*?>
+        // 2. Eliminar todas las etiquetas HTML crudas mediante Regex <.*?>
         var sinTags = System.Text.RegularExpressions.Regex.Replace(
             conEspacios,
-            @"<[^>]+>",
+            @"<.*?>",
             string.Empty);
 
         // 3. Decodificar entidades HTML (&nbsp;, &aacute;, etc.)

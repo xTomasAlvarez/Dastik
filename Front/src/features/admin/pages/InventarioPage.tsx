@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus,
   MagnifyingGlass,
-  ArrowClockwise,
-  WarningCircle,
+  Plus,
+  Funnel,
   Package,
-  SlidersHorizontal,
   Barcode,
+  TrendUp,
   CloudArrowDown,
-  CheckCircle,
-  X,
-  Image
+  SpinnerGap,
+  Image,
+  CaretLeft,
+  CaretRight,
 } from '@phosphor-icons/react';
 import { inventarioApi, type ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 import { Button } from '../../../components/ui/Button';
@@ -19,72 +19,151 @@ import { ModalCrearProducto } from '../components/ModalCrearProducto';
 import { ModalDetalleProducto } from '../components/ModalDetalleProducto';
 
 export const InventarioPage: React.FC = () => {
-  const [busqueda, setBusqueda] = useState('');
-  const [filtroUnidad, setFiltroUnidad] = useState<string>('TODAS');
+  const queryClient = useQueryClient();
 
-  // Consulta de catálogo completo con TanStack Query
+  // Estados de Filtros y Búsqueda
+  const [busqueda, setBusqueda] = useState('');
+  const [unidadFiltro, setUnidadFiltro] = useState<'TODAS' | 'DASTIK' | 'HIDDEN'>('TODAS');
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string>('TODAS');
+  const [stockFiltro, setStockFiltro] = useState<'TODOS' | 'CON_STOCK' | 'SIN_STOCK' | 'BAJO_STOCK'>('TODOS');
+
+  // Paginación Local Client-Side
+  const PAGE_SIZE = 15;
+  const [paginaActual, setPaginaActual] = useState(1);
+
+  // Estados de Modales y Notificación
+  const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
+  const [isModalDetalleOpen, setIsModalDetalleOpen] = useState(false);
+  const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoCatalogoDto | null>(null);
+  const [mensajeNotificacion, setMensajeNotificacion] = useState<{
+    tipo: 'exito' | 'error';
+    texto: string;
+  } | null>(null);
+
+  // Consulta de Catálogo Centralizado
   const {
     data: productos = [],
     isLoading,
     isError,
-    error,
     refetch,
-    isFetching
-  } = useQuery<ProductoCatalogoDto[]>({
+  } = useQuery({
     queryKey: ['productos-inventario'],
-    queryFn: inventarioApi.obtenerProductos
+    queryFn: inventarioApi.obtenerProductos,
   });
 
-  // Cálculo de productos filtrados
+  // Mutación para sincronizar catálogo desde Tiendanube
+  const sincronizarMutation = useMutation({
+    mutationFn: inventarioApi.sincronizarTiendanube,
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
+      queryClient.invalidateQueries({ queryKey: ['productos'] });
+      setMensajeNotificacion({
+        tipo: 'exito',
+        texto: `Sincronización completada: ${res.productosNuevos} nuevos, ${res.productosActualizados} actualizados (${res.totalVariantesImportadas} variantes).`,
+      });
+      setTimeout(() => setMensajeNotificacion(null), 7000);
+    },
+    onError: (err: any) => {
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.message ||
+        'Error desconocido al sincronizar con Tiendanube.';
+      setMensajeNotificacion({
+        tipo: 'error',
+        texto: `Error de sincronización: ${errorMsg}`,
+      });
+      setTimeout(() => setMensajeNotificacion(null), 8000);
+    },
+  });
+
+  // Lista única de Categorías para el filtro
+  const categoriasDisponibles = useMemo(() => {
+    const setCat = new Set<string>();
+    productos.forEach((p) => {
+      if (p.categoria) setCat.add(p.categoria);
+    });
+    return Array.from(setCat).sort();
+  }, [productos]);
+
+  // Filtrado reactivo en memoria
   const productosFiltrados = useMemo(() => {
-    return productos.filter((prod) => {
-      // Filtro por unidad de negocio
-      if (filtroUnidad !== 'TODAS' && prod.unidadNegocio?.toUpperCase() !== filtroUnidad.toUpperCase()) {
+    return productos.filter((p) => {
+      // 1. Filtro por Unidad de Negocio
+      if (unidadFiltro === 'DASTIK') {
+        const esDastik = p.unidadNegocio?.toLowerCase().includes('dastik') ?? false;
+        if (!esDastik) return false;
+      } else if (unidadFiltro === 'HIDDEN') {
+        const esHidden = p.unidadNegocio?.toLowerCase().includes('hidden') ?? false;
+        if (!esHidden) return false;
+      }
+
+      // 2. Filtro por Categoría
+      if (categoriaFiltro !== 'TODAS' && p.categoria !== categoriaFiltro) {
         return false;
       }
 
-      // Filtro por término de búsqueda (nombre, marca, descripción, código de barras)
-      if (!busqueda.trim()) return true;
+      // 3. Filtro por Estado de Stock
+      const stockTotal = p.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
+      if (stockFiltro === 'CON_STOCK' && stockTotal <= 0) return false;
+      if (stockFiltro === 'SIN_STOCK' && stockTotal > 0) return false;
+      if (stockFiltro === 'BAJO_STOCK' && (stockTotal <= 0 || stockTotal > 5)) return false;
 
-      const term = busqueda.toLowerCase().trim();
-      const coincideBasico =
-        prod.nombre.toLowerCase().includes(term) ||
-        prod.marca.toLowerCase().includes(term) ||
-        prod.categoria.toLowerCase().includes(term) ||
-        prod.unidadNegocio.toLowerCase().includes(term);
+      // 4. Búsqueda por Texto
+      if (busqueda.trim() !== '') {
+        const query = busqueda.toLowerCase().trim();
+        const matchNombre = p.nombre.toLowerCase().includes(query);
+        const matchMarca = p.marca.toLowerCase().includes(query);
+        const matchCategoria = p.categoria.toLowerCase().includes(query);
+        const matchBarcode = p.variantes?.some((v) =>
+          v.codigoBarras?.toLowerCase().includes(query)
+        );
 
-      if (coincideBasico) return true;
+        if (!matchNombre && !matchMarca && !matchCategoria && !matchBarcode) {
+          return false;
+        }
+      }
 
-      // Buscar si algún talle o código de barras coincide
-      return prod.variantes.some(
-        (v) =>
-          v.talle.toLowerCase().includes(term) ||
-          v.color.toLowerCase().includes(term) ||
-          v.codigoBarras.includes(term)
-      );
+      return true;
     });
-  }, [productos, busqueda, filtroUnidad]);
+  }, [productos, unidadFiltro, categoriaFiltro, stockFiltro, busqueda]);
 
-  // Métricas rápidas de cabecera
-  const metricas = useMemo(() => {
-    const totalItems = productos.length;
-    const totalVariantes = productos.reduce((acc, p) => acc + (p.variantes?.length || 0), 0);
-    const totalStock = productos.reduce(
-      (acc, p) => acc + (p.variantes?.reduce((s, v) => s + v.stockFisico, 0) || 0),
-      0
-    );
-    return { totalItems, totalVariantes, totalStock };
+  // Reset de página al cambiar cualquier filtro de búsqueda
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [busqueda, unidadFiltro, categoriaFiltro, stockFiltro]);
+
+  // Cálculo de Paginación Local
+  const totalPaginas = Math.ceil(productosFiltrados.length / PAGE_SIZE) || 1;
+
+  useEffect(() => {
+    if (paginaActual > totalPaginas) {
+      setPaginaActual(Math.max(1, totalPaginas));
+    }
+  }, [paginaActual, totalPaginas]);
+
+  const indiceInicio = (paginaActual - 1) * PAGE_SIZE;
+  const productosPaginados = useMemo(() => {
+    return productosFiltrados.slice(indiceInicio, indiceInicio + PAGE_SIZE);
+  }, [productosFiltrados, indiceInicio, PAGE_SIZE]);
+
+  // Cálculos de Resumen
+  const totalItemsEnStock = useMemo(() => {
+    return productos.reduce((acc, p) => {
+      const sumVar = p.variantes?.reduce((vAcc, v) => vAcc + (v.stockFisico || 0), 0) ?? 0;
+      return acc + sumVar;
+    }, 0);
   }, [productos]);
 
-  const queryClient = useQueryClient();
-  const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
-  const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoCatalogoDto | null>(null);
-  const [isModalDetalleOpen, setIsModalDetalleOpen] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncFeedback, setSyncFeedback] = useState<{ tipo: 'ok' | 'error'; mensaje: string } | null>(null);
+  const totalSinStock = useMemo(() => {
+    return productos.filter((p) => {
+      const sumVar = p.variantes?.reduce((vAcc, v) => vAcc + (v.stockFisico || 0), 0) ?? 0;
+      return sumVar === 0;
+    }).length;
+  }, [productos]);
 
-  const handleNuevoProducto = () => {
-    setIsModalCrearOpen(true);
+  const handleCreacionExitosa = () => {
+    queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
+    queryClient.invalidateQueries({ queryKey: ['productos'] });
   };
 
   const handleVerDetalle = (producto: ProductoCatalogoDto) => {
@@ -92,87 +171,66 @@ export const InventarioPage: React.FC = () => {
     setIsModalDetalleOpen(true);
   };
 
-  const handleCreacionExitosa = () => {
-    queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
-    queryClient.invalidateQueries({ queryKey: ['productos'] });
-  };
-
-  const handleSincronizarTiendanube = async () => {
-    setIsSyncing(true);
-    setSyncFeedback(null);
-    try {
-      const res = await inventarioApi.sincronizarTiendanube();
-      queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
-      queryClient.invalidateQueries({ queryKey: ['productos'] });
-      setSyncFeedback({
-        tipo: 'ok',
-        mensaje: res.mensaje || `Sincronización exitosa: ${res.productosNuevos} productos nuevos, ${res.productosActualizados} actualizados.`
-      });
-    } catch (err: unknown) {
-      const mensaje =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-          : 'Error al sincronizar catálogo desde Tiendanube.';
-      setSyncFeedback({
-        tipo: 'error',
-        mensaje: mensaje || 'No se pudo sincronizar el catálogo con Tiendanube.'
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   return (
-    <div className="flex-1 flex flex-col p-6 md:p-8 space-y-6 max-w-7xl w-full mx-auto">
-      {/* 1. Header de la Página */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#333333]">
+    <div className="space-y-6">
+      {/* Notificación de Sincronización o Acción */}
+      {mensajeNotificacion && (
+        <div
+          className={`p-4 border text-xs font-mono uppercase tracking-wider flex items-center justify-between transition-all ${
+            mensajeNotificacion.tipo === 'exito'
+              ? 'border-green-800 bg-green-950/40 text-green-300'
+              : 'border-red-800 bg-red-950/40 text-red-300'
+          }`}
+        >
+          <span>{mensajeNotificacion.texto}</span>
+          <button
+            onClick={() => setMensajeNotificacion(null)}
+            className="text-[#A1A1AA] hover:text-white ml-4 font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Header del Inventario & Acciones Principales */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-[#222222]">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-heading font-extrabold uppercase tracking-tight text-[#FAFAFA]">
-              INVENTARIO CENTRAL
-            </h1>
-            <span className="border border-[#222222] bg-[#111111] px-2.5 py-1 text-[10px] uppercase tracking-widest text-[#71717A] font-sans">
-              CATÁLOGO & STOCK
-            </span>
-          </div>
-          <p className="text-xs text-[#71717A] uppercase tracking-wider font-sans mt-1">
-            CONTROL MULTI-TIENDA · DASTIK // HIDDEN SNEAKERS
-          </p>
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717A]">
+            GESTIÓN DE STOCK CENTRAL
+          </span>
+          <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-[#FAFAFA] tracking-tight uppercase">
+            INVENTARIO DE PRODUCTOS
+          </h1>
         </div>
 
-        {/* Botones de Acción */}
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => refetch()}
-            disabled={isFetching || isSyncing}
-            className="p-2.5 border border-[#333333] bg-[#111111] hover:bg-[#1A1A1A] hover:border-[#555555] text-[#FAFAFA] transition-fast cursor-pointer disabled:opacity-50"
-            title="Refrescar catálogo local"
-          >
-            <ArrowClockwise size={16} weight="light" className={isFetching ? 'animate-spin' : ''} />
-          </button>
-
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Botón Sincronizar Tiendanube */}
           <Button
             variant="secondary"
             size="md"
-            onClick={handleSincronizarTiendanube}
-            disabled={isSyncing || isFetching}
-            className="gap-2 px-4 py-2.5 font-heading font-semibold tracking-wider text-xs border-[#333333] hover:border-[#555555]"
-            title="Importar catálogo y actualizar stock desde Tiendanube"
+            onClick={() => sincronizarMutation.mutate()}
+            disabled={sincronizarMutation.isPending}
+            className="border-[#333333] hover:border-[#555555] text-xs font-heading font-semibold tracking-wider flex items-center gap-2"
           >
-            <CloudArrowDown
-              size={17}
-              weight={isSyncing ? 'bold' : 'light'}
-              className={isSyncing ? 'animate-bounce text-amber-400' : 'text-amber-400'}
-            />
-            <span>{isSyncing ? 'SINCRONIZANDO...' : 'SINCRONIZAR NUBE'}</span>
+            {sincronizarMutation.isPending ? (
+              <>
+                <SpinnerGap size={16} weight="light" className="animate-spin text-amber-400" />
+                <span>SINCRONIZANDO...</span>
+              </>
+            ) : (
+              <>
+                <CloudArrowDown size={16} weight="light" className="text-amber-400" />
+                <span>SINCRONIZAR NUBE</span>
+              </>
+            )}
           </Button>
 
+          {/* Botón Nuevo Producto */}
           <Button
             variant="primary"
             size="md"
-            onClick={handleNuevoProducto}
-            className="gap-2 px-5 py-2.5 font-bold tracking-widest text-xs"
+            onClick={() => setIsModalCrearOpen(true)}
+            className="text-xs font-heading font-bold tracking-wider flex items-center gap-2"
           >
             <Plus size={16} weight="bold" />
             <span>NUEVO PRODUCTO</span>
@@ -180,157 +238,184 @@ export const InventarioPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Banner de Feedback de Sincronización */}
-      {syncFeedback && (
-        <div
-          className={`border p-3.5 flex items-center justify-between gap-3 text-xs font-sans transition-fast ${
-            syncFeedback.tipo === 'ok'
-              ? 'border-emerald-900/80 bg-emerald-950/30 text-emerald-300'
-              : 'border-red-900/80 bg-red-950/30 text-red-300'
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            {syncFeedback.tipo === 'ok' ? (
-              <CheckCircle size={18} weight="light" className="text-emerald-400 shrink-0" />
-            ) : (
-              <WarningCircle size={18} weight="light" className="text-red-400 shrink-0" />
-            )}
-            <span>{syncFeedback.mensaje}</span>
+      {/* Tarjetas de Métricas Rápidas Avant-Garde */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="border border-[#222222] bg-[#0C0C0C] p-4 flex flex-col justify-between">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1.5">
+            <Package size={14} weight="light" />
+            TOTAL ARTÍCULOS
+          </span>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="font-heading font-bold text-2xl text-[#FAFAFA]">
+              {productos.length}
+            </span>
+            <span className="text-[10px] font-mono text-[#71717A]">SKUs PADRE</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setSyncFeedback(null)}
-            className="text-inherit hover:opacity-75 cursor-pointer p-0.5"
-            title="Cerrar notificación"
-          >
-            <X size={15} weight="light" />
-          </button>
-        </div>
-      )}
-
-      {/* 2. Tarjetas de Resumen Rápido (Estilo Flat Avant-Garde) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="border border-[#222222] bg-[#090909] p-4 flex flex-col justify-between">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-sans">
-            PRODUCTOS REGISTRADOS
-          </span>
-          <span className="text-2xl md:text-3xl font-heading font-bold text-[#FAFAFA] mt-2">
-            {isLoading ? '...' : metricas.totalItems}
-          </span>
         </div>
 
-        <div className="border border-[#222222] bg-[#090909] p-4 flex flex-col justify-between">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-sans">
-            SKUS / VARIANTES TOTALES
+        <div className="border border-[#222222] bg-[#0C0C0C] p-4 flex flex-col justify-between">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1.5">
+            <Barcode size={14} weight="light" />
+            UNIDADES EN STOCK
           </span>
-          <span className="text-2xl md:text-3xl font-heading font-bold text-[#FAFAFA] mt-2">
-            {isLoading ? '...' : metricas.totalVariantes}
-          </span>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="font-heading font-bold text-2xl text-[#FAFAFA]">
+              {totalItemsEnStock}
+            </span>
+            <span className="text-[10px] font-mono text-green-400">FÍSICO REAL</span>
+          </div>
         </div>
 
-        <div className="border border-[#222222] bg-[#090909] p-4 flex flex-col justify-between">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-sans">
-            STOCK FÍSICO GLOBAL
+        <div className="border border-[#222222] bg-[#0C0C0C] p-4 flex flex-col justify-between">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1.5">
+            <TrendUp size={14} weight="light" />
+            SIN STOCK FÍSICO
           </span>
-          <span className="text-2xl md:text-3xl font-heading font-bold text-amber-400 mt-2">
-            {isLoading ? '...' : metricas.totalStock}
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="font-heading font-bold text-2xl text-red-400">
+              {totalSinStock}
+            </span>
+            <span className="text-[10px] font-mono text-red-500/80">QUIEBRE STOCK</span>
+          </div>
+        </div>
+
+        <div className="border border-[#222222] bg-[#0C0C0C] p-4 flex flex-col justify-between">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1.5">
+            <Funnel size={14} weight="light" />
+            RESULTADOS FILTRO
           </span>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="font-heading font-bold text-2xl text-amber-400">
+              {productosFiltrados.length}
+            </span>
+            <span className="text-[10px] font-mono text-[#71717A]">VISIBLES</span>
+          </div>
         </div>
       </div>
 
-      {/* 3. Barra de Búsqueda y Filtros */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-[#090909] p-3 border border-[#222222]">
-        {/* Buscador Input */}
+      {/* Barra de Filtros y Búsqueda */}
+      <div className="border border-[#222222] bg-[#0A0A0A] p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        {/* Buscador */}
         <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#71717A]">
-            <MagnifyingGlass size={16} weight="light" />
-          </div>
+          <MagnifyingGlass
+            size={18}
+            weight="light"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#71717A]"
+          />
           <input
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="BUSCAR POR NOMBRE, MARCA, TALLE O CÓDIGO DE BARRAS..."
-            className="w-full pl-9 pr-4 py-2 bg-[#111111] border border-[#333333] text-xs font-sans text-[#FAFAFA] placeholder:text-[#555555] uppercase tracking-wider focus:outline-none focus:border-[#FAFAFA] transition-fast rounded-none"
+            placeholder="BUSCAR POR NOMBRE, MARCA, CATEGORÍA O CÓDIGO DE BARRAS..."
+            className="w-full bg-[#111111] border border-[#2B2B2B] pl-10 pr-4 py-2 text-xs font-mono text-[#FAFAFA] placeholder:text-[#555555] focus:outline-none focus:border-[#FAFAFA] transition-fast uppercase"
           />
         </div>
 
-        {/* Filtros de Unidad de Negocio */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-          <div className="flex items-center gap-1.5 text-[#71717A] text-[10px] uppercase tracking-wider mr-2 font-mono shrink-0">
-            <SlidersHorizontal size={14} weight="light" />
-            <span>UNIDAD:</span>
-          </div>
-
-          {['TODAS', 'DASTIK', 'HIDDEN SNEAKERS'].map((unidad) => (
+        {/* Filtros Selectores */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Selector de Unidad */}
+          <div className="flex items-center border border-[#2B2B2B] bg-[#111111] p-0.5">
             <button
-              key={unidad}
-              type="button"
-              onClick={() => setFiltroUnidad(unidad)}
-              className={`px-3 py-1.5 text-[10px] font-heading font-semibold uppercase tracking-wider transition-fast border shrink-0 cursor-pointer ${
-                filtroUnidad === unidad
-                  ? 'bg-[#FAFAFA] text-[#000000] border-[#FAFAFA]'
-                  : 'bg-[#111111] text-[#71717A] border-[#222222] hover:text-[#FAFAFA] hover:border-[#444444]'
+              onClick={() => setUnidadFiltro('TODAS')}
+              className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider transition-fast ${
+                unidadFiltro === 'TODAS'
+                  ? 'bg-[#222222] text-[#FAFAFA] font-bold'
+                  : 'text-[#71717A] hover:text-[#D4D4D8]'
               }`}
             >
-              {unidad}
+              TODAS
             </button>
-          ))}
+            <button
+              onClick={() => setUnidadFiltro('DASTIK')}
+              className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider transition-fast ${
+                unidadFiltro === 'DASTIK'
+                  ? 'bg-[#222222] text-[#FAFAFA] font-bold'
+                  : 'text-[#71717A] hover:text-[#D4D4D8]'
+              }`}
+            >
+              DASTIK
+            </button>
+            <button
+              onClick={() => setUnidadFiltro('HIDDEN')}
+              className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider transition-fast ${
+                unidadFiltro === 'HIDDEN'
+                  ? 'bg-amber-950/60 text-amber-300 font-bold border border-amber-900/40'
+                  : 'text-[#71717A] hover:text-[#D4D4D8]'
+              }`}
+            >
+              HIDDEN
+            </button>
+          </div>
+
+          {/* Selector de Categoría */}
+          <select
+            value={categoriaFiltro}
+            onChange={(e) => setCategoriaFiltro(e.target.value)}
+            className="bg-[#111111] border border-[#2B2B2B] px-3 py-1.5 text-[11px] font-mono text-[#FAFAFA] focus:outline-none focus:border-[#FAFAFA] transition-fast uppercase cursor-pointer"
+          >
+            <option value="TODAS">TODAS LAS CATEGORÍAS</option>
+            {categoriasDisponibles.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat.toUpperCase()}
+              </option>
+            ))}
+          </select>
+
+          {/* Selector de Stock */}
+          <select
+            value={stockFiltro}
+            onChange={(e) => setStockFiltro(e.target.value as any)}
+            className="bg-[#111111] border border-[#2B2B2B] px-3 py-1.5 text-[11px] font-mono text-[#FAFAFA] focus:outline-none focus:border-[#FAFAFA] transition-fast uppercase cursor-pointer"
+          >
+            <option value="TODOS">TODOS LOS NIVELES</option>
+            <option value="CON_STOCK">DISPONIBLES (STOCK &gt; 0)</option>
+            <option value="BAJO_STOCK">STOCK BAJO (1 A 5)</option>
+            <option value="SIN_STOCK">QUIEBRE (STOCK = 0)</option>
+          </select>
         </div>
       </div>
 
-      {/* 4. Tabla de Datos (Flat Data Grid) */}
-      <div className="border border-[#333333] bg-[#090909] overflow-hidden">
+      {/* Tabla Data Grid de Inventario */}
+      <div className="border border-[#222222] bg-[#0A0A0A] overflow-hidden">
         {isLoading ? (
-          <div className="py-20 flex flex-col items-center justify-center space-y-3">
-            <ArrowClockwise size={28} weight="light" className="animate-spin text-[#71717A]" />
-            <span className="text-xs uppercase tracking-widest text-[#71717A] font-sans">
-              CARGANDO INVENTARIO CENTRAL...
+          <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
+            <SpinnerGap size={32} weight="light" className="animate-spin text-amber-400" />
+            <span className="font-mono text-xs uppercase tracking-widest text-[#71717A]">
+              CARGANDO CATÁLOGO CENTRAL...
             </span>
           </div>
         ) : isError ? (
-          <div className="py-16 px-6 text-center space-y-3">
-            <WarningCircle size={32} weight="light" className="text-red-400 mx-auto" />
-            <p className="text-xs text-red-300 font-sans uppercase tracking-wider">
-              {error instanceof Error ? error.message : 'Error al conectar con la base de datos de inventario.'}
-            </p>
-            <Button variant="secondary" size="sm" onClick={() => refetch()} className="mx-auto text-[10px]">
-              REINTENTAR CONSULTA
+          <div className="p-12 text-center flex flex-col items-center justify-center gap-3 text-red-400">
+            <span className="font-mono text-xs uppercase tracking-widest">
+              FALLÓ LA CONEXIÓN CON EL SERVIDOR DE INVENTARIO
+            </span>
+            <Button variant="secondary" size="sm" onClick={() => refetch()}>
+              REINTENTAR
             </Button>
           </div>
         ) : productosFiltrados.length === 0 ? (
-          <div className="py-20 text-center space-y-3">
-            <Package size={36} weight="light" className="text-[#333333] mx-auto" />
-            <p className="text-xs uppercase tracking-widest text-[#71717A] font-sans">
-              NO SE ENCONTRARON PRODUCTOS QUE COINCIDAN CON LA BÚSQUEDA
-            </p>
-            {(busqueda || filtroUnidad !== 'TODAS') && (
-              <button
-                type="button"
-                onClick={() => {
-                  setBusqueda('');
-                  setFiltroUnidad('TODAS');
-                }}
-                className="text-[10px] uppercase font-sans tracking-widest text-amber-400 hover:underline cursor-pointer"
-              >
-                Limpiar filtros
-              </button>
-            )}
+          <div className="p-12 text-center flex flex-col items-center justify-center gap-2">
+            <Package size={36} weight="light" className="text-[#333333]" />
+            <span className="font-mono text-xs uppercase tracking-widest text-[#71717A]">
+              NO SE ENCONTRARON PRODUCTOS CON LOS FILTROS ACTUALES
+            </span>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse font-sans">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#0D0D0D] border-b border-[#333333] text-[10px] uppercase tracking-widest text-[#71717A] font-semibold">
-                  <th className="py-3 px-4 w-40">MARCA</th>
-                  <th className="py-3 px-4">PRODUCTO</th>
-                  <th className="py-3 px-4 text-right w-36">PRECIO</th>
-                  <th className="py-3 px-4 w-48">VARIANTES</th>
-                  <th className="py-3 px-4 text-right w-36">STOCK TOTAL</th>
+                <tr className="border-b border-[#222222] bg-[#0D0D0D] text-[10px] font-mono uppercase tracking-[0.15em] text-[#71717A]">
+                  <th className="py-3 px-4 w-36">MARCA / UNIDAD</th>
+                  <th className="py-3 px-4 min-w-[260px]">PRODUCTO</th>
+                  <th className="py-3 px-4 text-right w-28">PRECIO VTA</th>
+                  <th className="py-3 px-4 w-72">VARIANTES (TALLE / STOCK)</th>
+                  <th className="py-3 px-4 text-right w-32">STOCK TOTAL</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1A1A1A] text-xs">
-                {productosFiltrados.map((producto) => {
-                  const stockTotal = producto.variantes?.reduce((s, v) => s + v.stockFisico, 0) || 0;
+              <tbody className="divide-y divide-[#1A1A1A]">
+                {productosPaginados.map((producto) => {
+                  const stockTotal =
+                    producto.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
                   const sinStock = stockTotal === 0;
 
                   return (
@@ -356,11 +441,11 @@ export const InventarioPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Columna 2: Producto (con miniatura Avant-Garde) */}
+                      {/* Columna 2: Producto (con miniatura cuadrada w-10 h-10 border border-[#333333]) */}
                       <td className="py-3.5 px-4 align-top">
                         <div className="flex items-start gap-3">
-                          {/* Miniatura Cuadrada Avant-Garde */}
-                          <div className="w-12 h-12 shrink-0 border border-[#333333] bg-[#111111] overflow-hidden flex items-center justify-center relative">
+                          {/* Miniatura Cuadrada Avant-Garde w-10 h-10 */}
+                          <div className="w-10 h-10 shrink-0 border border-[#333333] bg-[#111111] overflow-hidden flex items-center justify-center relative">
                             {producto.imagenUrl ? (
                               <img
                                 src={producto.imagenUrl}
@@ -380,7 +465,7 @@ export const InventarioPage: React.FC = () => {
                               }`}
                               title="Sin imagen"
                             >
-                              <Image size={20} weight="light" />
+                              <Image size={18} weight="light" />
                             </div>
                           </div>
 
@@ -461,14 +546,49 @@ export const InventarioPage: React.FC = () => {
           </div>
         )}
 
-        {/* Footer de la Tabla con Conteo */}
+        {/* Footer de la Tabla con Paginación Client-Side y Conteo */}
         {!isLoading && !isError && productosFiltrados.length > 0 && (
-          <div className="p-3 bg-[#0D0D0D] border-t border-[#222222] flex items-center justify-between text-[10px] text-[#71717A] uppercase tracking-wider font-mono">
-            <span>MOSTRANDO {productosFiltrados.length} DE {productos.length} PRODUCTOS</span>
-            <span className="flex items-center gap-1.5">
-              <Barcode size={14} weight="light" />
-              SISTEMA CENTRAL DE INVENTARIO
-            </span>
+          <div className="p-3 bg-[#0D0D0D] border-t border-[#222222] flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-[#71717A] uppercase tracking-wider font-mono">
+            {/* Información de Registros */}
+            <div className="flex items-center gap-2">
+              <span>
+                MOSTRANDO {indiceInicio + 1} -{' '}
+                {Math.min(indiceInicio + PAGE_SIZE, productosFiltrados.length)} DE{' '}
+                {productosFiltrados.length} PRODUCTOS
+              </span>
+              {productosFiltrados.length !== productos.length && (
+                <span className="text-[#555555]">
+                  (TOTAL CATÁLOGO: {productos.length})
+                </span>
+              )}
+            </div>
+
+            {/* Controles de Navegación de Páginas */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+                disabled={paginaActual <= 1}
+                className="px-2.5 py-1.5 border border-[#333333] bg-[#141414] hover:bg-[#222222] text-[#FAFAFA] disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 transition-fast"
+                title="Página Anterior"
+              >
+                <CaretLeft size={12} weight="bold" />
+                <span>ANT</span>
+              </button>
+
+              <span className="px-3 py-1.5 border border-[#222222] bg-[#0A0A0A] text-[#FAFAFA] font-bold">
+                PÁGINA {paginaActual} DE {totalPaginas}
+              </span>
+
+              <button
+                onClick={() => setPaginaActual((p) => Math.min(p + 1, totalPaginas))}
+                disabled={paginaActual >= totalPaginas}
+                className="px-2.5 py-1.5 border border-[#333333] bg-[#141414] hover:bg-[#222222] text-[#FAFAFA] disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 transition-fast"
+                title="Página Siguiente"
+              >
+                <span>SIG</span>
+                <CaretRight size={12} weight="bold" />
+              </button>
+            </div>
           </div>
         )}
       </div>

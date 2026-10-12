@@ -23,7 +23,9 @@ public record ProductoCatalogoDto(
     string UnidadNegocio,
     string ImagenUrl,
     decimal PrecioVenta,
-    List<VarianteCatalogoDto> Variantes
+    List<VarianteCatalogoDto> Variantes,
+    decimal CostoBase = 0,
+    decimal MarkupAplicado = 0
 );
 
 public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery, List<ProductoCatalogoDto>>
@@ -59,7 +61,9 @@ public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery,
                     v.Color,
                     v.CodigoBarras,
                     v.StockFisico
-                )).ToList()
+                )).ToList(),
+                p.CostoBase,
+                p.MarkupAplicado
             ))
             .ToListAsync(cancellationToken);
     }

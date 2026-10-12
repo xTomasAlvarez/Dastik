@@ -17,6 +17,8 @@ export interface ProductoCatalogoDto {
   unidadNegocio: string;
   imagenUrl?: string;
   precioVenta: number;
+  costoBase?: number;
+  markupAplicado?: number;
   variantes: VarianteDto[];
 }
 
