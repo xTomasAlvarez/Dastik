@@ -148,6 +148,8 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 }
 
                 page++;
+                // Pausa intencional para evitar Rate Limiting (429 Too Many Requests) en Tiendanube
+                await Task.Delay(500, ct);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

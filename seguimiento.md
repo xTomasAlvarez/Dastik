@@ -559,6 +559,31 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Pruebas unitarias para paginación de página 1 y acumulación multi-página en `TiendanubeApiClientTests.cs`.
   - Compilación de frontend sin errores de TypeScript (`npm run build`).
 
+---
+
+### Prevención de Rate Limit, Sanitización HTML y Drawer de Detalle de Producto - COMPLETADA
+
+**Objetivo:** Proteger las llamadas de sincronización contra bloqueos 429 de Tiendanube con pausas de 500ms, sanitizar etiquetas HTML en descripciones para texto plano legible, y brindar una experiencia inmersiva de inspección de prendas mediante un Slide-Over Drawer Avant-Garde.
+
+- **Rama:** `fix/tiendanube-sync-and-details` (creada a partir de `develop`).
+- **1. Prevención de Rate Limit (`TiendanubeApiClient.cs`):**
+  - Se introdujo `await Task.Delay(500, ct);` al avanzar de página en el bucle de paginación de `ObtenerProductosAsync`, evitando que Tiendanube corte la conexión por exceso de solicitudes concurrentes.
+- **2. Sanitización de HTML (`TiendanubeSyncService.cs`):**
+  - Implementación del método `LimpiarHtml(string? html)`: elimina tags HTML (`<.*?>`), traduce saltos de línea y bloques, decodifica entidades web (`&nbsp;`, `&aacute;`, etc.) y normaliza espacios en blanco.
+  - Aplicado tanto en inserción de nuevos productos como en actualización idempotente de productos existentes.
+  - Saneamiento retroactivo ejecutado sobre la base local `dastik_dev.db`.
+- **3. Slide-Over Drawer de Detalle de Producto (`ModalDetalleProducto.tsx`):**
+  - Panel lateral derecho animado con backdrop blur oscuro y bordes brutalistas (`#333333`, `#090909`).
+  - Muestra la foto del artículo en tamaño ampliado destacado con manejo de fallback.
+  - Detalla Marca, Nombre, Categoría, Unidad de Negocio, Precio de Venta en ARS y la Descripción sanitizada.
+  - Desglose exhaustivo de variantes con Talle, Color, EAN-13, Stock físico y estados visuales (Disponible, Crítico <= 3, Agotado).
+- **4. Integración en `InventarioPage.tsx`:**
+  - Filas de la tabla convertidas en elementos interactivos con `cursor-pointer`, hover sutil `#151515`.
+  - Apertura inmediata del Drawer al hacer clic en cualquier fila para inspección sin recargar ni alterar la vista.
+- **5. Cobertura y Verificación (94 pruebas superadas, 0 fallos):**
+  - Pruebas unitarias en `TiendanubeSyncServiceTests.cs` validando la sanitización de HTML y decodificación de entidades.
+  - Verificación de compilación sin errores tanto en backend (.NET 8) como en frontend (React + TypeScript).
+
 
 
 

@@ -286,4 +286,16 @@ public class TiendanubeSyncServiceTests : IDisposable
         mockClient.UltimoStoreId.Should().Be("5686318");
         mockClient.UltimoAccessToken.Should().Be("b0b1c5f8e482ed372168badfe114d2cf97254bd5");
     }
+
+    [Theory]
+    [InlineData("<h4><span>Remera de corte boxy</span></h4><p>100% algod&oacute;n peinado 24/1.&nbsp;Hecho en Argentina.</p>", "Remera de corte boxy 100% algodón peinado 24/1. Hecho en Argentina.")]
+    [InlineData("Texto simple sin tags", "Texto simple sin tags")]
+    [InlineData("<div>Linea 1<br/>Linea 2</div>", "Linea 1 Linea 2")]
+    [InlineData(null, "")]
+    [InlineData("   ", "")]
+    public void LimpiarHtml_DebeRemoverTagsYEntidadesHtml(string? entrada, string esperado)
+    {
+        var resultado = TiendanubeSyncService.LimpiarHtml(entrada);
+        resultado.Should().Be(esperado);
+    }
 }

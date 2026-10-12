@@ -16,6 +16,7 @@ import {
 import { inventarioApi, type ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 import { Button } from '../../../components/ui/Button';
 import { ModalCrearProducto } from '../components/ModalCrearProducto';
+import { ModalDetalleProducto } from '../components/ModalDetalleProducto';
 
 export const InventarioPage: React.FC = () => {
   const [busqueda, setBusqueda] = useState('');
@@ -77,11 +78,18 @@ export const InventarioPage: React.FC = () => {
 
   const queryClient = useQueryClient();
   const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
+  const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoCatalogoDto | null>(null);
+  const [isModalDetalleOpen, setIsModalDetalleOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<{ tipo: 'ok' | 'error'; mensaje: string } | null>(null);
 
   const handleNuevoProducto = () => {
     setIsModalCrearOpen(true);
+  };
+
+  const handleVerDetalle = (producto: ProductoCatalogoDto) => {
+    setProductoSeleccionado(producto);
+    setIsModalDetalleOpen(true);
   };
 
   const handleCreacionExitosa = () => {
@@ -328,7 +336,9 @@ export const InventarioPage: React.FC = () => {
                   return (
                     <tr
                       key={producto.id}
-                      className="hover:bg-[#121212] transition-fast group"
+                      onClick={() => handleVerDetalle(producto)}
+                      className="hover:bg-[#151515] transition-fast group cursor-pointer"
+                      title="Ver detalle del producto y desglose de variantes"
                     >
                       {/* Columna 1: Marca */}
                       <td className="py-3.5 px-4 font-heading font-bold text-[#FAFAFA] uppercase tracking-wider text-xs align-top">
@@ -468,6 +478,16 @@ export const InventarioPage: React.FC = () => {
         isOpen={isModalCrearOpen}
         onClose={() => setIsModalCrearOpen(false)}
         onSuccess={handleCreacionExitosa}
+      />
+
+      {/* Slide-Over Drawer de Detalle y Variantes */}
+      <ModalDetalleProducto
+        isOpen={isModalDetalleOpen}
+        onClose={() => {
+          setIsModalDetalleOpen(false);
+          setProductoSeleccionado(null);
+        }}
+        producto={productoSeleccionado}
       />
     </div>
   );
