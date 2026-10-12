@@ -101,6 +101,29 @@ public static class SandboxDataSeeder
             });
         }
 
+        // 1.c Usuario Admin tomiDev en Sandbox
+        var tomiDevSandbox = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "tomidev@dastik.com" || u.Nombre == "tomiDev");
+        if (tomiDevSandbox is null)
+        {
+            context.Usuarios.Add(new Usuario
+            {
+                Nombre = "tomiDev",
+                Email = "tomidev@dastik.com",
+                PasswordHash = passwordHasher.Hash(DataSeeder.AdminDefaultPassword),
+                Rol = RolUsuario.Admin,
+                DebeCambiarPassword = false,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            tomiDevSandbox.PasswordHash = passwordHasher.Hash(DataSeeder.AdminDefaultPassword);
+            tomiDevSandbox.Rol = RolUsuario.Admin;
+            tomiDevSandbox.DebeCambiarPassword = false;
+            tomiDevSandbox.Activo = true;
+        }
+
         // 2. Unidades de Negocio
         var unidadDastik = await context.UnidadesNegocio.FirstOrDefaultAsync(u => u.Nombre == "Dastik");
         if (unidadDastik is null)

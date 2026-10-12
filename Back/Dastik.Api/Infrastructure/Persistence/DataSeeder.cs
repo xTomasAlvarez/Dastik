@@ -51,5 +51,32 @@ public static class DataSeeder
             context.Usuarios.Add(cajeroUser);
             await context.SaveChangesAsync();
         }
+
+        // Sembrar usuario adicional de testing y desarrollo: tomiDev (Rol Admin)
+        var tomiDevUser = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "tomidev@dastik.com" || u.Nombre == "tomiDev");
+        if (tomiDevUser is null)
+        {
+            tomiDevUser = new Usuario
+            {
+                Nombre = "tomiDev",
+                Email = "tomidev@dastik.com",
+                PasswordHash = hasher.Hash(AdminDefaultPassword),
+                Rol = RolUsuario.Admin,
+                DebeCambiarPassword = false, // Permite acceder directamente al panel admin sin forzar reseteo
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow
+            };
+
+            context.Usuarios.Add(tomiDevUser);
+            await context.SaveChangesAsync();
+        }
+        else
+        {
+            tomiDevUser.PasswordHash = hasher.Hash(AdminDefaultPassword);
+            tomiDevUser.Rol = RolUsuario.Admin;
+            tomiDevUser.DebeCambiarPassword = false;
+            tomiDevUser.Activo = true;
+            await context.SaveChangesAsync();
+        }
     }
 }
