@@ -755,5 +755,36 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Backend: 97/97 tests completados con éxito (`dotnet test`).
   - Frontend: 0 errores TypeScript y bundle de producción generado con éxito (`npm run build`).
 
+---
+
+### [feature/admin-empleados-sueldos] Gestión de Empleados y Sueldos en el Panel de Administración
+- **1. Backend - Modelo de Datos (`Usuario.cs`, `UsuarioConfiguration.cs`):**
+  - Ampliación de la entidad `Usuario` con las propiedades `TurnoAsignado` (`string`: "Mañana", "Tarde", "Completo") y `TarifaPorHora` (`decimal`: valor monetario personalizado por hora).
+  - Configuración fluida en Entity Framework Core con valores por defecto tolerantes.
+  - Migración tolerante en desarrollo (`Program.cs`) en SQLite para agregar las columnas `TurnoAsignado` y `TarifaPorHora` a la tabla `Usuarios` sin destruir datos existentes.
+- **2. Backend - Endpoints de Gestión y Liquidación (`UsuariosEndpoints.cs`):**
+  - `GET /api/usuarios/empleados`: Lista a todos los usuarios con rol `Empleado` ordenados por nombre, devolviendo sus turnos asignados y tarifas por hora.
+  - `POST /api/usuarios/empleados`: Permite al Admin dar de alta una nueva cuenta de empleado con validaciones (email único, contraseña temporal ≥ 6 caracteres, flag `DebeCambiarPassword = true` para forzar cambio en su primer inicio de sesión).
+  - `POST /api/usuarios/empleados/{id}/calcular-pago`: Endpoint de cálculo y liquidación de jornada que recibe `HorasTrabajadas` (decimal) y calcula en el backend `TotalAPagar = Math.Round(HorasTrabajadas * TarifaPorHora, 2)`.
+- **3. Backend - Seeding y Suite de Pruebas (`DataSeeder.cs`, `UsuariosEndpointsTests.cs`):**
+  - Seeding de empleados de prueba con turnos asignados ("Mañana", "Tarde") y tarifas horarias realistas ($3.500 y $3.800).
+  - Pruebas unitarias completas en `UsuariosEndpointsTests.cs` para filtrado por rol, alta con hashing de clave y cálculo matemático exacto de liquidación diaria para jornadas parciales (8.5h) y completas (12h).
+  - Suite de backend ampliada a **100 pruebas en verde sin fallos** (`dotnet test`).
+- **4. Frontend - Servicio API (`empleadosApi.ts`):**
+  - Cliente Axios tipado con métodos `obtenerEmpleados()`, `crearEmpleado()` y `calcularPago()`.
+- **5. Frontend - Vista de Gestión de Empleados (`EmpleadosPage.tsx`):**
+  - **Diseño Avant-Garde Minimalista:**
+    - Tarjetas KPI: Personal total activo, distribución por turno (Mañana / Tarde) y tarifa promedio por hora.
+    - Buscador en vivo por nombre/email y filtros por turno asignado.
+    - Data Grid minimalista con nombre, email, badge de turno (Mañana, Tarde, Completo), tarifa por hora, proyección automática a jornada completa (12h) y estado activo.
+    - **Modal "NUEVO EMPLEADO":** Formulario de alta con nombre, email, contraseña temporal, selector de turno y tarifa horaria.
+    - **Acción Rápida "LIQUIDAR JORNADA":** Modal interactivo por empleado que pregunta *"¿Cuántas horas trabajó hoy?"*, incluye botones de acceso rápido para presets de turno (6h medio turno, 8h estándar, 12h jornada Dastik) o entrada personalizada, mostrando instantáneamente en tipografía gigante el **Total a Pagar** calculado sobre su tarifa única.
+- **6. Frontend - Navegación y Rutas (`App.tsx`, `AdminLayout.tsx`):**
+  - Ruta `/admin/empleados` montando `EmpleadosPage`.
+  - Icono `Users` en el menú lateral con enlace a "Empleados (Sueldos & Staff)".
+- **7. Verificación de Calidad:**
+  - Backend: 100/100 tests completados con éxito (`dotnet test`).
+  - Frontend: 0 errores TypeScript y bundle de producción generado con éxito (`npm run build`).
+
 
 

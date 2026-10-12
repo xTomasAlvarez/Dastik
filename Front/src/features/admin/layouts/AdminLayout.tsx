@@ -5,6 +5,7 @@ import {
   Storefront,
   Receipt,
   ChartBar,
+  Users,
   SignOut,
   ShieldCheck,
   TestTube,
@@ -36,6 +37,12 @@ export const AdminLayout: React.FC = () => {
       label: 'Arqueos',
       icon: <Receipt size={18} weight="light" />,
       description: 'Cierres de Caja'
+    },
+    {
+      to: '/admin/empleados',
+      label: 'Empleados',
+      icon: <Users size={18} weight="light" />,
+      description: 'Sueldos & Staff'
     }
   ];
 

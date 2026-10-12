@@ -35,9 +35,10 @@ public static class DataSeeder
         }
 
         // Si el usuario cajero de entrenamiento no existe, lo sembramos
-        if (!await context.Usuarios.AnyAsync(u => u.Email == "cajero.sandbox@dastik.com"))
+        var cajeroUser = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "cajero.sandbox@dastik.com");
+        if (cajeroUser is null)
         {
-            var cajeroUser = new Usuario
+            cajeroUser = new Usuario
             {
                 Nombre = "Cajero Sandbox Entrenado",
                 Email = "cajero.sandbox@dastik.com",
@@ -45,10 +46,39 @@ public static class DataSeeder
                 Rol = RolUsuario.Empleado,
                 DebeCambiarPassword = false,
                 Activo = true,
+                TurnoAsignado = "Mañana",
+                TarifaPorHora = 3500.00m,
                 FechaCreacion = DateTime.UtcNow
             };
 
             context.Usuarios.Add(cajeroUser);
+            await context.SaveChangesAsync();
+        }
+        else if (cajeroUser.TarifaPorHora == 0m)
+        {
+            cajeroUser.TurnoAsignado = "Mañana";
+            cajeroUser.TarifaPorHora = 3500.00m;
+            await context.SaveChangesAsync();
+        }
+
+        // Sembrar segundo empleado para turno tarde (Sofía Martínez)
+        var sofiaUser = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "sofia.empleada@dastik.com");
+        if (sofiaUser is null)
+        {
+            sofiaUser = new Usuario
+            {
+                Nombre = "Sofía Martínez",
+                Email = "sofia.empleada@dastik.com",
+                PasswordHash = hasher.Hash("Dastik2026!"),
+                Rol = RolUsuario.Empleado,
+                DebeCambiarPassword = false,
+                Activo = true,
+                TurnoAsignado = "Tarde",
+                TarifaPorHora = 3800.00m,
+                FechaCreacion = DateTime.UtcNow
+            };
+
+            context.Usuarios.Add(sofiaUser);
             await context.SaveChangesAsync();
         }
 

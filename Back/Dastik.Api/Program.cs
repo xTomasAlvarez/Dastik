@@ -7,6 +7,7 @@ using Dastik.Api.Features.Caja;
 using Dastik.Api.Features.Inventario.CrearProducto;
 using Dastik.Api.Features.Inventario.SincronizarTiendanube;
 using Dastik.Api.Features.Metricas;
+using Dastik.Api.Features.Usuarios;
 using Dastik.Api.Infrastructure.BackgroundServices;
 using Dastik.Api.Infrastructure.Integrations.Tiendanube;
 using Dastik.Api.Infrastructure.Persistence;
@@ -168,6 +169,7 @@ app.MapAuthEndpoints();
 app.MapCrearProductoEndpoint();
 app.MapCajaEndpoints();
 app.MapMetricasEndpoints();
+app.MapUsuariosEndpoints();
 
 // Seeder de datos iniciales (Usuario Fundador)
 try
@@ -185,6 +187,24 @@ try
             catch
             {
                 // La columna ya existe o recién fue creada
+            }
+
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Usuarios\" ADD COLUMN \"TurnoAsignado\" TEXT DEFAULT 'Completo' NOT NULL;");
+            }
+            catch
+            {
+                // La columna ya existe
+            }
+
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Usuarios\" ADD COLUMN \"TarifaPorHora\" TEXT DEFAULT '0' NOT NULL;");
+            }
+            catch
+            {
+                // La columna ya existe
             }
         }
     }

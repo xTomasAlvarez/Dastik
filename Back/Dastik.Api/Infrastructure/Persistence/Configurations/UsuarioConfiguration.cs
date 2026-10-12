@@ -40,6 +40,16 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
             .IsRequired()
             .HasDefaultValue(true);
 
+        builder.Property(u => u.TurnoAsignado)
+            .IsRequired()
+            .HasMaxLength(50)
+            .HasDefaultValue("Completo");
+
+        builder.Property(u => u.TarifaPorHora)
+            .IsRequired()
+            .HasColumnType("decimal(18,2)")
+            .HasDefaultValue(0m);
+
         builder.Property(u => u.FechaCreacion)
             .IsRequired();
     }

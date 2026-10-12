@@ -9,5 +9,7 @@ public class Usuario
     public RolUsuario Rol { get; set; } = RolUsuario.Empleado;
     public bool DebeCambiarPassword { get; set; } = true;
     public bool Activo { get; set; } = true;
+    public string TurnoAsignado { get; set; } = "Completo";
+    public decimal TarifaPorHora { get; set; } = 0m;
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 }
