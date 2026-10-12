@@ -153,7 +153,7 @@ public static class CajaEndpoints
                 .Sum(p => p.Monto);
 
             decimal totalVentasTarjeta = pagos
-                .Where(p => p.MetodoPago == MetodoPago.Tarjeta)
+                .Where(p => p.MetodoPago == MetodoPago.Tarjeta || p.MetodoPago == MetodoPago.Debito || p.MetodoPago == MetodoPago.Credito)
                 .Sum(p => p.Monto);
 
             decimal totalVentasTransferencia = pagos

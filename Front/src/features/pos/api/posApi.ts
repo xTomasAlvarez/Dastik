@@ -4,6 +4,8 @@ export const MetodosPago = {
   Efectivo: 1,
   Transferencia: 2,
   Tarjeta: 3,
+  Debito: 4,
+  Credito: 5,
 } as const;
 
 export type MetodoPagoTipo = (typeof MetodosPago)[keyof typeof MetodosPago];

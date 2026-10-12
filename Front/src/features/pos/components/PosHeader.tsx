@@ -58,7 +58,9 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCi
               turnoActivo ? 'text-[#FAFAFA]' : 'text-amber-300'
             }`}
           >
-            {turnoActivo ? `TURNO #${turnoActivo.turnoId}` : 'SIN TURNO'}
+            {turnoActivo
+              ? `${new Date(turnoActivo.fechaApertura).getHours() < 14 ? 'TURNO MAÑANA' : 'TURNO TARDE'} (#${turnoActivo.turnoId})`
+              : 'SIN TURNO'}
           </span>
         </div>
 
@@ -93,11 +95,14 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCi
           </button>
         </div>
 
-        {/* Datos del Operador */}
+        {/* Datos del Personal (Dueño / Empleado) */}
         <div className="border border-[#333333] bg-[#111111] px-3 py-1.5 flex items-center gap-2 text-xs font-sans">
           <ShieldCheck size={16} weight="light" className="text-green-400 shrink-0" />
           <span className="font-heading text-xs font-medium text-[#FAFAFA]">
-            {usuario?.nombre} <span className="text-[#71717A]">({usuario?.rol})</span>
+            {usuario?.nombre}{' '}
+            <span className="text-[#71717A]">
+              ({usuario?.rol === 'Admin' ? 'Dueño' : 'Empleado'})
+            </span>
           </span>
         </div>
 

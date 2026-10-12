@@ -148,11 +148,57 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     setVariantes((prev) => prev.filter((v) => v.tempId !== tempId));
   };
 
-  // Presets rápidos de talles según categoría
-  const presetsTalles =
-    categoriaId === 2
-      ? ['US 8', 'US 8.5', 'US 9', 'US 9.5', 'US 10', 'US 10.5', 'US 11']
-      : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  // Curvas de talles oficiales del negocio
+  const CURVAS_DISPONIBLES = [
+    {
+      id: 'arriba',
+      label: 'Partes de arriba (Remeras, Buzos, Camperas)',
+      shortLabel: 'Arriba (XS-XL)',
+      talles: ['XS', 'S', 'M', 'L', 'XL'],
+    },
+    {
+      id: 'abajo',
+      label: 'Partes de abajo (Pantalones, Bermudas)',
+      shortLabel: 'Abajo (36-50)',
+      talles: ['36', '38', '40', '42', '44', '46', '48', '50'],
+    },
+    {
+      id: 'zapatillasBajos',
+      label: 'Zapatillas Brasil (Bajos 35-39)',
+      shortLabel: 'Zapatillas (35-39)',
+      talles: ['35', '36', '37', '38', '39'],
+    },
+    {
+      id: 'zapatillasAltos',
+      label: 'Zapatillas Brasil (Altos 39-43)',
+      shortLabel: 'Zapatillas (39-43)',
+      talles: ['39', '40', '41', '42', '43'],
+    },
+    {
+      id: 'accesorios',
+      label: 'Accesorios (Gorras, Medias, Cintos)',
+      shortLabel: 'Accesorios (TU)',
+      talles: ['TU'],
+    },
+  ];
+
+  const [curvaActivaId, setCurvaActivaId] = useState<string>(categoriaId === 2 ? 'zapatillasBajos' : 'arriba');
+  const curvaActiva = CURVAS_DISPONIBLES.find((c) => c.id === curvaActivaId) || CURVAS_DISPONIBLES[0];
+
+  // Agregar la curva completa de una sola vez
+  const handleAgregarCurvaCompleta = (talles: string[]) => {
+    const stock = parseInt(nuevoStock, 10) || 5;
+    const color = nuevoColor.trim() || 'Único';
+    const nuevas: VarianteTemporal[] = talles.map((t) => ({
+      tempId: `var-${Date.now()}-${t}-${Math.random().toString(36).substring(2, 6)}`,
+      talle: t,
+      color,
+      stockFisico: stock,
+      codigoBarras: generarEan13(),
+    }));
+    setVariantes((prev) => [...prev, ...nuevas]);
+    setErrorMessage(null);
+  };
 
   // Guardar producto
   const handleSubmit = async (e: React.FormEvent) => {
@@ -505,20 +551,55 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 </span>
               </div>
 
-              {/* Botones Presets Rápidos de Talle */}
+              {/* Selector de Curvas Oficiales y Talles */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="text-[9px] uppercase tracking-wider text-[#71717A]">CURVA:</span>
+                  {CURVAS_DISPONIBLES.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCurvaActivaId(c.id)}
+                      className={`px-2 py-0.5 text-[9.5px] font-mono border transition-fast cursor-pointer ${
+                        curvaActivaId === c.id
+                          ? 'border-[#FAFAFA] bg-[#222222] text-[#FAFAFA] font-bold'
+                          : 'border-[#222222] bg-[#0E0E0E] text-[#71717A] hover:border-[#444444]'
+                      }`}
+                    >
+                      {c.shortLabel}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Fila de Talles Rápidos de la Curva Activa y Botón de Lote */}
+            <div className="bg-[#0E0E0E] border border-[#222222] p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[9px] uppercase tracking-wider text-[#71717A]">TALLES RÁPIDOS:</span>
-                {presetsTalles.map((t) => (
+                <span className="text-[9px] uppercase tracking-wider text-[#71717A]">
+                  TALLES {curvaActiva.shortLabel.toUpperCase()}:
+                </span>
+                {curvaActiva.talles.map((t) => (
                   <button
                     key={t}
                     type="button"
                     onClick={() => setNuevoTalle(t)}
-                    className="border border-[#222222] hover:border-[#FAFAFA] bg-[#111111] hover:bg-[#1A1A1A] px-2 py-0.5 text-[10px] text-[#FAFAFA] transition-fast cursor-pointer"
+                    className="border border-[#2A2A2A] hover:border-[#FAFAFA] bg-[#161616] hover:bg-[#202020] px-2 py-0.5 text-[10px] text-[#FAFAFA] font-mono transition-fast cursor-pointer"
+                    title={`Seleccionar talle ${t}`}
                   >
                     {t}
                   </button>
                 ))}
               </div>
+
+              <button
+                type="button"
+                onClick={() => handleAgregarCurvaCompleta(curvaActiva.talles)}
+                className="text-[9.5px] uppercase font-mono tracking-wider border border-[#333333] hover:border-emerald-500 bg-[#161616] hover:bg-emerald-950/30 text-emerald-300 px-2.5 py-1 transition-fast cursor-pointer shrink-0"
+                title="Generar todas las variantes de esta curva con códigos EAN-13"
+              >
+                + AGREGAR CURVA COMPLETA ({curvaActiva.talles.length} TALLES)
+              </button>
             </div>
 
             {/* Mini-Formulario para Añadir Variante */}

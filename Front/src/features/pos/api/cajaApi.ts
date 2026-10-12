@@ -36,6 +36,8 @@ export interface ResumenTurnoDto {
 export interface CerrarTurnoRequest {
   turnoId: number;
   saldoFinal?: number;
+  gastosTurno?: number;
+  motivoGastos?: string;
   montoRealEfectivo?: number;
 }
 

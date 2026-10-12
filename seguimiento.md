@@ -432,4 +432,55 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
     - Cajero `cajero.sandbox@dastik.com` (`Dastik2026!`).
   - Placeholder del formulario actualizado a `tomidev@dastik.com`.
 
+---
+
+### Refactor de Lenguaje de Dominio y UI del Local Físico - COMPLETADO
+
+**Objetivo:** Alinear pantallas de Caja (POS) y Administración con el vocabulario, dinámicas y reglas exactas del Documento de Requisitos de Negocio Original.
+
+- **Rama:** `refactor/domain-language` (creada a partir de `feature/frontend-admin-crud-producto`).
+- **1. Roles y Autenticación:**
+  - Terminología genérica (Admin/Operador/Cajero) sustituida por **"Dueño"** y **"Empleado"** en toda la interfaz (`PosHeader.tsx`, `ModalAbrirTurno.tsx`, `ModalCerrarTurno.tsx`, `AdminLayout.tsx`, `LoginPage.tsx`).
+  - Nomenclatura oficial de turnos: **"Turno Mañana"** (< 14:00 hs) y **"Turno Tarde"** (>= 14:00 hs), visible en badges de cabecera, apertura y arqueo.
+- **2. Modal de Pago Realista (`ModalPago.tsx`):**
+  - Métodos exactos de pago del local:
+    - `Efectivo`: Mantiene conteo en vivo de vuelto, atajos de billetes (+1000, +2000, +5000, +10000, +20000) y botón "EXACTO".
+    - `Transferencia`: Texto de ayuda con alias oficial del negocio `(Alias: el de Ale / el del Gordo)`.
+    - `Débito`: Switch opcional de "Descuento por Débito" (configurable 5%, 10%, 15%) con recálculo en vivo del total y desglose de ahorro.
+    - `Crédito`: Switch de recargo financiero del 25% con recálculo en vivo del total.
+  - Consistencia transaccional ACID: Escalado proporcional de precios unitarios de cada ítem antes del envío a la API para satisfacer la restricción backend `sum(items) == sum(pagos)`.
+  - Alerta de Comisión de Sábado: Si es sábado y el total supera los $120.000, muestra el badge destacado `🔥 VENTA CALIFICADA: 5% COMISIÓN PARA EMPLEADO` con cálculo de la comisión ganada. Incluye switch de prueba para simular sábado en cualquier momento.
+- **3. Arqueo y Cierre de Turno (`ModalCerrarTurno.tsx`):**
+  - Sección previa a efectivo real: **"Salidas / Gastos del Turno"** para asentar retiros de gaveta (Desayuno, Uber, Almuerzo) con monto y motivo.
+  - Fórmula oficial del negocio: `Efectivo Esperado en Gaveta = (Saldo Inicial + Ventas Efectivo) - Gastos`.
+  - Backend actualizado en `CerrarTurnoCommand` y `CerrarTurnoCommandHandler` deduciendo `GastosTurno` del saldo esperado.
+- **4. Curvas de Talles del Local en Creación de Productos (`ModalCrearProducto.tsx`):**
+  - Curvas de talles preconfiguradas:
+    - *Partes de arriba (Remeras, Buzos, Camperas):* `XS-XL` (`XS`, `S`, `M`, `L`, `XL`).
+    - *Partes de abajo (Pantalones, Bermudas):* `36-50` (`36`, `38`, `40`, `42`, `44`, `46`, `48`, `50`).
+    - *Zapatillas Brasil:* Bajos `35-39` (`35`, `36`, `37`, `38`, `39`) y Altos `39-43` (`39`, `40`, `41`, `42`, `43`).
+    - *Accesorios (Gorras, Medias, Cintos):* `TU` (Talle Único).
+  - Botón de carga por lote: "+ AGREGAR CURVA COMPLETA" que genera automáticamente todas las variantes con sus respectivos códigos de barras GS1 EAN-13.
+
+---
+
+### Roadmap Oficial para Métricas del Back-Office (Requisitos de Negocio)
+
+Toma de nota formal de las especificaciones de negocio para las próximas fases de reportería y métricas del panel de administración:
+
+1. **Cálculo de Margen Neto Real:**
+   - Deducir costos variables del canal online:
+     - Gasto en Publicidad (Meta Ads / Google Ads asignado).
+     - Comisiones y costos de plataforma de **Tiendanube** (comisión por transacción + pasarela de pago).
+   - Margen Neto = `Ingresos - (Costo de Mercadería Vendida + Publicidad + Costo Tiendanube + Comisiones de Cobro)`.
+2. **Alertas de Stock Crítico:**
+   - Umbral mínimo fijado en **3 unidades** por variante/SKU.
+   - Indicador visual inmediato en Data Grid y reporte de reposición rápida cuando `stockFisico <= 3`.
+3. **Métricas de Velocidad de Venta (Sell-Through & Rotación):**
+   - Días promedio de permanencia en inventario por SKU y por categoría.
+   - Identificación de "Fast Movers" (alta rotación) vs "Huesos" (mercadería estancada) para planificar promociones o liquidaciones.
+4. **Gestión de Cambios y Devoluciones:**
+   - Módulo específico para cambios de talle/producto en mostrador físico manteniendo integridad del stock (entrada del ítem devuelto y salida del nuevo ítem con posible ajuste de saldo o nota de crédito).
+
+
 
