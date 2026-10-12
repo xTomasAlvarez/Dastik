@@ -17,6 +17,8 @@ export interface ProductoCatalogoDto {
   unidadNegocio: string;
   imagenUrl?: string;
   precioVenta: number;
+  costoBase?: number;
+  markupAplicado?: number;
   variantes: VarianteDto[];
 }
 
@@ -72,7 +74,11 @@ export const inventarioApi = {
   },
 
   sincronizarTiendanube: async (): Promise<SincronizarCatalogoResponse> => {
-    const response = await apiClient.post<SincronizarCatalogoResponse>('/api/inventario/sincronizar-tiendanube');
+    const response = await apiClient.post<SincronizarCatalogoResponse>(
+      '/api/inventario/sincronizar-tiendanube',
+      undefined,
+      { timeout: 120000 }
+    );
     return response.data;
   },
 };

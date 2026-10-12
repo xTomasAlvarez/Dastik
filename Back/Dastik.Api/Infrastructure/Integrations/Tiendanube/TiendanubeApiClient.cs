@@ -102,12 +102,12 @@ public class TiendanubeApiClient : ITiendanubeApiClient
             return Result<List<TiendanubeProductResponse>>.Success(GenerarCatalogoMock());
         }
 
-        // 2. Request REST con bucle de paginación acumulativa: GET {storeId}/products?per_page=200&page={page}
+        // 2. Request REST con bucle de paginación seguro: GET {storeId}/products?per_page=200&page={page}
         var todosLosProductos = new List<TiendanubeProductResponse>();
         var tokenLimpio = TiendanubeTokenHelper.NormalizarToken(accessToken)?.Trim() ?? accessToken.Trim();
         int page = 1;
 
-        while (!ct.IsCancellationRequested)
+        do
         {
             var endpointUrl = $"{storeId}/products?per_page=200&page={page}";
             using var request = new HttpRequestMessage(HttpMethod.Get, endpointUrl);
@@ -141,7 +141,10 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                     "Página {Page} de Tiendanube importada ({Cantidad} productos). Total acumulado: {Total}",
                     page, productos.Count, todosLosProductos.Count);
 
-                // Si la página devolvió menos de 200 items, se alcanzó el final del catálogo
+                // CRÍTICO: Pausa obligatoria después de procesar cada página para prevenir bloqueo de Tiendanube (429 Rate Limit)
+                await Task.Delay(500, ct);
+
+                // Evalúa la cantidad de productos devueltos en la página actual. Si es menor a 200 (o 0), rompe el bucle
                 if (productos.Count < 200)
                 {
                     break;
@@ -154,7 +157,7 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 _logger.LogError(ex, "Excepción de red al obtener productos de Tiendanube API (página {Page}) para Store {StoreId}", page, storeId);
                 return Result<List<TiendanubeProductResponse>>.Failure($"Fallo de conexión con Tiendanube: {ex.Message}");
             }
-        }
+        } while (!ct.IsCancellationRequested);
 
         return Result<List<TiendanubeProductResponse>>.Success(todosLosProductos);
     }

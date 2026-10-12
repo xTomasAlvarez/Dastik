@@ -1,8 +1,9 @@
-Actúa como un Tech Lead y Senior Backend Engineer experto en .NET 8, PostgreSQL y Arquitectura de Software Cloud-Native. 
+Actúa como un Tech Lead y Senior Backend Engineer experto en .NET 8, PostgreSQL y Arquitectura de Software Cloud-Native.
 
-Estamos construyendo el backend de un sistema ERP/POS para el negocio de indumentaria "Dastik" y "Hidden Sneakers". 
+Estamos construyendo el backend de un sistema ERP/POS para el negocio de indumentaria "Dastik" y "Hidden Sneakers".
 
 **Contexto Actual de Carpetas y Avance:**
+
 - La raíz del proyecto está en: `C:\Users\tomas\OneDrive\Escritorio\PROGRAMACION\Laburo\Dastik`
 - El scaffolding base **ya fue realizado** (Paso 1 completado). Ya existen la solución `DastikERP.sln`, los proyectos `Dastik.Api` (webapi) y `Dastik.Tests` (xunit), las referencias entre ellos y el repositorio Git inicializado.
 - En la raíz del backend existe un archivo `.env` con las credenciales de Tiendanube.
@@ -10,6 +11,7 @@ Estamos construyendo el backend de un sistema ERP/POS para el negocio de indumen
 - Las skills están divididas en tres subcarpetas: `general`, `front` y `back`.
 
 **Reglas Arquitectónicas Inquebrantables:**
+
 1. **USO OBLIGATORIO DE SKILLS (Ruta Absoluta):** Debes leer, tener en cuenta y aplicar estrictamente las directrices (.md) ubicadas en `C:\Users\tomas\OneDrive\Escritorio\PROGRAMACION\Laburo\Dastik\skill` (revisando las subcarpetas `general` y `back` para esta etapa). Son la ley suprema de este proyecto y rigen sobre cualquier estándar genérico.
 2. **Vertical Slice Architecture:** Cero arquitectura en capas tradicional. Agruparemos por caso de uso (Features/Modules) usando `MediatR`.
 3. **Tipos Estrictos:** Todo cálculo monetario usa `decimal(18,2)`. No se usarán IDs auto-generados para el campo `Talle`, será de tipo `string` puro.
@@ -17,7 +19,7 @@ Estamos construyendo el backend de un sistema ERP/POS para el negocio de indumen
 5. **Seguridad:** Uso de `DotNetEnv` para leer secretos del archivo `.env`.
 
 **Reglas de Flujo de Trabajo (Git Flow y Commits Granulares):**
-Quiero que trabajemos de forma extremadamente granular. Vas a guiarme para implementar el código paso a paso usando la estrategia Git Flow (`main` -> `develop` -> `feature/x`). 
+Quiero que trabajemos de forma extremadamente granular. Vas a guiarme para implementar el código paso a paso usando la estrategia Git Flow (`main` -> `develop` -> `feature/x`).
 No me des todo el código de golpe. Te voy a pedir que me des las instrucciones y el código para **UN SOLO PASO** a la vez. Cuando yo te confirme que lo integré y que hice el commit, pasamos al siguiente. Usa Convención de Commits (`feat:`, `test:`, `chore:`, `fix:`).
 
 ---
@@ -27,30 +29,36 @@ No me des todo el código de golpe. Te voy a pedir que me des las instrucciones 
 Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 ya está completado. Inicia únicamente con el Paso 2 y detente a esperar mi confirmación.**
 
 **Paso 1: Scaffolding de la Solución, Proyectos y Git (✅ COMPLETADO)**
+
 - Solución y proyectos base ya creados y linkeados.
 
 **Paso 2: Setup de Variables de Entorno (✅ COMPLETADO)**
+
 - DotNetEnv configurado en Program.cs para inyectar secretos desde .env.
 - Comandos para instalar `DotNetEnv` en la API.
 - Código para configurar `Program.cs` de modo que cargue el `.env` existente.
 - Mensaje de commit sugerido.
 
 **Paso 3: TDD - Regla de Comisión (✅ COMPLETADO - RED)**
+
 - Rama `feature/tdd-comisiones` activa.
 - Suite de pruebas xUnit + FluentAssertions escrita en `ComisionesTests.cs` (5 casos de negocio).
 - Fase RED verificada y commiteada con `test: agregar prueba fallida para calculo de comisiones en sabados (RED)`.
 
 **Paso 4: TDD - Regla de Comisión (✅ COMPLETADO - GREEN)**
+
 - Lógica de dominio implementada en `CalculadoraComisiones.cs` con tipos estrictos (`decimal(18,2)`).
 - 5/5 pruebas unitarias pasando en verde (Green).
 - Rama `feature/tdd-comisiones` integrada en `develop`.
 
 **Paso 5: Entidades de Dominio (✅ COMPLETADO)**
+
 - Entidades POCOs puras creadas en `Domain/Entities`: `UnidadNegocio`, `Marca`, `Categoria`, `Proveedor`, `Producto`, `Variante`.
 - Cero Data Annotations, `decimal` para dinero, `string` para `Talle`, y propiedades de navegación bidireccionales.
 - Rama `feature/domain-entities` integrada en `develop`.
 
 **Paso 6: EF Core y Fluent API (✅ COMPLETADO)**
+
 - Paquetes `Npgsql.EntityFrameworkCore.PostgreSQL` y `Microsoft.EntityFrameworkCore.Design` (8.0.11) instalados.
 - `AppDbContext` configurado con registro dinámico de mapeos (`ApplyConfigurationsFromAssembly`).
 - Mapeos Fluent API implementados para todas las entidades en `Infrastructure/Persistence/Configurations/`.
@@ -63,27 +71,32 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 ### Plan de Ejecución (Fase 2: Inventario y EAN-13)
 
 **Paso 1: Setup CQRS y Validaciones (✅ COMPLETADO)**
+
 - `MediatR` y `FluentValidation.DependencyInjectionExtensions` instalados.
 - Registrados en `Program.cs` escaneando el assembly actual.
 - Rama `feature/mediatr-setup` integrada a `develop`.
 
 **Paso 2: TDD - Generador EAN-13 (✅ COMPLETADO - RED)**
+
 - Rama `feature/ean13-generator` activa.
 - Pruebas escritas en `GeneradorEan13Tests.cs` (longitud 13, caracteres numéricos y algoritmo módulo 10).
 - Fase RED verificada (4 pruebas fallando sobre el stub `GeneradorEan13.cs`).
 - Commit: `test: agregar pruebas unitarias para generacion y validacion de EAN-13 (RED)`.
 
 **Paso 3: TDD - Generador EAN-13 (✅ COMPLETADO - GREEN)**
+
 - Servicio `GeneradorEan13` implementado con prefijo in-store (`20...`) y algoritmo GS1 Módulo 10.
 - 10/10 pruebas unitarias superadas en verde.
 - Rama `feature/ean13-generator` integrada a `develop`.
 
 **Paso 4: Vertical Slice - Crear Producto (✅ COMPLETADO)**
+
 - Vertical Slice implementado en `Features/Inventario/CrearProducto/`: `CrearProductoCommand`, `CrearProductoCommandValidator`, `CrearProductoCommandHandler`.
 - Inyección de `GeneradorEan13` para generación automática de códigos de barra faltantes.
 - Rama `feature/slice-crear-producto` integrada a `develop`.
 
 **Paso 5: Endpoint Crear Producto (✅ COMPLETADO)**
+
 - Endpoint Minimal API expuesto en `POST /api/productos` vía `CrearProductoEndpoint.cs`.
 - Validación preventiva con FluentValidation (retorno RFC 7807 `ValidationProblem`) y dispatch desacoplado con `ISender`.
 - Rama `feature/endpoint-crear-producto` integrada a `develop`.
@@ -93,18 +106,21 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 ### Plan de Ejecución (Fase 3: Motor Financiero y Punto de Venta)
 
 **Paso 1: Entidades de Dominio de Caja (✅ COMPLETADO)**
+
 - Enums de dominio creados en `Domain/Entities`: `EstadoTurno`, `EstadoOrden`, `MetodoPago`.
 - Entidades POCOs puras creadas en `Domain/Entities`: `Turno`, `Orden`, `DetalleOrden`, `Pago`.
 - Cero Data Annotations, montos estrictos con `decimal` y propiedades de navegación relacionales.
 - Rama `feature/domain-caja` integrada a `develop`.
 
 **Paso 2: EF Core y Fluent API para Caja (✅ COMPLETADO)**
+
 - Registro de `DbSet` correspondientes en `AppDbContext`.
 - Configuraciones Fluent API con `IEntityTypeConfiguration<T>` en `Infrastructure/Persistence/Configurations/` forzando tipos monetarios a `decimal(18,2)` y relaciones referenciales.
 - Generación de migración `AddCajaYOrdenes` y esquema listo para PostgreSQL.
 - Rama `feature/efcore-caja` integrada a `develop`.
 
 **Paso 3 y 4: Inyección de Dependencias para Comisiones (✅ COMPLETADO)**
+
 - Lógica de dominio y suite de pruebas unitarias xUnit confirmadas desde Fase 1.
 - Extracción de contrato `ICalculadoraComisiones` en `Domain/Services/`.
 - `CalculadoraComisiones` implementa `ICalculadoraComisiones`.
@@ -112,6 +128,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Rama `refactor/comisiones-di` integrada a `develop`.
 
 **Paso 6: Vertical Slice - Abrir Turno (✅ COMPLETADO)**
+
 - Implementación de Vertical Slice en `Features/Caja/AbrirTurno/`: `AbrirTurnoCommand`, `AbrirTurnoCommandValidator`, `AbrirTurnoCommandHandler`.
 - Regla de negocio: Validación de turno único abierto por empleado mediante `AnyAsync`.
 - Persistencia de entidad `Turno` en PostgreSQL con `FechaApertura` UTC y estado `Abierto`.
@@ -119,6 +136,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Rama `feature/slice-abrir-turno` integrada a `develop`.
 
 **Paso 7: Vertical Slice - Cobrar Orden (✅ COMPLETADO)**
+
 - Implementación de Vertical Slice en `Features/Caja/CobrarOrden/`: `CobrarOrdenCommand`, `CobrarOrdenCommandValidator`, `CobrarOrdenCommandHandler` y `CobrarOrdenEndpoint`.
 - Regla de validación preventiva: Suma de métodos de pago igual al total de subtotales de los ítems.
 - Transacción ACID atómica con `BeginTransactionAsync`, `CommitAsync`, `RollbackAsync` en EF Core.
@@ -127,6 +145,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Rama `feature/slice-cobrar-orden` integrada a `develop`.
 
 **Paso 8: Vertical Slice - Cerrar Turno / Arqueo de Caja (✅ COMPLETADO)**
+
 - Implementación de Vertical Slice en `Features/Caja/CerrarTurno/`: `CerrarTurnoCommand`, `CerrarTurnoCommandValidator`, `CerrarTurnoCommandHandler`.
 - Regla de negocio: Validación de turno existente y en estado `Abierto`.
 - Cálculo de arqueo: Total en efectivo acumulado (`SaldoInicial` + pagos en efectivo de órdenes pagadas), balance esperado y cálculo de diferencia (faltante o sobrante).
@@ -135,6 +154,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Rama `feature/slice-cerrar-turno` integrada a `develop`.
 
 **Paso 9: Endpoints Minimal API para Caja Completa (✅ COMPLETADO)**
+
 - Implementación de `CajaEndpoints.cs` agrupado bajo `/api/caja` con `MapGroup`.
 - Mapeo de `POST /api/caja/turnos/abrir` (`AbrirTurnoCommand`).
 - Mapeo de `POST /api/caja/ordenes/cobrar` (`CobrarOrdenCommand`).
@@ -153,6 +173,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 ### Plan de Ejecución (Fase 4: Autenticación, Roles y Modo Sandbox)
 
 **Paso 1: Entidades de Seguridad y Configuración JWT (✅ COMPLETADO)**
+
 - Rama `feature/auth-sandbox` creada desde `develop`.
 - Instalación de `Microsoft.AspNetCore.Authentication.JwtBearer` (8.0.11).
 - Entidades de Dominio creadas en `Domain/Entities/`:
@@ -169,12 +190,14 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Suite de pruebas unitarias ampliada: 34 tests en verde (3 nuevos tests en `JwtProviderTests.cs` validando generación, claims de rol y sandbox, y fallo por firma inválida).
 
 **Paso 1.1: Refactor de Reglas de Seguridad (✅ COMPLETADO)**
+
 - Regla A (Jerarquía de Roles): Política de autorización `OperadorCaja` configurada en `Program.cs` (`policy.RequireRole("Admin", "Empleado")`) y aplicada a los endpoints de caja (`CajaEndpoints.cs`), garantizando que el Dueño/Admin pueda operar la caja heredando permisos.
 - Regla B (Reseteo Obligatorio): Propiedad `DebeCambiarPassword` (bool, default `true`) agregada a `Usuario` y mapeada en `UsuarioConfiguration.cs`.
 - Claim `DebeCambiarPassword` incorporado en el payload del JWT mediante `JwtProvider`.
 - Pruebas unitarias actualizadas y 34/34 tests superados al 100%.
 
 **Paso 2: Migración, Seeder inicial y Endpoint de Login (✅ COMPLETADO)**
+
 - Migración EF Core: `20261011152403_AddUsuarios.cs` generada con tabla `Usuarios`, índice único en `Email`, y tipos estrictos.
 - Hashing de contraseñas: Servicio `IPasswordHasher` / `PasswordHasher` con BCrypt (`BCrypt.Net-Next`).
 - Data Seeder: `DataSeeder.cs` sembrando automáticamente `admin@dastik.com` (`Rol.Admin`, contraseña default `Dastik2026!`, `DebeCambiarPassword = true`) al inicializar la app.
@@ -183,6 +206,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Suite de pruebas unitarias ampliada: 43 tests en verde (5 nuevos tests en `LoginCommandHandlerTests` y 4 nuevos tests en `CommandValidatorsTests`).
 
 **Paso 3: Vertical Slice - Cambio de Contraseña (✅ COMPLETADO)**
+
 - Rama `feature/auth-cambiar-password` creada desde `develop`.
 - Implementación de Vertical Slice en `Features/Auth/CambiarPassword/`:
   - `CambiarPasswordRequest` (payload del cliente seguro sin ID) y `CambiarPasswordCommand` (enrutado con ID autenticado del token).
@@ -193,6 +217,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Rama `feature/auth-cambiar-password` integrada a `develop`.
 
 **Paso 4: Infraestructura Multi-Tenant para Sandbox (✅ COMPLETADO)**
+
 - Rama `feature/sandbox-tenant` creada desde `develop`.
 - Abstracción de Tenancy: `ITenantService` en `Domain/Services/` e implementación `TenantService` en `Infrastructure/Tenancy/`.
 - Detección reactiva del claim `IsSandboxMode` a través de `IHttpContextAccessor`.
@@ -202,6 +227,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Rama `feature/sandbox-tenant` integrada exitosamente a `develop`.
 
 **Paso 5: Seeder del Modo Sandbox (✅ COMPLETADO)**
+
 - Rama `feature/sandbox-seeder` creada desde `develop`.
 - Implementación de `SandboxDataSeeder.cs` en `Infrastructure/Persistence/`:
   - Guardia estricta de seguridad: Valida `EsBaseDeDatosSandbox` inspeccionando la cadena de conexión para impedir categóricamente la inyección de datos ficticios en la base de datos de producción (`dastik_erp`).
@@ -218,6 +244,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 ### Plan de Ejecución (Fase 5: Integración Omnicanal con Tiendanube y Outbox Pattern - ✅ COMPLETADA)
 
 **Paso 1: Entidad de Persistencia Outbox (✅ COMPLETADO)**
+
 - Rama `feature/outbox-pattern` creada desde `develop`.
 - Entidad POCO creada en `Domain/Entities/OutboxMessage.cs`: `Id` (Guid), `TipoEvento` (string), `ContenidoJson` (string), `FechaOcurrenciaUtc` (DateTime), `FechaProcesadoUtc` (DateTime?), `Error` (string?), `Intentos` (int, default 0).
 - Configuración Fluent API en `Infrastructure/Persistence/Configurations/OutboxMessageConfiguration.cs`:
@@ -228,6 +255,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Suite de pruebas unitarias ampliada: 61 tests en verde (2 nuevos tests en `OutboxMessagePersistenceTests.cs` validando persistencia con defaults y filtrado indexado de pendientes).
 
 **Paso 2: Integración del Outbox en CobrarOrdenCommandHandler (✅ COMPLETADO)**
+
 - Lógica de intercepción de omnicanalidad agregada en `CobrarOrdenCommandHandler.cs`:
   - Eager loading de `Producto` y `UnidadNegocio` en la consulta de variantes vendidas.
   - Creación condicional de `OutboxMessage` si el producto pertenece a "Hidden Sneakers" (`UnidadNegocio.HiddenSneakers` o `TieneTiendaNube == true`).
@@ -237,6 +265,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Suite de pruebas unitarias ampliada: 63 tests en verde (2 nuevos tests en `CajaHandlersTests.cs` verificando generación de OutboxMessage para ventas de Hidden Sneakers y cero registros para ventas de Dastik).
 
 **Paso 3: Background Worker para Procesar Outbox Messages (✅ COMPLETADO)**
+
 - Implementación de `OutboxMessageProcessor` en `Infrastructure/BackgroundServices/`:
   - Servicio alojado que hereda de `BackgroundService` en .NET 8.
   - Creación periódica de `IServiceScope` para resolver `AppDbContext` de manera segura (desacoplado del ciclo de vida Singleton).
@@ -253,6 +282,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 ### Plan de Ejecución (Frontend: PWA POS React + Vite)
 
 **Paso 1: Scaffolding y Arquitectura Base PWA (✅ COMPLETADO)**
+
 - Rama `feature/frontend-scaffolding` creada desde `develop`.
 - Scaffolding de aplicación React + Vite + TypeScript en `Front/`.
 - Instalación de dependencias de producción: `axios`, `@tanstack/react-query`, `zustand`, `react-router-dom`, `@phosphor-icons/react`.
@@ -271,8 +301,9 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 - Rama `feature/frontend-scaffolding` integrada exitosamente a `develop`.
 
 **Paso 2: Pantalla de Login y Flujo de Reseteo Obligatorio (UI/UX) (✅ COMPLETADO)**
+
 - Rama `feature/frontend-login` creada y desarrollada.
-- Estilo estricto *Avant-Garde / High-End Streetwear* (`Design_Base.md`):
+- Estilo estricto _Avant-Garde / High-End Streetwear_ (`Design_Base.md`):
   - 100% Flat Design, bordes 1px (`#333333`), fondos oscuros `#000000`/`#090909`/`#111111`, cero sombras difuminadas.
   - Tipografías Google Fonts `Syne` (Headings) y `Space Grotesk` (Data/UI).
   - Iconografía `@phosphor-icons/react` (`weight="light"`).
@@ -290,6 +321,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 ### Fase 1 Frontend - Próximos Pasos
 
 **Paso 3: Dashboard POS - Terminal de Ventas y Grilla de Productos (UI/UX) (Completado)**
+
 - Rama `feature/frontend-pos-dashboard` integrada exitosamente a `develop`.
 - Header Arquitectónico POS (`PosHeader.tsx`):
   - Estado de turno de caja (Abierto/Cerrado con badge reactivo y número de turno).
@@ -307,6 +339,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Ticket en vivo con agregado atómico, incremento/decremento de unidades limitado por stock físico y cálculo de totales.
 
 **Paso 4: Flujo de Caja y Modal de Cobro (Completado)**
+
 - Rama `feature/frontend-caja-cobro` integrada exitosamente a `develop`.
 - Conexión Backend & Endpoints:
   - `GET /api/caja/turno-activo`: consulta reactiva de turno abierto del operador.
@@ -324,6 +357,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Venta atómica con reseteo de ticket en Zustand e invalidación de caché en catálogo.
 
 **Paso 5: Arqueo y Cierre de Turno (Completado)**
+
 - Rama `feature/frontend-cierre-caja` integrada exitosamente a `develop`.
 - Endpoint de Resumen en Vivo (`GET /api/caja/turnos/{turnoId}/resumen`):
   - Cálculo instantáneo de ventas discriminadas por método de pago (Efectivo, Tarjeta, Transferencia) y efectivo esperado en caja física (`SaldoInicial + TotalVentasEfectivo`).
@@ -350,6 +384,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 **Objetivo:** Conectar el `OutboxMessageProcessor` en segundo plano con la API REST real de Tiendanube v1 para sincronización de stock y órdenes, empleando arquitectura resiliente en .NET 8 con TDD estricto.
 
 **Paso 1: Cliente HTTP Resiliente para Tiendanube (`ITiendanubeApiClient`) (Completado)**
+
 - Rama `feature/backend-tiendanube-client` desde `develop`.
 - Contrato de dominio e integración: `ITiendanubeApiClient` con DTOs de respuesta y modelo `Result<T>`.
 - Cliente HTTP tipado: `TiendanubeApiClient` consumiendo endpoint PUT `{storeId}/products/{productId}/variants/{variantId}` con header `Authentication: bearer {token}`.
@@ -375,6 +410,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 ### Fase 2: Panel de Administración Back-Office (Frontend) - EN CURSO
 
 **Paso 1: Layout de Admin y Tabla de Inventario (Completado)**
+
 - Rama `feature/frontend-admin-layout` creada desde `develop`.
 - **`AdminLayout.tsx`:**
   - Sidebar fija izquierda (`w-64`, border-r `#333333`, fondos `#090909`).
@@ -394,6 +430,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Acceso directo bidireccional desde `PosHeader.tsx` ("ADMIN").
 
 **Paso 2: Modal de Alta de Nuevo Producto y Variantes (CRUD) (Completado)**
+
 - Rama `feature/frontend-admin-crud-producto` creada desde `develop`.
 - **`inventarioApi.ts`:**
   - Interfaces tipadas: `CrearVarianteItemRequest`, `CrearProductoRequest`, `CrearProductoResponse`.
@@ -413,6 +450,7 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Invalida las queries de TanStack Query (`productos-inventario` y `productos`) al guardar para refrescar automáticamente la tabla sin recargar la página.
 
 **Paso 3: Botón de Sincronización de Catálogo en el Frontend (Completado)**
+
 - Rama `feature/frontend-admin-sincronizar-tiendanube` creada desde `develop`.
 - **`inventarioApi.ts`:**
   - Definición de interfaz `SincronizarCatalogoResponse` (`totalProductosImportados`, `totalVariantesImportadas`, `productosNuevos`, `productosActualizados`, `mensaje`).
@@ -469,10 +507,10 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Backend actualizado en `CerrarTurnoCommand` y `CerrarTurnoCommandHandler` deduciendo `GastosTurno` del saldo esperado.
 - **4. Curvas de Talles del Local en Creación de Productos (`ModalCrearProducto.tsx`):**
   - Curvas de talles preconfiguradas:
-    - *Partes de arriba (Remeras, Buzos, Camperas):* `XS-XL` (`XS`, `S`, `M`, `L`, `XL`).
-    - *Partes de abajo (Pantalones, Bermudas):* `36-50` (`36`, `38`, `40`, `42`, `44`, `46`, `48`, `50`).
-    - *Zapatillas Brasil:* Bajos `35-39` (`35`, `36`, `37`, `38`, `39`) y Altos `39-43` (`39`, `40`, `41`, `42`, `43`).
-    - *Accesorios (Gorras, Medias, Cintos):* `TU` (Talle Único).
+    - _Partes de arriba (Remeras, Buzos, Camperas):_ `XS-XL` (`XS`, `S`, `M`, `L`, `XL`).
+    - _Partes de abajo (Pantalones, Bermudas):_ `36-50` (`36`, `38`, `40`, `42`, `44`, `46`, `48`, `50`).
+    - _Zapatillas Brasil:_ Bajos `35-39` (`35`, `36`, `37`, `38`, `39`) y Altos `39-43` (`39`, `40`, `41`, `42`, `43`).
+    - _Accesorios (Gorras, Medias, Cintos):_ `TU` (Talle Único).
   - Botón de carga por lote: "+ AGREGAR CURVA COMPLETA" que genera automáticamente todas las variantes con sus respectivos códigos de barras GS1 EAN-13.
 
 ---
@@ -559,6 +597,81 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Pruebas unitarias para paginación de página 1 y acumulación multi-página en `TiendanubeApiClientTests.cs`.
   - Compilación de frontend sin errores de TypeScript (`npm run build`).
 
+---
 
+### Prevención de Rate Limit, Sanitización HTML y Drawer de Detalle de Producto - COMPLETADA
+
+**Objetivo:** Proteger las llamadas de sincronización contra bloqueos 429 de Tiendanube con pausas de 500ms, sanitizar etiquetas HTML en descripciones para texto plano legible, y brindar una experiencia inmersiva de inspección de prendas mediante un Slide-Over Drawer Avant-Garde.
+
+- **Rama:** `fix/tiendanube-sync-and-details` (creada a partir de `develop`).
+- **1. Prevención de Rate Limit (`TiendanubeApiClient.cs`):**
+  - Se introdujo `await Task.Delay(500, ct);` al avanzar de página en el bucle de paginación de `ObtenerProductosAsync`, evitando que Tiendanube corte la conexión por exceso de solicitudes concurrentes.
+- **2. Sanitización de HTML (`TiendanubeSyncService.cs`):**
+  - Implementación del método `LimpiarHtml(string? html)`: elimina tags HTML (`<.*?>`), traduce saltos de línea y bloques, decodifica entidades web (`&nbsp;`, `&aacute;`, etc.) y normaliza espacios en blanco.
+  - Aplicado tanto en inserción de nuevos productos como en actualización idempotente de productos existentes.
+  - Saneamiento retroactivo ejecutado sobre la base local `dastik_dev.db`.
+- **3. Slide-Over Drawer de Detalle de Producto (`ModalDetalleProducto.tsx`):**
+  - Panel lateral derecho animado con backdrop blur oscuro y bordes brutalistas (`#333333`, `#090909`).
+  - Muestra la foto del artículo en tamaño ampliado destacado con manejo de fallback.
+  - Detalla Marca, Nombre, Categoría, Unidad de Negocio, Precio de Venta en ARS y la Descripción sanitizada.
+  - Desglose exhaustivo de variantes con Talle, Color, EAN-13, Stock físico y estados visuales (Disponible, Crítico <= 3, Agotado).
+- **4. Integración en `InventarioPage.tsx`:**
+  - Filas de la tabla convertidas en elementos interactivos con `cursor-pointer`, hover sutil `#151515`.
+  - Apertura inmediata del Drawer al hacer clic en cualquier fila para inspección sin recargar ni alterar la vista.
+- **5. Cobertura y Verificación (94 pruebas superadas, 0 fallos):**
+  - Pruebas unitarias en `TiendanubeSyncServiceTests.cs` validando la sanitización de HTML y decodificación de entidades.
+  - Verificación de compilación sin errores tanto en backend (.NET 8) como en frontend (React + TypeScript).
+
+---
+
+### Bucle de Paginación Seguro, Sanitización HTML y Paginación en Frontend - COMPLETADA
+
+**Objetivo:** Garantizar la sincronización robusta sin errores de Rate Limit (429) o loops indebidos en catálogos extensos de Tiendanube (200+ productos), sanitizar descripciones a texto plano, e implementar paginación client-side fluida en el Data Grid de inventario con miniaturas uniformes e inspección interactiva.
+
+- **Rama:** `fix/tiendanube-sync-and-pagination`.
+- **1. Backend - Bucle de Paginación Seguro (`TiendanubeApiClient.cs`):**
+  - Estructurado mediante un bucle `do-while` controlado con `page = 1`.
+  - Petición parametrizada: `{storeId}/products?per_page=200&page={page}`.
+  - Pausa obligatoria `await Task.Delay(500, ct);` al procesar cada página para prevenir bloqueos por Rate Limit de Tiendanube.
+  - Condición de corte estricta: `if (productos.Count < 200) break;` y control por cancelación.
+- **2. Backend - Limpieza de HTML (`TiendanubeSyncService.cs`):**
+  - Método `LimpiarHtml` utilizando expresiones regulares (`Regex.Replace(pDto.Descripcion, @"<.*?>", string.Empty)`) para despojar tags crudos, decodificar entidades HTML y normalizar el texto plano de la descripción.
+  - Mapeo consistente tanto en inserción de nuevos productos como en actualización de registros existentes.
+  - Exposición de `CostoBase` y `MarkupAplicado` en `ProductoCatalogoDto` (`ListarProductosQuery.cs`) para el consumo de administración.
+- **3. Frontend - Componente de Detalle (`ModalDetalleProducto.tsx`):**
+  - Slide-Over Drawer brutalista con fondo `#090909`, borde lateral `#333333` y soporte para tecla `Escape` o backdrop blur.
+  - Renderiza imagen en gran formato (`imagenUrl`) con fallback de contenedor `#111111` e ícono.
+  - Muestra tarjetas métricas con Precio de Venta, Costo Base y Markup/Margen aplicado.
+  - Renderiza la descripción saneada en texto plano y la curva completa de variantes (talles, colores, EAN-13 y stock físico con estados reactivos).
+- **4. Frontend - Paginación Local y Miniaturas (`InventarioPage.tsx`):**
+  - Paginación client-side con `PAGE_SIZE = 15` sobre el conjunto de productos filtrados.
+  - Controles de navegación "ANT" y "SIG" con indicador "PÁGINA X DE Y" y reseteo reactivo de página en cambios de filtros o búsqueda.
+  - Miniatura cuadrada uniforme de `w-10 h-10 border border-[#333333]` en la columna de Producto.
+  - Filas interactivas (`cursor-pointer`) que abren el `ModalDetalleProducto` al seleccionarlas.
+- **5. Cobertura y Verificación:**
+  - Backend: 94 pruebas unitarias ejecutadas y superadas con 0 fallos (`dotnet test`).
+  - Frontend: Compilación limpia sin errores de tipos (`npm run build` en 1.48s).
+
+---
+
+### Extensión de Timeout en Frontend y Optimización de Upsert por Lotes - COMPLETADA
+
+**Objetivo:** Eliminar el error "TIMEOUT OF 10000MS EXCEEDED" en el frontend al procesar catálogos reales de más de 200 productos con pausas de rate limiting, y optimizar el proceso de persistencia en backend mediante acumulación y guardado por lotes atómico único.
+
+- **Rama:** `fix/tiendanube-sync-timeout-and-auth`.
+- **1. Frontend - Extensión de Timeout (`apiClient.ts` y `inventarioApi.ts`):**
+  - Timeout global de Axios elevado de 10.000 ms a 120.000 ms (2 minutos) en `apiClient.ts`.
+  - Configuración explícita de `timeout: 120000` en la petición `sincronizarTiendanube` en `inventarioApi.ts`.
+  - Botón "SINCRONIZAR NUBE" en `InventarioPage.tsx` actualizado para reflejar el estado claro "SINCRONIZANDO CATÁLOGO COMPLETO..." con spinner activo y prevención de re-envíos concurrentes.
+- **2. Backend - Optimización de Upsert (`TiendanubeSyncService.cs`):**
+  - Los productos nuevos se acumulan en memoria en una lista (`nuevosProductos`) durante la iteración del catálogo.
+  - Al finalizar el bucle, se ejecuta `_context.Productos.AddRange(nuevosProductos)` y una única llamada atómica `await _context.SaveChangesAsync(ct);`.
+  - Esto minimiza la sobrecarga del `ChangeTracker` de Entity Framework Core y reduce drásticamente los tiempos de transacción en disco.
+- **3. Frontend - Confirmación de Modal de Detalle (`ModalDetalleProducto.tsx`):**
+  - Slide-Over Drawer brutalista 100% verificado y conectado al evento `onClick` de las filas del Data Grid con `cursor-pointer`.
+  - Muestra imagen con fallback, descripción limpia, tarjetas métricas (Precio, Costo, Markup/Margen) y desglose de variantes con stock.
+- **4. Cobertura y Verificación:**
+  - Backend: 94 pruebas unitarias superadas con 0 fallos (`dotnet test`).
+  - Frontend: Compilación limpia con 0 errores TypeScript (`npm run build`).
 
 

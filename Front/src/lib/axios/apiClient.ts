@@ -10,7 +10,7 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 120000, // 2 minutos para soportar sincronizaciones y operaciones pesadas de catálogo
 });
 
 // Interceptor de Petición: Inyección de Bearer Token y cabecera de Modo Sandbox

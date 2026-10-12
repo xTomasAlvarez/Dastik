@@ -110,6 +110,7 @@ public class TiendanubeSyncService : ITiendanubeSyncService
         int productosNuevos = 0;
         int productosActualizados = 0;
         int totalVariantesImportadas = 0;
+        var nuevosProductos = new List<Producto>();
 
         foreach (var pDto in productosNube)
         {
@@ -121,7 +122,11 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                 prodExistente.Nombre = pDto.Nombre;
                 if (!string.IsNullOrWhiteSpace(pDto.Descripcion))
                 {
-                    prodExistente.Descripcion = pDto.Descripcion;
+                    var descLimpia = LimpiarHtml(pDto.Descripcion);
+                    if (!string.IsNullOrWhiteSpace(descLimpia))
+                    {
+                        prodExistente.Descripcion = descLimpia;
+                    }
                 }
                 if (!string.IsNullOrWhiteSpace(pDto.ImagenUrl))
                 {
@@ -199,7 +204,9 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                     MarcaId = marcaDefault.Id,
                     ProveedorId = proveedorDefault.Id,
                     Nombre = pDto.Nombre,
-                    Descripcion = !string.IsNullOrWhiteSpace(pDto.Descripcion) ? pDto.Descripcion : $"{pDto.Nombre} - Importado Tiendanube",
+                    Descripcion = !string.IsNullOrWhiteSpace(LimpiarHtml(pDto.Descripcion))
+                        ? LimpiarHtml(pDto.Descripcion)
+                        : $"{pDto.Nombre} - Importado Tiendanube",
                     ImagenUrl = pDto.ImagenUrl ?? "",
                     PrecioVenta = precioVenta,
                     CostoBase = costoBase,
@@ -226,10 +233,16 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                     totalVariantesImportadas++;
                 }
 
-                _context.Productos.Add(nuevoProducto);
+                nuevosProductos.Add(nuevoProducto);
                 existentesDict[tnProdId] = nuevoProducto;
                 productosNuevos++;
             }
+        }
+
+        // Optimización de Guardado por Lotes (Batch): único SaveChangesAsync fuera del bucle
+        if (nuevosProductos.Count > 0)
+        {
+            _context.Productos.AddRange(nuevosProductos);
         }
 
         await _context.SaveChangesAsync(ct);
@@ -245,5 +258,37 @@ public class TiendanubeSyncService : ITiendanubeSyncService
             ProductosActualizados: productosActualizados,
             Mensaje: $"Catálogo de Tiendanube sincronizado correctamente: {productosNuevos} productos nuevos creados, {productosActualizados} actualizados."
         ));
+    }
+
+    /// <summary>
+    /// Limpia tags y entidades HTML devolviendo texto plano legible.
+    /// </summary>
+    public static string LimpiarHtml(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+
+        // 1. Reemplazar saltos de bloque HTML por espacios
+        var conEspacios = System.Text.RegularExpressions.Regex.Replace(
+            html,
+            @"<br\s*/?>|</p>|</li>|</div>|</tr>|</h1>|</h2>|</h3>|</h4>|</h5>|</h6>",
+            " ",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // 2. Eliminar todas las etiquetas HTML crudas mediante Regex <.*?>
+        var sinTags = System.Text.RegularExpressions.Regex.Replace(
+            conEspacios,
+            @"<.*?>",
+            string.Empty);
+
+        // 3. Decodificar entidades HTML (&nbsp;, &aacute;, etc.)
+        var decodificado = System.Net.WebUtility.HtmlDecode(sinTags);
+
+        // 4. Normalizar múltiples espacios en blanco
+        var normalizado = System.Text.RegularExpressions.Regex.Replace(
+            decodificado,
+            @"\s+",
+            " ").Trim();
+
+        return normalizado;
     }
 }
