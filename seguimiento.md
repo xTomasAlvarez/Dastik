@@ -370,3 +370,26 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Pruebas de integración de `OutboxMessageProcessorTests` (flujo exitoso para Dastik con Tiendanube, reintentos/errores ante fallo de API externa, bypass para Hidden Sneakers físico).
   - Pruebas de cobranza con Tenant Guard en `CajaHandlersTests` (`CobrarOrden_CuandoArticuloEsDeDastikConTiendanube_DeberiaGenerarOutboxMessage`, `CobrarOrden_CuandoArticuloEsDeHiddenSneakersFisico_NoDebeGenerarOutboxMessage`, `CobrarOrden_VentaMixtaDastikYHiddenSneakers_DebeGenerarOutboxSoloParaArticuloDeDastik`).
 
+---
+
+### Fase 2: Panel de Administración Back-Office (Frontend) - EN CURSO
+
+**Paso 1: Layout de Admin y Tabla de Inventario (Completado)**
+- Rama `feature/frontend-admin-layout` creada desde `develop`.
+- **`AdminLayout.tsx`:**
+  - Sidebar fija izquierda (`w-64`, border-r `#333333`, fondos `#090909`).
+  - Branding Avant-Garde Dastik // Admin.
+  - Acceso directo al "Terminal POS" (`/` o `/pos`).
+  - Navegación react-router-dom activa: "Inventario" (`/admin/inventario`), "Arqueos", "Métricas".
+  - Controles de operador, estado de base (Sandbox vs Prod) y logout.
+- **`InventarioPage.tsx`:**
+  - Data Grid flat Avant-Garde consumiendo `inventarioApi.obtenerProductos()` con TanStack Query.
+  - Columnas: Marca (con badge de unidad), Producto (nombre, descripción, categoría), Precio (formato ARS), Variantes (conteo y badges de talles/stock individual), Stock Total (con estados de stock bajo/agotado).
+  - Tarjetas de resumen métrico: Productos Registrados, SKUs Totales, Stock Físico Global.
+  - Buscador reactivo por texto y filtros por Unidad de Negocio (Todas, Dastik, Hidden Sneakers).
+  - Botón principal de acción superior: `NUEVO PRODUCTO`.
+- **Rutas configuradas en `App.tsx`:**
+  - `/admin` redirige a `/admin/inventario`.
+  - Rutas anidadas protegidas para el Back-Office.
+  - Acceso directo bidireccional desde `PosHeader.tsx` ("ADMIN").
+

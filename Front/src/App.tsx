@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { DashboardPos } from './features/pos/pages/DashboardPos';
+import { AdminLayout } from './features/admin/layouts/AdminLayout';
+import { InventarioPage } from './features/admin/pages/InventarioPage';
 import { CambiarPasswordModal } from './features/auth/components/CambiarPasswordModal';
 import { useAuthStore } from './stores/useAuthStore';
 import { queryClient } from './lib/react-query/queryClient';
@@ -45,6 +47,8 @@ export function App() {
               )
             }
           />
+
+          {/* Terminal POS (Caja de mostrador) */}
           <Route
             path="/"
             element={
@@ -53,6 +57,30 @@ export function App() {
               </RutaProtegida>
             }
           />
+          <Route
+            path="/pos"
+            element={
+              <RutaProtegida>
+                <DashboardPos />
+              </RutaProtegida>
+            }
+          />
+
+          {/* Panel de Administración (Back-Office) */}
+          <Route
+            path="/admin"
+            element={
+              <RutaProtegida>
+                <AdminLayout />
+              </RutaProtegida>
+            }
+          >
+            <Route index element={<Navigate to="inventario" replace />} />
+            <Route path="inventario" element={<InventarioPage />} />
+            <Route path="arqueos" element={<Navigate to="inventario" replace />} />
+            <Route path="metricas" element={<Navigate to="inventario" replace />} />
+          </Route>
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
