@@ -6,6 +6,8 @@ import {
   WarningCircle,
   X,
   SignOut,
+  MinusCircle,
+  Clock
 } from '@phosphor-icons/react';
 import { cajaApi, type ResumenTurnoDto, type CerrarTurnoResponse } from '../api/cajaApi';
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -22,8 +24,13 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
   onClose,
   turnoId,
 }) => {
-  const { logout } = useAuthStore();
+  const { logout, usuario } = useAuthStore();
 
+  // Estados de Gastos / Salidas del Turno
+  const [gastosTurno, setGastosTurno] = useState<string>('');
+  const [motivoGastos, setMotivoGastos] = useState<string>('');
+
+  // Efectivo contado en gaveta
   const [efectivoReal, setEfectivoReal] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,16 +52,26 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
     if (isOpen) {
       setError(null);
       setCierreCompletado(null);
+      setGastosTurno('');
+      setMotivoGastos('');
       refetchResumen();
     }
   }, [isOpen, refetchResumen]);
 
-  // Cuando carga el resumen, sugerimos el monto esperado
+  // Cálculos de Arqueo y Gaveta
+  const saldoInicial = resumen?.saldoInicial ?? 0;
+  const ventasEfectivo = resumen?.totalVentasEfectivo ?? 0;
+  const gastosNum = Math.max(0, parseFloat(gastosTurno) || 0);
+
+  // Regla de Negocio: Efectivo Esperado en Gaveta = (Saldo Inicial + Ventas Efectivo) - Gastos
+  const efectivoEsperadoEnGaveta = Math.max(0, saldoInicial + ventasEfectivo - gastosNum);
+
+  // Inicializar o sugerir el efectivo real
   useEffect(() => {
     if (resumen && efectivoReal === '') {
-      setEfectivoReal(resumen.saldoEsperado.toString());
+      setEfectivoReal(efectivoEsperadoEnGaveta.toString());
     }
-  }, [resumen, efectivoReal]);
+  }, [resumen, efectivoReal, efectivoEsperadoEnGaveta]);
 
   if (!isOpen) return null;
 
@@ -66,9 +83,13 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
     }).format(monto);
   };
 
-  const saldoEsperado = resumen?.saldoEsperado ?? 0;
   const contadoNum = parseFloat(efectivoReal) || 0;
-  const diferencia = contadoNum - saldoEsperado;
+  const diferencia = contadoNum - efectivoEsperadoEnGaveta;
+
+  // Detección de Turno Mañana vs Turno Tarde
+  const horaApertura = resumen?.fechaApertura ? new Date(resumen.fechaApertura).getHours() : new Date().getHours();
+  const nombreTurno = horaApertura < 14 ? 'TURNO MAÑANA' : 'TURNO TARDE';
+  const rolPersonal = usuario?.rol === 'Admin' ? 'Dueño' : 'Empleado';
 
   const handleCerrarTurno = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +101,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
     }
 
     if (isNaN(contadoNum) || contadoNum < 0) {
-      setError('Por favor ingresa un monto real válido en efectivo.');
+      setError('Por favor ingresa un monto real válido en efectivo contado.');
       return;
     }
 
@@ -89,6 +110,8 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
       const resultado = await cajaApi.cerrarTurno({
         turnoId,
         saldoFinal: contadoNum,
+        gastosTurno: gastosNum,
+        motivoGastos: motivoGastos.trim() || undefined,
         montoRealEfectivo: contadoNum,
       });
 
@@ -109,21 +132,29 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#000000]/95 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-[#090909] border border-[#333333] p-6 md:p-8 flex flex-col gap-6 text-left relative">
-        {/* Header */}
+    <div className="fixed inset-0 z-50 bg-[#000000]/95 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-lg bg-[#090909] border border-[#333333] p-6 md:p-8 flex flex-col gap-5 text-left relative my-auto shadow-2xl">
+        {/* Header con Lenguaje de Dominio */}
         <div className="flex items-start justify-between border-b border-[#222222] pb-4">
           <div className="flex items-center gap-3">
             <div className="border border-[#222222] bg-[#111111] p-2 text-[#FAFAFA] shrink-0">
               <Archive size={22} weight="light" />
             </div>
             <div>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-mono block">
-                TERMINAL POS // ARQUEO DE CAJA
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-mono block">
+                  TERMINAL // ARQUEO DE CAJA
+                </span>
+                <span className="text-[9px] uppercase tracking-wider font-mono border border-[#333333] bg-[#141414] px-1.5 py-0.2 text-amber-300">
+                  {nombreTurno}
+                </span>
+              </div>
               <h2 className="text-xl font-heading font-extrabold text-[#FAFAFA] tracking-tight">
-                CIERRE DE TURNO #{turnoId}
+                CIERRE DE {nombreTurno} (#{turnoId})
               </h2>
+              <span className="text-[10px] text-[#71717A] font-sans">
+                Responsable: <strong className="text-[#A1A1AA]">{usuario?.nombre}</strong> ({rolPersonal})
+              </span>
             </div>
           </div>
           {!cierreCompletado && (
@@ -144,27 +175,33 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
             <CheckCircle size={44} weight="light" className="text-emerald-400" />
             <div>
               <h3 className="font-heading text-base font-bold text-[#FAFAFA] uppercase tracking-wider">
-                TURNO CERRADO EXITOSAMENTE
+                {nombreTurno} CERRADO EXITOSAMENTE
               </h3>
               <p className="text-xs font-sans text-[#A1A1AA] mt-1">
-                El arqueo ha sido registrado en el sistema. Redirigiendo a la pantalla de login...
+                El arqueo de gaveta ha sido guardado. Redirigiendo a la pantalla de login...
               </p>
             </div>
-            <div className="border border-[#222222] bg-[#111111] p-3 w-full text-xs font-mono space-y-1 text-left">
+            <div className="border border-[#222222] bg-[#111111] p-3.5 w-full text-xs font-mono space-y-1.5 text-left">
               <div className="flex justify-between text-[#A1A1AA]">
                 <span>Efectivo Real Contado:</span>
                 <span className="text-[#FAFAFA] font-bold">{formatearDinero(cierreCompletado.saldoFinal)}</span>
               </div>
+              {gastosNum > 0 && (
+                <div className="flex justify-between text-red-400">
+                  <span>Salidas / Gastos del Turno:</span>
+                  <span>-{formatearDinero(gastosNum)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-[#A1A1AA]">
-                <span>Efectivo Esperado:</span>
-                <span className="text-[#FAFAFA]">{formatearDinero(cierreCompletado.saldoEsperado)}</span>
+                <span>Efectivo Esperado en Gaveta:</span>
+                <span className="text-[#FAFAFA]">{formatearDinero(efectivoEsperadoEnGaveta)}</span>
               </div>
-              <div className="flex justify-between pt-1 border-t border-[#222222]">
+              <div className="flex justify-between pt-1.5 border-t border-[#222222]">
                 <span>Diferencia de Balance:</span>
-                <span className={cierreCompletado.diferencia === 0 ? 'text-emerald-400 font-bold' : cierreCompletado.diferencia > 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
-                  {cierreCompletado.diferencia === 0
+                <span className={diferencia === 0 ? 'text-emerald-400 font-bold' : diferencia > 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
+                  {diferencia === 0
                     ? 'CUADRE EXACTO ($0,00)'
-                    : `${cierreCompletado.diferencia > 0 ? '+' : ''}${formatearDinero(cierreCompletado.diferencia)}`}
+                    : `${diferencia > 0 ? '+' : ''}${formatearDinero(diferencia)}`}
                 </span>
               </div>
             </div>
@@ -197,10 +234,11 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
               </div>
             )}
 
-            {/* Resumen de Métricas del Turno */}
+            {/* 1. Resumen de Ventas del Turno */}
             <div className="border border-[#222222] bg-[#111111] p-4 flex flex-col gap-2.5">
-              <span className="text-[9px] uppercase tracking-widest text-[#71717A] font-mono">
-                BALANCE DEL TURNO ({resumen?.cantidadOrdenes ?? 0} {resumen?.cantidadOrdenes === 1 ? 'VENTA' : 'VENTAS'})
+              <span className="text-[9px] uppercase tracking-widest text-[#71717A] font-mono flex items-center gap-1.5">
+                <Clock size={13} weight="light" />
+                MÉTRICAS DEL {nombreTurno} ({resumen?.cantidadOrdenes ?? 0} {resumen?.cantidadOrdenes === 1 ? 'VENTA' : 'VENTAS'})
               </span>
 
               {isLoadingResumen ? (
@@ -209,18 +247,18 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                   <div className="h-4 bg-[#1E1E1E] w-3/4" />
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 text-xs font-sans">
+                <div className="grid grid-cols-2 gap-2.5 text-xs font-sans">
                   <div className="border border-[#1E1E1E] bg-[#0E0E0E] p-2.5">
                     <span className="text-[10px] text-[#71717A] block uppercase">Fondo Inicial:</span>
                     <span className="font-heading font-bold text-[#FAFAFA]">
-                      {formatearDinero(resumen?.saldoInicial ?? 0)}
+                      {formatearDinero(saldoInicial)}
                     </span>
                   </div>
 
                   <div className="border border-[#1E1E1E] bg-[#0E0E0E] p-2.5">
-                    <span className="text-[10px] text-[#71717A] block uppercase">Ventas Efectivo:</span>
-                    <span className="font-heading font-bold text-[#FAFAFA]">
-                      {formatearDinero(resumen?.totalVentasEfectivo ?? 0)}
+                    <span className="text-[10px] text-[#71717A] block uppercase">(+) Ventas Efectivo:</span>
+                    <span className="font-heading font-bold text-emerald-400">
+                      +{formatearDinero(ventasEfectivo)}
                     </span>
                   </div>
 
@@ -232,35 +270,110 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                   </div>
 
                   <div className="border border-[#1E1E1E] bg-[#0E0E0E] p-2.5">
-                    <span className="text-[10px] text-[#71717A] block uppercase">Total Facturado:</span>
+                    <span className="text-[10px] text-[#71717A] block uppercase">Transferencias:</span>
                     <span className="font-heading font-bold text-[#FAFAFA]">
-                      {formatearDinero(resumen?.totalVentas ?? 0)}
+                      {formatearDinero(resumen?.totalVentasTransferencia ?? 0)}
                     </span>
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Total Efectivo Esperado en Caja Física */}
-              <div className="border-t border-[#1F1F1F] pt-2.5 flex justify-between items-baseline">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-[#A1A1AA]">
-                  EFECTIVO ESPERADO EN CAJA FÍSICA:
+            {/* 2. SECCIÓN NUEVA: SALIDAS / GASTOS DEL TURNO */}
+            <div className="border border-[#333333] bg-[#0D0D0D] p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-[#222222] pb-2">
+                <div className="flex items-center gap-2">
+                  <MinusCircle size={17} weight="light" className="text-red-400" />
+                  <span className="text-[10px] uppercase tracking-widest text-[#FAFAFA] font-heading font-bold">
+                    SALIDAS / GASTOS DEL TURNO
+                  </span>
+                </div>
+                <span className="text-[10px] text-[#71717A] font-sans">
+                  Resta de gaveta física
                 </span>
-                <span className="font-heading text-base font-extrabold text-[#FAFAFA]">
-                  {formatearDinero(saldoEsperado)}
-                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[9.5px] uppercase font-sans tracking-wider text-[#71717A] block mb-1">
+                    MONTO TOTAL GASTOS (ARS)
+                  </label>
+                  <div className="flex items-center border border-[#333333] focus-within:border-[#FAFAFA] bg-[#141414] px-3 py-2">
+                    <span className="text-sm font-mono text-[#71717A] mr-2">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      value={gastosTurno}
+                      onChange={(e) => setGastosTurno(e.target.value)}
+                      placeholder="0"
+                      className="bg-transparent text-sm font-mono font-bold text-[#FAFAFA] outline-none w-full"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9.5px] uppercase font-sans tracking-wider text-[#71717A] block mb-1">
+                    MOTIVO / CONCEPTO
+                  </label>
+                  <input
+                    type="text"
+                    value={motivoGastos}
+                    onChange={(e) => setMotivoGastos(e.target.value)}
+                    placeholder="ej: Desayuno, Uber, Almuerzo"
+                    className="w-full bg-[#141414] border border-[#333333] focus:border-[#FAFAFA] px-3 py-2 text-xs text-[#FAFAFA] outline-none placeholder-[#555555]"
+                  />
+                </div>
+              </div>
+
+              {/* Botones de Presets Rápidos de Gastos */}
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                <span className="text-[9px] uppercase tracking-wider text-[#71717A]">PRESETS:</span>
+                {[
+                  { label: 'Desayuno ($1.500)', monto: 1500, motivo: 'Desayuno' },
+                  { label: 'Uber ($3.500)', monto: 3500, motivo: 'Uber mercadería' },
+                  { label: 'Almuerzo ($5.000)', monto: 5000, motivo: 'Almuerzo personal' },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      setGastosTurno(preset.monto.toString());
+                      setMotivoGastos(preset.motivo);
+                    }}
+                    className="px-2 py-0.5 border border-[#222222] bg-[#141414] hover:border-[#444444] text-[9.5px] font-mono text-[#A1A1AA] hover:text-[#FAFAFA] transition-fast cursor-pointer"
+                  >
+                    +{preset.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Formulario de Conteo de Efectivo */}
-            <form onSubmit={handleCerrarTurno} className="flex flex-col gap-5">
+            {/* Display de Efectivo Esperado en Gaveta con Fórmula del Negocio */}
+            <div className="border border-[#2A2A2A] bg-[#111111] p-3.5 flex items-center justify-between">
+              <div>
+                <span className="text-[9.5px] uppercase font-mono tracking-widest text-[#71717A] block">
+                  EFECTIVO ESPERADO EN GAVETA FÍSICA:
+                </span>
+                <span className="text-[10px] text-[#555555] font-sans">
+                  (Saldo Inicial + Ventas Efectivo) - Gastos
+                </span>
+              </div>
+              <span className="font-heading text-lg font-extrabold text-[#FAFAFA]">
+                {formatearDinero(efectivoEsperadoEnGaveta)}
+              </span>
+            </div>
+
+            {/* 3. Formulario de Conteo de Efectivo Real */}
+            <form onSubmit={handleCerrarTurno} className="flex flex-col gap-4">
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="text-[10px] uppercase font-sans tracking-widest text-[#71717A]">
-                    EFECTIVO REAL CONTADO EN CAJA FÍSICA (ARS)
+                    EFECTIVO REAL CONTADO EN GAVETA (ARS)
                   </label>
                   <button
                     type="button"
-                    onClick={() => setEfectivoReal(saldoEsperado.toString())}
+                    onClick={() => setEfectivoReal(efectivoEsperadoEnGaveta.toString())}
                     className="text-[10px] font-mono text-[#FAFAFA] underline cursor-pointer hover:text-[#A1A1AA]"
                   >
                     COPIAR ESPERADO
@@ -298,14 +411,14 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
               >
                 <div>
                   <span className="text-[9px] uppercase tracking-widest block opacity-75">
-                    ESTADO DE ARQUEO
+                    BALANCE DE GAVETA
                   </span>
                   <span className="font-heading font-bold text-sm">
                     {diferencia === 0
-                      ? 'CUADRE PERFECTO'
+                      ? 'CUADRE EXACTO ($0,00)'
                       : diferencia > 0
-                      ? 'SOBRANTE EN CAJA'
-                      : 'FALTANTE EN CAJA'}
+                      ? 'SOBRANTE EN GAVETA'
+                      : 'FALTANTE EN GAVETA'}
                   </span>
                 </div>
                 <div className="text-right">
@@ -337,7 +450,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                   disabled={isSubmitting}
                   className="w-2/3 font-heading font-bold tracking-wider flex items-center justify-center gap-2"
                 >
-                  <span>{isSubmitting ? 'CERRANDO TURNO...' : 'CONFIRMAR CIERRE Y SALIR'}</span>
+                  <span>{isSubmitting ? 'CERRANDO TURNO...' : 'CONFIRMAR ARQUEO Y SALIR'}</span>
                   <SignOut size={16} weight="light" />
                 </Button>
               </div>

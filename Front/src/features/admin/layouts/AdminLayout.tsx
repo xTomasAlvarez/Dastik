@@ -132,16 +132,16 @@ export const AdminLayout: React.FC = () => {
             </button>
           </div>
 
-          {/* Datos del Operador */}
+          {/* Datos del Usuario (Dueño / Empleado) */}
           <div className="border border-[#222222] bg-[#111111] px-3 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2 overflow-hidden">
               <ShieldCheck size={16} weight="light" className="text-green-400 shrink-0" />
               <div className="truncate">
                 <div className="text-xs font-heading font-medium text-[#FAFAFA] truncate">
-                  {usuario?.nombre || 'Administrador'}
+                  {usuario?.nombre || 'Dueño'}
                 </div>
                 <div className="text-[9px] text-[#71717A] uppercase tracking-widest font-mono">
-                  {usuario?.rol || 'Admin'}
+                  {usuario?.rol === 'Admin' ? 'Dueño' : 'Empleado'}
                 </div>
               </div>
             </div>

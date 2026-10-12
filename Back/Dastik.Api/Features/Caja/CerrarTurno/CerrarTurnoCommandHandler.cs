@@ -43,7 +43,7 @@ public class CerrarTurnoCommandHandler : IRequestHandler<CerrarTurnoCommand, Res
             .Where(p => p.MetodoPago == MetodoPago.Efectivo)
             .Sum(p => p.Monto);
 
-        decimal saldoEsperado = turno.SaldoInicial + totalVentasEfectivo;
+        decimal saldoEsperado = turno.SaldoInicial + totalVentasEfectivo - request.GastosTurno;
 
         // 3. Comparar con el SaldoFinal (arqueo reportado por el cajero) y calcular la Diferencia
         decimal diferencia = request.SaldoFinal - saldoEsperado;

@@ -66,20 +66,20 @@ export const LoginPage: React.FC = () => {
               title="Autollenar credenciales de Admin tomiDev"
             >
               <div>
-                <span className="text-[#FAFAFA] font-medium block">Admin tomiDev (Directo)</span>
+                <span className="text-[#FAFAFA] font-medium block">Dueño tomiDev (Directo)</span>
                 <code className="text-[#A1A1AA] text-[9.5px]">tomidev@dastik.com</code>
               </div>
-              <span className="text-emerald-400 font-mono text-[9px] bg-emerald-950/40 border border-emerald-900/50 px-1.5 py-0.5">ADMIN</span>
+              <span className="text-emerald-400 font-mono text-[9px] bg-emerald-950/40 border border-emerald-900/50 px-1.5 py-0.5">DUEÑO</span>
             </button>
 
             <button
               type="button"
               onClick={() => setFillCreds({ email: 'admin@dastik.com', password: 'Dastik2026!' })}
               className="w-full text-left flex justify-between items-center border border-[#1A1A1A] hover:border-[#333333] bg-[#0D0D0D] hover:bg-[#141414] px-2.5 py-1.5 transition-fast cursor-pointer group"
-              title="Autollenar credenciales de Admin Fundador"
+              title="Autollenar credenciales de Dueño Fundador"
             >
               <div>
-                <span className="text-[#E4E4E7] block">Admin Fundador (Reseteo)</span>
+                <span className="text-[#E4E4E7] block">Dueño Fundador (Reseteo)</span>
                 <code className="text-[#71717A] text-[9.5px]">admin@dastik.com</code>
               </div>
               <span className="text-[#71717A] font-mono text-[9px] border border-[#222222] px-1.5 py-0.5">RESETEO</span>
@@ -89,13 +89,13 @@ export const LoginPage: React.FC = () => {
               type="button"
               onClick={() => setFillCreds({ email: 'cajero.sandbox@dastik.com', password: 'Dastik2026!' })}
               className="w-full text-left flex justify-between items-center border border-[#1A1A1A] hover:border-[#333333] bg-[#0D0D0D] hover:bg-[#141414] px-2.5 py-1.5 transition-fast cursor-pointer group"
-              title="Autollenar credenciales de Cajero Sandbox"
+              title="Autollenar credenciales de Empleado Sandbox"
             >
               <div>
-                <span className="text-[#E4E4E7] block">Cajero Sandbox (Directo)</span>
+                <span className="text-[#E4E4E7] block">Empleado Sandbox (Directo)</span>
                 <code className="text-[#71717A] text-[9.5px]">cajero.sandbox@dastik.com</code>
               </div>
-              <span className="text-amber-400 font-mono text-[9px] bg-amber-950/40 border border-amber-900/50 px-1.5 py-0.5">CAJERO</span>
+              <span className="text-amber-400 font-mono text-[9px] bg-amber-950/40 border border-amber-900/50 px-1.5 py-0.5">EMPLEADO</span>
             </button>
           </div>
         </div>

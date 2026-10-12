@@ -64,8 +64,8 @@ export const ModalAbrirTurno: React.FC<ModalAbrirTurnoProps> = ({ isOpen, onTurn
             <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-mono">
               TERMINAL POS // APERTURA DE CAJA
             </span>
-            <span className="text-[9px] font-mono border border-emerald-900 bg-emerald-950/40 text-emerald-400 px-2 py-0.5">
-              TURNO REQUERIDO
+            <span className="text-[9px] font-mono border border-emerald-900 bg-emerald-950/40 text-emerald-400 px-2 py-0.5 uppercase tracking-wider">
+              {new Date().getHours() < 14 ? 'TURNO MAÑANA' : 'TURNO TARDE'}
             </span>
           </div>
           <h2 className="text-xl font-heading font-extrabold text-[#FAFAFA] tracking-tight">
@@ -76,14 +76,17 @@ export const ModalAbrirTurno: React.FC<ModalAbrirTurnoProps> = ({ isOpen, onTurn
           </p>
         </div>
 
-        {/* Banner de Operador */}
+        {/* Banner de Usuario / Responsable */}
         <div className="border border-[#222222] bg-[#111111] p-3 flex items-center justify-between">
           <div>
             <span className="text-[9px] uppercase tracking-widest text-[#71717A] font-sans block">
-              OPERADOR AUTORIZADO
+              RESPONSABLE DE APERTURA
             </span>
             <span className="text-xs font-heading font-bold text-[#FAFAFA]">
-              {usuario?.nombre || 'Cajero en Turno'}
+              {usuario?.nombre || 'Empleado en Turno'}{' '}
+              <span className="text-[#71717A] font-normal">
+                ({usuario?.rol === 'Admin' ? 'Dueño' : 'Empleado'})
+              </span>
             </span>
             <span className="text-[10px] font-mono text-[#71717A] block">
               {usuario?.email}
@@ -165,7 +168,7 @@ export const ModalAbrirTurno: React.FC<ModalAbrirTurnoProps> = ({ isOpen, onTurn
               className="text-[10px] uppercase font-sans tracking-widest text-[#71717A] hover:text-red-400 transition-fast flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
             >
               <SignOut size={13} weight="light" />
-              <span>Cerrar sesión de operador</span>
+              <span>Cerrar sesión ({usuario?.rol === 'Admin' ? 'Dueño' : 'Empleado'})</span>
             </button>
           </div>
         </form>

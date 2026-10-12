@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   MagnifyingGlass,
@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { inventarioApi, type ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 import { Button } from '../../../components/ui/Button';
+import { ModalCrearProducto } from '../components/ModalCrearProducto';
 
 export const InventarioPage: React.FC = () => {
   const [busqueda, setBusqueda] = useState('');
@@ -70,8 +71,16 @@ export const InventarioPage: React.FC = () => {
     return { totalItems, totalVariantes, totalStock };
   }, [productos]);
 
+  const queryClient = useQueryClient();
+  const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
+
   const handleNuevoProducto = () => {
-    console.log('NUEVO PRODUCTO');
+    setIsModalCrearOpen(true);
+  };
+
+  const handleCreacionExitosa = () => {
+    queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
+    queryClient.invalidateQueries({ queryKey: ['productos'] });
   };
 
   return (
@@ -350,6 +359,13 @@ export const InventarioPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de Alta de Nuevo Producto y Variantes */}
+      <ModalCrearProducto
+        isOpen={isModalCrearOpen}
+        onClose={() => setIsModalCrearOpen(false)}
+        onSuccess={handleCreacionExitosa}
+      />
     </div>
   );
 };
