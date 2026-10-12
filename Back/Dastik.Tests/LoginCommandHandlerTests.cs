@@ -86,6 +86,73 @@ public class LoginCommandHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task Login_ConNombreDeUsuarioTomiDev_DebeRetornarTokenExitosamenteYRolAdmin()
+    {
+        // Arrange
+        var passwordHash = _passwordHasher.Hash("Dastik2026!");
+        var usuario = new Usuario
+        {
+            Nombre = "tomiDev",
+            Email = "tomidev@dastik.com",
+            PasswordHash = passwordHash,
+            Rol = RolUsuario.Admin,
+            DebeCambiarPassword = false,
+            Activo = true
+        };
+        _context.Usuarios.Add(usuario);
+        await _context.SaveChangesAsync();
+
+        var handler = new LoginCommandHandler(_context, _passwordHasher, _jwtProvider);
+        // Login ingresando el nombre de usuario "tomiDev" en vez del email
+        var command = new LoginCommand("tomiDev", "Dastik2026!", IsSandboxMode: true);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Nombre.Should().Be("tomiDev");
+        result.Value.Rol.Should().Be("Admin");
+        result.Value.DebeCambiarPassword.Should().BeFalse();
+        result.Value.IsSandboxMode.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Login_ConEmailTomiDevConArroba_DebeRetornarTokenExitosamenteYRolAdmin()
+    {
+        // Arrange
+        var passwordHash = _passwordHasher.Hash("Dastik2026!");
+        var usuario = new Usuario
+        {
+            Nombre = "tomiDev",
+            Email = "tomidev@dastik.com",
+            PasswordHash = passwordHash,
+            Rol = RolUsuario.Admin,
+            DebeCambiarPassword = false,
+            Activo = true
+        };
+        _context.Usuarios.Add(usuario);
+        await _context.SaveChangesAsync();
+
+        var handler = new LoginCommandHandler(_context, _passwordHasher, _jwtProvider);
+        // Login ingresando el email con formato estándar "@"
+        var command = new LoginCommand("tomidev@dastik.com", "Dastik2026!", IsSandboxMode: false);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Nombre.Should().Be("tomiDev");
+        result.Value.Email.Should().Be("tomidev@dastik.com");
+        result.Value.Rol.Should().Be("Admin");
+        result.Value.DebeCambiarPassword.Should().BeFalse();
+        result.Value.IsSandboxMode.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Login_ConPasswordIncorrecta_DebeRetornarFalloSinExcepcion()
     {
         // Arrange

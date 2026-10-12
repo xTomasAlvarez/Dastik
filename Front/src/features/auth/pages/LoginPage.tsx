@@ -9,6 +9,8 @@ export const LoginPage: React.FC = () => {
   const { isSandboxMode, toggleSandboxMode } = useTenantStore();
   const debeCambiarPassword = useAuthStore((state) => state.debeCambiarPassword);
 
+  const [fillCreds, setFillCreds] = React.useState<{ email: string; password: string } | null>(null);
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#000000] text-[#FAFAFA] flex items-center justify-center p-6 selection:bg-[#FAFAFA] selection:text-[#000000]">
       {/* Contenedor Arquitectónico Flat Design: Perfectamente centrado con márgenes simétricos arriba y abajo */}
@@ -47,22 +49,54 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Login Form */}
-        <LoginForm />
+        <LoginForm fillCredentials={fillCreds} />
 
         {/* Developer Sandbox Accounts Helper */}
         <div className="mt-6 pt-4 border-t border-[#1F1F1F] text-left">
-          <span className="text-[9px] uppercase tracking-widest text-[#555555] block mb-1.5 font-semibold">
-            ACCESOS DE PRUEBA RÁPIDA:
-          </span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[9px] uppercase tracking-widest text-[#555555] font-semibold">
+              ACCESOS RÁPIDOS (CLIC PARA AUTOLLENAR):
+            </span>
+          </div>
           <div className="space-y-1.5 text-[10px] font-sans text-[#71717A]">
-            <div className="flex justify-between items-center border-b border-[#141414] pb-1">
-              <span>Admin (Reseteo): <code className="text-[#FAFAFA]">admin@dastik.com</code></span>
-              <span className="text-[#555555] font-mono">Dastik2026!</span>
-            </div>
-            <div className="flex justify-between items-center pt-0.5">
-              <span>Cajero (Directo): <code className="text-[#FAFAFA]">cajero.sandbox@dastik.com</code></span>
-              <span className="text-amber-400 font-mono">Dastik2026!</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => setFillCreds({ email: 'tomidev@dastik.com', password: 'Dastik2026!' })}
+              className="w-full text-left flex justify-between items-center border border-[#1A1A1A] hover:border-[#333333] bg-[#0D0D0D] hover:bg-[#141414] px-2.5 py-1.5 transition-fast cursor-pointer group"
+              title="Autollenar credenciales de Admin tomiDev"
+            >
+              <div>
+                <span className="text-[#FAFAFA] font-medium block">Admin tomiDev (Directo)</span>
+                <code className="text-[#A1A1AA] text-[9.5px]">tomidev@dastik.com</code>
+              </div>
+              <span className="text-emerald-400 font-mono text-[9px] bg-emerald-950/40 border border-emerald-900/50 px-1.5 py-0.5">ADMIN</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFillCreds({ email: 'admin@dastik.com', password: 'Dastik2026!' })}
+              className="w-full text-left flex justify-between items-center border border-[#1A1A1A] hover:border-[#333333] bg-[#0D0D0D] hover:bg-[#141414] px-2.5 py-1.5 transition-fast cursor-pointer group"
+              title="Autollenar credenciales de Admin Fundador"
+            >
+              <div>
+                <span className="text-[#E4E4E7] block">Admin Fundador (Reseteo)</span>
+                <code className="text-[#71717A] text-[9.5px]">admin@dastik.com</code>
+              </div>
+              <span className="text-[#71717A] font-mono text-[9px] border border-[#222222] px-1.5 py-0.5">RESETEO</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFillCreds({ email: 'cajero.sandbox@dastik.com', password: 'Dastik2026!' })}
+              className="w-full text-left flex justify-between items-center border border-[#1A1A1A] hover:border-[#333333] bg-[#0D0D0D] hover:bg-[#141414] px-2.5 py-1.5 transition-fast cursor-pointer group"
+              title="Autollenar credenciales de Cajero Sandbox"
+            >
+              <div>
+                <span className="text-[#E4E4E7] block">Cajero Sandbox (Directo)</span>
+                <code className="text-[#71717A] text-[9.5px]">cajero.sandbox@dastik.com</code>
+              </div>
+              <span className="text-amber-400 font-mono text-[9px] bg-amber-950/40 border border-amber-900/50 px-1.5 py-0.5">CAJERO</span>
+            </button>
           </div>
         </div>
       </div>

@@ -370,3 +370,47 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Pruebas de integración de `OutboxMessageProcessorTests` (flujo exitoso para Dastik con Tiendanube, reintentos/errores ante fallo de API externa, bypass para Hidden Sneakers físico).
   - Pruebas de cobranza con Tenant Guard en `CajaHandlersTests` (`CobrarOrden_CuandoArticuloEsDeDastikConTiendanube_DeberiaGenerarOutboxMessage`, `CobrarOrden_CuandoArticuloEsDeHiddenSneakersFisico_NoDebeGenerarOutboxMessage`, `CobrarOrden_VentaMixtaDastikYHiddenSneakers_DebeGenerarOutboxSoloParaArticuloDeDastik`).
 
+---
+
+### Fase 2: Panel de Administración Back-Office (Frontend) - EN CURSO
+
+**Paso 1: Layout de Admin y Tabla de Inventario (Completado)**
+- Rama `feature/frontend-admin-layout` creada desde `develop`.
+- **`AdminLayout.tsx`:**
+  - Sidebar fija izquierda (`w-64`, border-r `#333333`, fondos `#090909`).
+  - Branding Avant-Garde Dastik // Admin.
+  - Acceso directo al "Terminal POS" (`/` o `/pos`).
+  - Navegación react-router-dom activa: "Inventario" (`/admin/inventario`), "Arqueos", "Métricas".
+  - Controles de operador, estado de base (Sandbox vs Prod) y logout.
+- **`InventarioPage.tsx`:**
+  - Data Grid flat Avant-Garde consumiendo `inventarioApi.obtenerProductos()` con TanStack Query.
+  - Columnas: Marca (con badge de unidad), Producto (nombre, descripción, categoría), Precio (formato ARS), Variantes (conteo y badges de talles/stock individual), Stock Total (con estados de stock bajo/agotado).
+  - Tarjetas de resumen métrico: Productos Registrados, SKUs Totales, Stock Físico Global.
+  - Buscador reactivo por texto y filtros por Unidad de Negocio (Todas, Dastik, Hidden Sneakers).
+  - Botón principal de acción superior: `NUEVO PRODUCTO`.
+- **Rutas configuradas en `App.tsx`:**
+  - `/admin` redirige a `/admin/inventario`.
+  - Rutas anidadas protegidas para el Back-Office.
+  - Acceso directo bidireccional desde `PosHeader.tsx` ("ADMIN").
+
+---
+
+### Configuración de Credenciales de Testing y Usuario Admin (`tomiDev`)
+
+- **Usuario Administrador de Desarrollo (`tomiDev`):**
+  - **Email:** `tomidev@dastik.com` (formato con `@` compatible con HTML5 e input `type="email"`, y validación `LoginCommandValidator`).
+  - **Contraseña:** `Dastik2026!`
+  - **Rol:** `Admin` (con acceso directo tanto al Back-Office `/admin` como al Terminal POS).
+  - **DebeCambiarPassword:** `false` (no requiere reseteo forzoso de clave).
+- **Sembrado Dual (Producción/Dev y Sandbox):**
+  - Sincronizado en `DataSeeder.cs` y `SandboxDataSeeder.cs`.
+  - Corregido el orden de ejecución en `SandboxDataSeeder.cs` para garantizar que los usuarios del sistema se siembren siempre, incluso cuando ya existían productos previamente.
+  - Ambas bases SQLite locales (`dastik_dev.db` y `dastik_sandbox_dev.db`) actualizadas con el usuario `tomidev@dastik.com`.
+- **Experiencia de Usuario en Frontend (`LoginPage.tsx` y `LoginForm.tsx`):**
+  - Botones de autollenado de un clic para acceso inmediato en `LoginPage.tsx`:
+    - Admin `tomidev@dastik.com` (`Dastik2026!`).
+    - Admin Fundador `admin@dastik.com` (`Dastik2026!`).
+    - Cajero `cajero.sandbox@dastik.com` (`Dastik2026!`).
+  - Placeholder del formulario actualizado a `tomidev@dastik.com`.
+
+

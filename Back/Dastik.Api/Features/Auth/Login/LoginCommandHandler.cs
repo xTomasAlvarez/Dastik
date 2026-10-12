@@ -24,10 +24,10 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginRes
 
     public async Task<Result<LoginResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var normalizedInput = request.Email.Trim().ToLowerInvariant();
 
         var usuario = await _context.Usuarios
-            .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && u.Activo, cancellationToken);
+            .FirstOrDefaultAsync(u => (u.Email.ToLower() == normalizedInput || u.Nombre.ToLower() == normalizedInput) && u.Activo, cancellationToken);
 
         if (usuario is null)
         {

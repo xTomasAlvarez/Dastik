@@ -9,13 +9,22 @@ import type { AxiosError } from 'axios';
 
 interface LoginFormProps {
   onSuccess?: () => void;
+  fillCredentials?: { email: string; password: string } | null;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, fillCredentials }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (fillCredentials) {
+      setEmail(fillCredentials.email);
+      setPassword(fillCredentials.password);
+      setErrorMessage(null);
+    }
+  }, [fillCredentials]);
 
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -76,7 +85,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           id="email"
           label="CORREO ELECTRÓNICO"
           type="email"
-          placeholder="admin@dastik.com"
+          placeholder="tomidev@dastik.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}

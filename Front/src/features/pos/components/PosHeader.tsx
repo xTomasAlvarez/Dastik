@@ -1,5 +1,6 @@
 import React from 'react';
-import { Archive, ShieldCheck, SignOut, Storefront, TestTube } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
+import { Archive, ShieldCheck, SignOut, Storefront, TestTube, SlidersHorizontal } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useTenantStore } from '../../../stores/useTenantStore';
@@ -99,6 +100,16 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCi
             {usuario?.nombre} <span className="text-[#71717A]">({usuario?.rol})</span>
           </span>
         </div>
+
+        {/* Acceso a Back-Office Admin */}
+        <Link
+          to="/admin/inventario"
+          className="border border-[#333333] bg-[#111111] hover:bg-[#1A1A1A] hover:border-[#555555] text-[#FAFAFA] px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-heading font-semibold uppercase tracking-wider transition-fast"
+          title="Ir al panel de administración e inventario"
+        >
+          <SlidersHorizontal size={14} weight="light" className="text-amber-400" />
+          <span>ADMIN</span>
+        </Link>
 
         {/* Cierre de Sesión */}
         <Button

@@ -62,12 +62,6 @@ public static class SandboxDataSeeder
             return;
         }
 
-        // Si ya existen productos en la base de datos Sandbox, no duplicar
-        if (await context.Productos.AnyAsync())
-        {
-            return;
-        }
-
         eanGenerator ??= new GeneradorEan13();
         passwordHasher ??= new PasswordHasher();
 
@@ -99,6 +93,31 @@ public static class SandboxDataSeeder
                 Activo = true,
                 FechaCreacion = DateTime.UtcNow
             });
+        }
+
+        // 1.c Usuario Admin tomiDev en Sandbox
+        var tomiDevSandbox = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "tomidev@dastik.com" || u.Nombre == "tomiDev");
+        if (tomiDevSandbox is null)
+        {
+            context.Usuarios.Add(new Usuario
+            {
+                Nombre = "tomiDev",
+                Email = "tomidev@dastik.com",
+                PasswordHash = passwordHasher.Hash(DataSeeder.AdminDefaultPassword),
+                Rol = RolUsuario.Admin,
+                DebeCambiarPassword = false,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            tomiDevSandbox.Nombre = "tomiDev";
+            tomiDevSandbox.Email = "tomidev@dastik.com";
+            tomiDevSandbox.PasswordHash = passwordHasher.Hash(DataSeeder.AdminDefaultPassword);
+            tomiDevSandbox.Rol = RolUsuario.Admin;
+            tomiDevSandbox.DebeCambiarPassword = false;
+            tomiDevSandbox.Activo = true;
         }
 
         // 2. Unidades de Negocio
@@ -188,6 +207,12 @@ public static class SandboxDataSeeder
         }
 
         await context.SaveChangesAsync();
+
+        // Si ya existen productos en la base de datos Sandbox, no duplicar el catálogo de prueba
+        if (await context.Productos.AnyAsync())
+        {
+            return;
+        }
 
         // 6. Productos y Variantes - Unidad "Dastik"
         // Producto 1: Remera Oversize Básica (Talles XS a XL)
