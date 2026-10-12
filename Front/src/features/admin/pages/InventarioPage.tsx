@@ -215,7 +215,7 @@ export const InventarioPage: React.FC = () => {
             {sincronizarMutation.isPending ? (
               <>
                 <SpinnerGap size={16} weight="light" className="animate-spin text-amber-400" />
-                <span>SINCRONIZANDO...</span>
+                <span className="text-amber-400">SINCRONIZANDO CATÁLOGO COMPLETO...</span>
               </>
             ) : (
               <>

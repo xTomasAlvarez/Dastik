@@ -110,6 +110,7 @@ public class TiendanubeSyncService : ITiendanubeSyncService
         int productosNuevos = 0;
         int productosActualizados = 0;
         int totalVariantesImportadas = 0;
+        var nuevosProductos = new List<Producto>();
 
         foreach (var pDto in productosNube)
         {
@@ -232,10 +233,16 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                     totalVariantesImportadas++;
                 }
 
-                _context.Productos.Add(nuevoProducto);
+                nuevosProductos.Add(nuevoProducto);
                 existentesDict[tnProdId] = nuevoProducto;
                 productosNuevos++;
             }
+        }
+
+        // Optimización de Guardado por Lotes (Batch): único SaveChangesAsync fuera del bucle
+        if (nuevosProductos.Count > 0)
+        {
+            _context.Productos.AddRange(nuevosProductos);
         }
 
         await _context.SaveChangesAsync(ct);

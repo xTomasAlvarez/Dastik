@@ -652,3 +652,26 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Backend: 94 pruebas unitarias ejecutadas y superadas con 0 fallos (`dotnet test`).
   - Frontend: Compilación limpia sin errores de tipos (`npm run build` en 1.48s).
 
+---
+
+### Extensión de Timeout en Frontend y Optimización de Upsert por Lotes - COMPLETADA
+
+**Objetivo:** Eliminar el error "TIMEOUT OF 10000MS EXCEEDED" en el frontend al procesar catálogos reales de más de 200 productos con pausas de rate limiting, y optimizar el proceso de persistencia en backend mediante acumulación y guardado por lotes atómico único.
+
+- **Rama:** `fix/tiendanube-sync-timeout-and-auth`.
+- **1. Frontend - Extensión de Timeout (`apiClient.ts` y `inventarioApi.ts`):**
+  - Timeout global de Axios elevado de 10.000 ms a 120.000 ms (2 minutos) en `apiClient.ts`.
+  - Configuración explícita de `timeout: 120000` en la petición `sincronizarTiendanube` en `inventarioApi.ts`.
+  - Botón "SINCRONIZAR NUBE" en `InventarioPage.tsx` actualizado para reflejar el estado claro "SINCRONIZANDO CATÁLOGO COMPLETO..." con spinner activo y prevención de re-envíos concurrentes.
+- **2. Backend - Optimización de Upsert (`TiendanubeSyncService.cs`):**
+  - Los productos nuevos se acumulan en memoria en una lista (`nuevosProductos`) durante la iteración del catálogo.
+  - Al finalizar el bucle, se ejecuta `_context.Productos.AddRange(nuevosProductos)` y una única llamada atómica `await _context.SaveChangesAsync(ct);`.
+  - Esto minimiza la sobrecarga del `ChangeTracker` de Entity Framework Core y reduce drásticamente los tiempos de transacción en disco.
+- **3. Frontend - Confirmación de Modal de Detalle (`ModalDetalleProducto.tsx`):**
+  - Slide-Over Drawer brutalista 100% verificado y conectado al evento `onClick` de las filas del Data Grid con `cursor-pointer`.
+  - Muestra imagen con fallback, descripción limpia, tarjetas métricas (Precio, Costo, Markup/Margen) y desglose de variantes con stock.
+- **4. Cobertura y Verificación:**
+  - Backend: 94 pruebas unitarias superadas con 0 fallos (`dotnet test`).
+  - Frontend: Compilación limpia con 0 errores TypeScript (`npm run build`).
+
+
