@@ -47,6 +47,14 @@ export interface CrearProductoResponse {
   cantidadVariantesCreadas: number;
 }
 
+export interface SincronizarCatalogoResponse {
+  totalProductosImportados: number;
+  totalVariantesImportadas: number;
+  productosNuevos: number;
+  productosActualizados: number;
+  mensaje: string;
+}
+
 export const inventarioApi = {
   obtenerCatalogoPos: async (): Promise<ProductoCatalogoDto[]> => {
     const response = await apiClient.get<ProductoCatalogoDto[]>('/api/productos');
@@ -62,4 +70,10 @@ export const inventarioApi = {
     const response = await apiClient.post<CrearProductoResponse>('/api/inventario', data);
     return response.data;
   },
+
+  sincronizarTiendanube: async (): Promise<SincronizarCatalogoResponse> => {
+    const response = await apiClient.post<SincronizarCatalogoResponse>('/api/inventario/sincronizar-tiendanube');
+    return response.data;
+  },
 };
+
