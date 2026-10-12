@@ -323,12 +323,40 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Validación de dinero insuficiente.
   - Venta atómica con reseteo de ticket en Zustand e invalidación de caché en catálogo.
 
+**Paso 5: Arqueo y Cierre de Turno (Completado)**
+- Rama `feature/frontend-cierre-caja` integrada exitosamente a `develop`.
+- Endpoint de Resumen en Vivo (`GET /api/caja/turnos/{turnoId}/resumen`):
+  - Cálculo instantáneo de ventas discriminadas por método de pago (Efectivo, Tarjeta, Transferencia) y efectivo esperado en caja física (`SaldoInicial + TotalVentasEfectivo`).
+- Endpoint de Cierre de Turno (`POST /api/caja/turnos/cerrar` y alias `/api/caja/cerrar-turno`):
+  - Cierre formal del turno con asentamiento de `SaldoFinal` y registro de `Diferencia` de balance.
+- Modal de Cierre y Arqueo de Caja (`ModalCerrarTurno.tsx`):
+  - Métricas en vivo del turno con diseño Avant-Garde flat 1px.
+  - Input numérico de "Efectivo Real Contado en Caja Física" con botón de asistencia rápida "Copiar Esperado".
+  - Indicador dinámico en tiempo real del estado de arqueo:
+    - `CUADRE PERFECTO` ($0,00 - esmeralda)
+    - `SOBRANTE EN CAJA` (+ $XX - verde)
+    - `FALTANTE EN CAJA` (- $XX - rojo)
+  - Al confirmar con éxito, visualiza el comprobante de arqueo y ejecuta `logout()` automático para proteger la terminal y devolverla a la pantalla de login.
+- Botón de Cierre de Turno en Header (`PosHeader.tsx`):
+  - Acceso directo visible únicamente cuando existe un turno activo.
+
+> **ESTADO DE FASE 1 FRONTEND (POS TERMINAL MVP): 100% COMPLETADA**  
+> El ciclo de mostrador opera de punta a punta: Login -> Apertura de Caja -> Escaneo/Catálogo -> Venta Atómica con Vuelto -> Arqueo y Cierre -> Logout.
+
 ---
 
-### Próximos Pasos Disponibles
+### Fase 6: Integración Real con Tiendanube (Backend) - EN CURSO
 
-- **Opción A (Completar Frontend POS):** Arqueo y Cierre de Turno de Caja (`ModalCerrarTurno.tsx` / balance de arqueo en efectivo vs tarjeta, diferencias de caja y cierre formal del turno).
-- **Opción B (Fase 6 Backend):** Integración real con Tiendanube (Cliente HTTP con tokens de producción/sandbox y procesamiento activo de eventos en `OutboxMessageProcessor`).
+**Objetivo:** Conectar el `OutboxMessageProcessor` en segundo plano con la API REST real de Tiendanube v1 para sincronización de stock y órdenes, empleando arquitectura resiliente en .NET 8.
+
+**Paso 1: Cliente HTTP Resiliente para Tiendanube (`ITiendanubeApiClient`) (Pendiente)**
+- Rama `feature/backend-tiendanube-client` desde `develop`.
+- Configuración de `IHttpClientFactory` y `HttpClient` tipado (`TiendanubeApiClient`).
+- Políticas de Resiliencia con **Polly** (Retry con jitter exponencial para rate limits `429 Too Many Requests`, Circuit Breaker y Timeout).
+- Inyección dinámica y resolución de credenciales (`TiendanubeStoreId`, `TiendanubeAccessToken`, `User-Agent`) por Unidad de Negocio (`Hidden Sneakers`) y soporte para base Sandbox / Mock.
+- DTOs fuertemente tipados de Tiendanube (actualización de stock de variantes `/products/{product_id}/variants/{variant_id}`).
+- Reemplazo del logger simulado en `OutboxMessageProcessor` por el cliente HTTP real.
+
 
 
 
