@@ -519,6 +519,27 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - `TiendanubeApiClientTests`: respuesta 200 con headers correctos, 401/404 manejados como `Failure`, y modo mock seguro.
   - `TiendanubeSyncServiceTests`: creación de nuevos productos, actualización idempotente de productos existentes, verificación estricta de asignación a Dastik (nunca a Hidden Sneakers), y manejo de fallos de red.
 
+---
+
+### Configuración de Credenciales Reales de Tiendanube en Desarrollo - COMPLETADA
+
+**Objetivo:** Permitir que la Unidad de Negocio "Dastik" utilice las credenciales reales de Tiendanube (`TIENDANUBE_STORE_ID` y `TIENDANUBE_ACCESS_TOKEN`) configuradas en `.env`, manteniendo el aislamiento multi-tenant y la resiliencia en desarrollo.
+
+- **Rama:** `feature/backend-tiendanube-credentials` (creada a partir de `develop`).
+- **1. Normalizador de Tokens (`TiendanubeTokenHelper.cs`):**
+  - Soporte para enlaces de clave compartida (`https://shared.tiendanube.com/share/api-key/...`), resolviendo automáticamente el token hexadecimal subyacente.
+  - Limpieza de comillas y espacios en blanco accidentales.
+- **2. Seeder de Inicialización (`DataSeeder.cs`):**
+  - Lee variables de entorno `TIENDANUBE_STORE_ID` y `TIENDANUBE_ACCESS_TOKEN` a través de `IConfiguration` y `Environment.GetEnvironmentVariable`.
+  - Actualiza de forma idempotente la `UnidadNegocio` "Dastik" en la base SQLite de desarrollo (`dastik_dev.db`) con el Store ID real (`5686318`) y el access token limpio.
+  - Mantiene a "Hidden Sneakers" con `TieneTiendaNube = false` y sin credenciales asignadas.
+- **3. Resolución Dinámica en Servicios (`TiendanubeSyncService.cs` y `TiendanubeApiClient.cs`):**
+  - `TiendanubeSyncService`: lee prioritariamente de `UnidadNegocio` en base de datos con fallback automático a variables de entorno antes del modo mock.
+  - `TiendanubeApiClient`: normaliza automáticamente los tokens antes de inyectar el header `Authentication: bearer {token}`.
+- **4. Cobertura TDD (88 pruebas superadas, 0 fallos):**
+  - Pruebas unitarias de normalización con `TiendanubeTokenHelper`.
+  - Pruebas de integración comprobando que `TiendanubeSyncService` lee y suministra las credenciales de la entidad `UnidadNegocio` de Dastik.
+
 
 
 
