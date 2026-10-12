@@ -44,6 +44,40 @@ export const generarEan13 = (): string => {
   return `${codigo12}${digitoVerificador}`;
 };
 
+// Curvas de talles oficiales del negocio
+const CURVAS_DISPONIBLES = [
+  {
+    id: 'arriba',
+    label: 'Partes de arriba (Remeras, Buzos, Camperas)',
+    shortLabel: 'Arriba (XS-XL)',
+    talles: ['XS', 'S', 'M', 'L', 'XL'],
+  },
+  {
+    id: 'abajo',
+    label: 'Partes de abajo (Pantalones, Bermudas)',
+    shortLabel: 'Abajo (36-50)',
+    talles: ['36', '38', '40', '42', '44', '46', '48', '50'],
+  },
+  {
+    id: 'zapatillasBajos',
+    label: 'Zapatillas Brasil (Bajos 35-39)',
+    shortLabel: 'Zapatillas (35-39)',
+    talles: ['35', '36', '37', '38', '39'],
+  },
+  {
+    id: 'zapatillasAltos',
+    label: 'Zapatillas Brasil (Altos 39-43)',
+    shortLabel: 'Zapatillas (39-43)',
+    talles: ['39', '40', '41', '42', '43'],
+  },
+  {
+    id: 'accesorios',
+    label: 'Accesorios (Gorras, Medias, Cintos)',
+    shortLabel: 'Accesorios (TU)',
+    talles: ['TU'],
+  },
+];
+
 export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   isOpen,
   onClose,
@@ -81,11 +115,14 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   const [nuevoStock, setNuevoStock] = useState('5');
   const [nuevoCodigoBarras, setNuevoCodigoBarras] = useState('');
 
+  // Curva activa de talles
+  const [curvaActivaId, setCurvaActivaId] = useState<string>('arriba');
+
   // Estados de Carga y Errores
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  const curvaActiva = CURVAS_DISPONIBLES.find((c) => c.id === curvaActivaId) || CURVAS_DISPONIBLES[0];
 
   // Cálculos automáticos de Markup y Margen
   const costoNum = parseFloat(costoBase) || 0;
@@ -97,14 +134,14 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   const handleSelectUnidad = (id: number) => {
     setUnidadNegocioId(id);
     if (id === 1) {
-      // Dastik
       setMarcaId(1); // Dastik
       setCategoriaId(1); // Indumentaria
+      setCurvaActivaId('arriba');
       setProveedorId(1); // Proveedor Textil Dastik
     } else {
-      // Hidden Sneakers
       setMarcaId(2); // Nike
       setCategoriaId(2); // Calzado
+      setCurvaActivaId('zapatillasBajos');
       setProveedorId(2); // Proveedor Sneakerheads
     }
   };
@@ -148,43 +185,6 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     setVariantes((prev) => prev.filter((v) => v.tempId !== tempId));
   };
 
-  // Curvas de talles oficiales del negocio
-  const CURVAS_DISPONIBLES = [
-    {
-      id: 'arriba',
-      label: 'Partes de arriba (Remeras, Buzos, Camperas)',
-      shortLabel: 'Arriba (XS-XL)',
-      talles: ['XS', 'S', 'M', 'L', 'XL'],
-    },
-    {
-      id: 'abajo',
-      label: 'Partes de abajo (Pantalones, Bermudas)',
-      shortLabel: 'Abajo (36-50)',
-      talles: ['36', '38', '40', '42', '44', '46', '48', '50'],
-    },
-    {
-      id: 'zapatillasBajos',
-      label: 'Zapatillas Brasil (Bajos 35-39)',
-      shortLabel: 'Zapatillas (35-39)',
-      talles: ['35', '36', '37', '38', '39'],
-    },
-    {
-      id: 'zapatillasAltos',
-      label: 'Zapatillas Brasil (Altos 39-43)',
-      shortLabel: 'Zapatillas (39-43)',
-      talles: ['39', '40', '41', '42', '43'],
-    },
-    {
-      id: 'accesorios',
-      label: 'Accesorios (Gorras, Medias, Cintos)',
-      shortLabel: 'Accesorios (TU)',
-      talles: ['TU'],
-    },
-  ];
-
-  const [curvaActivaId, setCurvaActivaId] = useState<string>(categoriaId === 2 ? 'zapatillasBajos' : 'arriba');
-  const curvaActiva = CURVAS_DISPONIBLES.find((c) => c.id === curvaActivaId) || CURVAS_DISPONIBLES[0];
-
   // Agregar la curva completa de una sola vez
   const handleAgregarCurvaCompleta = (talles: string[]) => {
     const stock = parseInt(nuevoStock, 10) || 5;
@@ -199,6 +199,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     setVariantes((prev) => [...prev, ...nuevas]);
     setErrorMessage(null);
   };
+
+  if (!isOpen) return null;
 
   // Guardar producto
   const handleSubmit = async (e: React.FormEvent) => {
