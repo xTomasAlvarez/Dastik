@@ -709,7 +709,12 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **5. Frontend - Navegación y Rutas (`App.tsx`, `AdminLayout.tsx`):**
   - `/admin` renderiza directamente `DashboardPage`.
   - Sidebar actualizada con acceso directo a "Dashboard" y a "Inventario".
-- **6. Cobertura y Verificación:**
+- **6. Frontend - Scrollbar Global Avant-Garde (`index.css`):**
+  - Personalización integral de barras de desplazamiento (`::-webkit-scrollbar` y `scrollbar-width` / `scrollbar-color`).
+  - Dark Mode (por defecto): Track `#090909`, Thumb `#333333` (hover `#555555`), sin bordes redondeados (`border-radius: 0px`).
+  - Preparado para futuro Light Mode mediante variables CSS y clase `.light` / `[data-theme="light"]` (Track `#F4F4F5`, Thumb `#D4D4D8`).
+  - Heredado automáticamente en toda la app: ventanas, modales, drawers, Data Grids y lista de alertas de stock.
+- **7. Cobertura y Verificación:**
   - Backend: 96 pruebas superadas (0 fallos).
   - Frontend: Compilación limpia con 0 errores TypeScript (`npm run build`).
 

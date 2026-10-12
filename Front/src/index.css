@@ -17,10 +17,50 @@
   --color-gray-stone: #71717A;
 }
 
+/* Variables de Tema y Scrollbar Avant-Garde */
+:root {
+  --scrollbar-track: #090909;
+  --scrollbar-thumb: #333333;
+  --scrollbar-thumb-hover: #555555;
+}
+
+/* Preparado para futuro Light Mode */
+.light, [data-theme="light"] {
+  --scrollbar-track: #F4F4F5;
+  --scrollbar-thumb: #D4D4D8;
+  --scrollbar-thumb-hover: #A1A1AA;
+}
+
 /* Reglas Estrictas Avant-Garde / High-End Streetwear (Design_Base.md) */
 * {
   box-sizing: border-box;
   box-shadow: none !important;
+  /* Scrollbar estándar para Firefox y navegadores modernos */
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Scrollbar Personalizado para WebKit (Chrome, Edge, Safari, Opera) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 0px; /* 100% Avant-Garde Flat */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
 }
 
 html, body {
