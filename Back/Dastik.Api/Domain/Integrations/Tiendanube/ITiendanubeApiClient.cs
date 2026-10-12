@@ -12,6 +12,27 @@ public record TiendanubeVariantResponse(
     int Stock
 );
 
+public record TiendanubeProductVariantResponse(
+    long Id,
+    long ProductId,
+    string? Talle,
+    string? Color,
+    string? Barcode,
+    decimal? Precio,
+    decimal? Costo,
+    int? Stock
+);
+
+public record TiendanubeProductResponse(
+    long Id,
+    string Nombre,
+    string? Descripcion,
+    string? ImagenUrl,
+    decimal? Precio,
+    decimal? Costo,
+    List<TiendanubeProductVariantResponse> Variantes
+);
+
 public interface ITiendanubeApiClient
 {
     Task<Result<TiendanubeVariantResponse>> ActualizarStockVarianteAsync(
@@ -20,5 +41,10 @@ public interface ITiendanubeApiClient
         string productId,
         string variantId,
         int nuevoStock,
+        CancellationToken ct = default);
+
+    Task<Result<List<TiendanubeProductResponse>>> ObtenerProductosAsync(
+        string storeId,
+        string accessToken,
         CancellationToken ct = default);
 }

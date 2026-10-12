@@ -422,5 +422,19 @@ public class OutboxMessageProcessorTests : IDisposable
             return Task.FromResult(Dastik.Api.Common.Result<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeVariantResponse>.Success(
                 new Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeVariantResponse(v, p, nuevoStock)));
         }
+
+        public Task<Dastik.Api.Common.Result<List<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeProductResponse>>> ObtenerProductosAsync(
+            string storeId,
+            string accessToken,
+            CancellationToken ct = default)
+        {
+            if (SimularFallo)
+            {
+                return Task.FromResult(Dastik.Api.Common.Result<List<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeProductResponse>>.Failure("Error 500 simulado"));
+            }
+
+            return Task.FromResult(Dastik.Api.Common.Result<List<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeProductResponse>>.Success(
+                new List<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeProductResponse>()));
+        }
     }
 }
