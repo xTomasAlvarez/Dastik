@@ -10,7 +10,8 @@ import {
   Barcode,
   CloudArrowDown,
   CheckCircle,
-  X
+  X,
+  Image
 } from '@phosphor-icons/react';
 import { inventarioApi, type ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 import { Button } from '../../../components/ui/Button';
@@ -345,20 +346,48 @@ export const InventarioPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Columna 2: Producto */}
+                      {/* Columna 2: Producto (con miniatura Avant-Garde) */}
                       <td className="py-3.5 px-4 align-top">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-heading font-semibold text-[#FAFAFA] text-sm group-hover:text-white transition-fast">
-                            {producto.nombre}
-                          </span>
-                          {producto.descripcion && (
-                            <span className="text-[11px] text-[#71717A] line-clamp-1 font-sans">
-                              {producto.descripcion}
+                        <div className="flex items-start gap-3">
+                          {/* Miniatura Cuadrada Avant-Garde */}
+                          <div className="w-12 h-12 shrink-0 border border-[#333333] bg-[#111111] overflow-hidden flex items-center justify-center relative">
+                            {producto.imagenUrl ? (
+                              <img
+                                src={producto.imagenUrl}
+                                alt={producto.nombre}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  const fallback = e.currentTarget.parentElement?.querySelector('.img-fallback');
+                                  if (fallback) fallback.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className={`w-full h-full flex items-center justify-center text-[#71717A] bg-[#111111] ${
+                                producto.imagenUrl ? 'hidden img-fallback' : ''
+                              }`}
+                              title="Sin imagen"
+                            >
+                              <Image size={20} weight="light" />
+                            </div>
+                          </div>
+
+                          {/* Info del Producto */}
+                          <div className="flex flex-col gap-1 min-w-0">
+                            <span className="font-heading font-semibold text-[#FAFAFA] text-sm group-hover:text-white transition-fast truncate">
+                              {producto.nombre}
                             </span>
-                          )}
-                          <span className="text-[9px] uppercase tracking-widest text-[#555555] font-mono mt-0.5">
-                            CATEGORÍA: {producto.categoria}
-                          </span>
+                            {producto.descripcion && (
+                              <span className="text-[11px] text-[#71717A] line-clamp-1 font-sans">
+                                {producto.descripcion}
+                              </span>
+                            )}
+                            <span className="text-[9px] uppercase tracking-widest text-[#555555] font-mono mt-0.5">
+                              CATEGORÍA: {producto.categoria}
+                            </span>
+                          </div>
                         </div>
                       </td>
 
