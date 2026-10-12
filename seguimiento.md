@@ -393,3 +393,24 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
   - Rutas anidadas protegidas para el Back-Office.
   - Acceso directo bidireccional desde `PosHeader.tsx` ("ADMIN").
 
+---
+
+### Configuración de Credenciales de Testing y Usuario Admin (`tomiDev`)
+
+- **Usuario Administrador de Desarrollo (`tomiDev`):**
+  - **Email:** `tomidev@dastik.com` (formato con `@` compatible con HTML5 e input `type="email"`, y validación `LoginCommandValidator`).
+  - **Contraseña:** `Dastik2026!`
+  - **Rol:** `Admin` (con acceso directo tanto al Back-Office `/admin` como al Terminal POS).
+  - **DebeCambiarPassword:** `false` (no requiere reseteo forzoso de clave).
+- **Sembrado Dual (Producción/Dev y Sandbox):**
+  - Sincronizado en `DataSeeder.cs` y `SandboxDataSeeder.cs`.
+  - Corregido el orden de ejecución en `SandboxDataSeeder.cs` para garantizar que los usuarios del sistema se siembren siempre, incluso cuando ya existían productos previamente.
+  - Ambas bases SQLite locales (`dastik_dev.db` y `dastik_sandbox_dev.db`) actualizadas con el usuario `tomidev@dastik.com`.
+- **Experiencia de Usuario en Frontend (`LoginPage.tsx` y `LoginForm.tsx`):**
+  - Botones de autollenado de un clic para acceso inmediato en `LoginPage.tsx`:
+    - Admin `tomidev@dastik.com` (`Dastik2026!`).
+    - Admin Fundador `admin@dastik.com` (`Dastik2026!`).
+    - Cajero `cajero.sandbox@dastik.com` (`Dastik2026!`).
+  - Placeholder del formulario actualizado a `tomidev@dastik.com`.
+
+

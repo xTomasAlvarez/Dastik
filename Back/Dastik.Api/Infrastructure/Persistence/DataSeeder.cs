@@ -72,6 +72,8 @@ public static class DataSeeder
         }
         else
         {
+            tomiDevUser.Nombre = "tomiDev";
+            tomiDevUser.Email = "tomidev@dastik.com";
             tomiDevUser.PasswordHash = hasher.Hash(AdminDefaultPassword);
             tomiDevUser.Rol = RolUsuario.Admin;
             tomiDevUser.DebeCambiarPassword = false;

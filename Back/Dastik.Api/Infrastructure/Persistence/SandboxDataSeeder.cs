@@ -62,12 +62,6 @@ public static class SandboxDataSeeder
             return;
         }
 
-        // Si ya existen productos en la base de datos Sandbox, no duplicar
-        if (await context.Productos.AnyAsync())
-        {
-            return;
-        }
-
         eanGenerator ??= new GeneradorEan13();
         passwordHasher ??= new PasswordHasher();
 
@@ -118,6 +112,8 @@ public static class SandboxDataSeeder
         }
         else
         {
+            tomiDevSandbox.Nombre = "tomiDev";
+            tomiDevSandbox.Email = "tomidev@dastik.com";
             tomiDevSandbox.PasswordHash = passwordHasher.Hash(DataSeeder.AdminDefaultPassword);
             tomiDevSandbox.Rol = RolUsuario.Admin;
             tomiDevSandbox.DebeCambiarPassword = false;
@@ -211,6 +207,12 @@ public static class SandboxDataSeeder
         }
 
         await context.SaveChangesAsync();
+
+        // Si ya existen productos en la base de datos Sandbox, no duplicar el catálogo de prueba
+        if (await context.Productos.AnyAsync())
+        {
+            return;
+        }
 
         // 6. Productos y Variantes - Unidad "Dastik"
         // Producto 1: Remera Oversize Básica (Talles XS a XL)
