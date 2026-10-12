@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Dastik.Api.Domain.Integrations.Tiendanube;
 using Dastik.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -99,12 +100,50 @@ public class OutboxMessageProcessor : BackgroundService
                     }
                 }
 
-                // En Fase 6 se conectará al cliente HTTP real de Tiendanube
+                if (varianteId > 0)
+                {
+                    var variante = await context.Variantes
+                        .Include(v => v.Producto)
+                            .ThenInclude(p => p.UnidadNegocio)
+                        .FirstOrDefaultAsync(v => v.Id == varianteId, cancellationToken);
+
+                    if (variante != null && variante.Producto?.UnidadNegocio?.TieneTiendaNube == true)
+                    {
+                        var apiClient = scope.ServiceProvider.GetService<ITiendanubeApiClient>();
+                        if (apiClient != null &&
+                            !string.IsNullOrWhiteSpace(variante.Producto.TiendanubeProductId) &&
+                            !string.IsNullOrWhiteSpace(variante.TiendanubeVariantId))
+                        {
+                            var storeId = variante.Producto.UnidadNegocio.TiendanubeStoreId ?? string.Empty;
+                            var token = variante.Producto.UnidadNegocio.TiendanubeAccessToken ?? string.Empty;
+
+                            var resultado = await apiClient.ActualizarStockVarianteAsync(
+                                storeId,
+                                token,
+                                variante.Producto.TiendanubeProductId,
+                                variante.TiendanubeVariantId,
+                                variante.StockFisico,
+                                cancellationToken);
+
+                            if (!resultado.IsSuccess)
+                            {
+                                message.Intentos++;
+                                message.Error = resultado.Error;
+                                _logger.LogWarning(
+                                    "Fallo de sincronización Tiendanube para OutboxMessage {MessageId}, Variante {VarianteId}: {Error}",
+                                    message.Id, varianteId, resultado.Error);
+                                continue;
+                            }
+                        }
+                    }
+                }
+
                 _logger.LogInformation(
-                    "Simulando sincronización de stock en Tiendanube para VarianteId {VarianteId}...",
-                    varianteId);
+                    "Sincronización de OutboxMessage {MessageId} procesada exitosamente (VarianteId {VarianteId}).",
+                    message.Id, varianteId);
 
                 message.FechaProcesadoUtc = DateTime.UtcNow;
+                message.Error = null;
             }
             catch (Exception ex)
             {

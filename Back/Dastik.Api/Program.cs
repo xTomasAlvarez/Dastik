@@ -1,10 +1,12 @@
 using System.Text;
 using Dastik.Api.Domain.Entities;
+using Dastik.Api.Domain.Integrations.Tiendanube;
 using Dastik.Api.Domain.Services;
 using Dastik.Api.Features.Auth;
 using Dastik.Api.Features.Caja;
 using Dastik.Api.Features.Inventario.CrearProducto;
 using Dastik.Api.Infrastructure.BackgroundServices;
+using Dastik.Api.Infrastructure.Integrations.Tiendanube;
 using Dastik.Api.Infrastructure.Persistence;
 using Dastik.Api.Infrastructure.Security;
 using Dastik.Api.Infrastructure.Tenancy;
@@ -61,6 +63,14 @@ builder.Services.AddSingleton<GeneradorEan13>();
 builder.Services.AddTransient<ICalculadoraComisiones, CalculadoraComisiones>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<IJwtProvider, JwtProvider>();
+
+// Cliente HTTP Tipado para Tiendanube con Políticas de Resiliencia (Polly)
+builder.Services.AddHttpClient<ITiendanubeApiClient, TiendanubeApiClient>(client =>
+{
+    client.BaseAddress = new Uri("https://api.tiendanube.com/v1/");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("DastikERP/1.0 (soporte@dastik.com)");
+})
+.AddStandardResilienceHandler();
 
 // Background Worker para Transactional Outbox Pattern
 builder.Services.AddHostedService<OutboxMessageProcessor>();

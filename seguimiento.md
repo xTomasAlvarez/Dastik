@@ -345,28 +345,23 @@ Vamos a ejecutar las siguientes tareas estrictamente en este orden. **El Paso 1 
 
 ---
 
-### Fase 6: Integración Real con Tiendanube (Backend) - EN CURSO
+### Fase 6: Integración Real con Tiendanube (Backend) - COMPLETADA
 
-**Objetivo:** Conectar el `OutboxMessageProcessor` en segundo plano con la API REST real de Tiendanube v1 para sincronización de stock y órdenes, empleando arquitectura resiliente en .NET 8.
+**Objetivo:** Conectar el `OutboxMessageProcessor` en segundo plano con la API REST real de Tiendanube v1 para sincronización de stock y órdenes, empleando arquitectura resiliente en .NET 8 con TDD estricto.
 
-**Paso 1: Cliente HTTP Resiliente para Tiendanube (`ITiendanubeApiClient`) (Pendiente)**
+**Paso 1: Cliente HTTP Resiliente para Tiendanube (`ITiendanubeApiClient`) (Completado)**
 - Rama `feature/backend-tiendanube-client` desde `develop`.
-- Configuración de `IHttpClientFactory` y `HttpClient` tipado (`TiendanubeApiClient`).
-- Políticas de Resiliencia con **Polly** (Retry con jitter exponencial para rate limits `429 Too Many Requests`, Circuit Breaker y Timeout).
-- Inyección dinámica y resolución de credenciales (`TiendanubeStoreId`, `TiendanubeAccessToken`, `User-Agent`) por Unidad de Negocio (`Hidden Sneakers`) y soporte para base Sandbox / Mock.
-- DTOs fuertemente tipados de Tiendanube (actualización de stock de variantes `/products/{product_id}/variants/{variant_id}`).
-- Reemplazo del logger simulado en `OutboxMessageProcessor` por el cliente HTTP real.
-
-
-
-
-
-
-
-
-
-
-
-
-
+- Contrato de dominio e integración: `ITiendanubeApiClient` con DTOs de respuesta y modelo `Result<T>`.
+- Cliente HTTP tipado: `TiendanubeApiClient` consumiendo endpoint PUT `{storeId}/products/{productId}/variants/{variantId}` con header `Authentication: bearer {token}`.
+- Guardia de seguridad Sandbox/Mock: protege los inventarios de producción verificando tiendas de prueba/mock para evitar cualquier invocación externa durante tests o desarrollo local.
+- Resiliencia estándar con **Polly** (`Microsoft.Extensions.Http.Resilience`): configuración de `AddStandardResilienceHandler()` sobre `AddHttpClient<ITiendanubeApiClient, TiendanubeApiClient>()` con User-Agent personalizado.
+- `OutboxMessageProcessor`:
+  - Deserialización de eventos de decremento de stock en el POS (`StockReducidoEnPOS`).
+  - Navegación y verificación de la `UnidadNegocio` (`TieneTiendaNube == true`).
+  - Resolución dinámica de credenciales por tenant/unidad (`TiendanubeStoreId`, `TiendanubeAccessToken`).
+  - Manejo de fallos con incremento de `Intentos`, registro de error y persistencia en base de datos para reintento automático.
+  - Omitido seguro para unidades sin tienda en la nube (marcado automático como procesado).
+- **Cobertura TDD Estricta (72 pruebas superadas, 0 fallos):**
+  - Pruebas unitarias de `TiendanubeApiClientTests` (código 200 con headers correctos, 404 manejado como Failure, modo mock seguro).
+  - Pruebas de integración de `OutboxMessageProcessorTests` (flujo exitoso para Hidden Sneakers, reintentos/errores ante fallo de API externa, bypass para productos solo físicos).
 
