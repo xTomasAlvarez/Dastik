@@ -72,7 +72,7 @@ export const ModalAbrirTurno: React.FC<ModalAbrirTurnoProps> = ({ isOpen, onTurn
             FONDO DE CAJA INICIAL
           </h2>
           <p className="text-xs font-sans text-[#71717A] mt-1 leading-relaxed">
-            Ingresa el efectivo inicial disponible en gaveta para dar cambio antes de operar la terminal de ventas.
+            Ingresa el efectivo inicial disponible en caja física para dar cambio antes de operar la terminal de ventas.
           </p>
         </div>
 
