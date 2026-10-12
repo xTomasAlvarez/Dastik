@@ -164,5 +164,68 @@ public static class DataSeeder
             );
             await context.SaveChangesAsync();
         }
+
+        // Sembrar Turnos Históricos Cerrados de Demostración si no existen
+        if (!await context.Turnos.AnyAsync(t => t.Estado == EstadoTurno.Cerrado))
+        {
+            var admin = await context.Usuarios.FirstOrDefaultAsync(u => u.Rol == RolUsuario.Admin);
+            var cajero = await context.Usuarios.FirstOrDefaultAsync(u => u.Rol == RolUsuario.Empleado) ?? admin;
+
+            if (admin != null)
+            {
+                var hoy = DateTime.UtcNow;
+
+                // 1. Turno de Ayer Mañana (Caja Cuadrada, Diferencia $0)
+                var turno1 = new Turno
+                {
+                    EmpleadoId = admin.Id,
+                    FechaApertura = hoy.AddDays(-1).Date.AddHours(9),
+                    FechaCierre = hoy.AddDays(-1).Date.AddHours(14),
+                    SaldoInicial = 15000m,
+                    SaldoFinal = 46500m,
+                    GastosTurno = 3500m,
+                    Estado = EstadoTurno.Cerrado
+                };
+                var ord1 = new Orden { Turno = turno1, Fecha = turno1.FechaApertura.AddHours(1), Total = 35000m, Estado = EstadoOrden.Pagada };
+                ord1.Pagos.Add(new Pago { Orden = ord1, MetodoPago = MetodoPago.Efectivo, Monto = 35000m });
+                var ord2 = new Orden { Turno = turno1, Fecha = turno1.FechaApertura.AddHours(3), Total = 42000m, Estado = EstadoOrden.Pagada };
+                ord2.Pagos.Add(new Pago { Orden = ord2, MetodoPago = MetodoPago.Transferencia, Monto = 42000m });
+
+                // 2. Turno de Ayer Tarde (Faltante de $1.000)
+                var turno2 = new Turno
+                {
+                    EmpleadoId = cajero?.Id ?? admin.Id,
+                    FechaApertura = hoy.AddDays(-1).Date.AddHours(15),
+                    FechaCierre = hoy.AddDays(-1).Date.AddHours(21),
+                    SaldoInicial = 20000m,
+                    SaldoFinal = 64000m,
+                    GastosTurno = 5000m,
+                    Estado = EstadoTurno.Cerrado
+                };
+                var ord3 = new Orden { Turno = turno2, Fecha = turno2.FechaApertura.AddHours(2), Total = 80000m, Estado = EstadoOrden.Pagada };
+                ord3.Pagos.Add(new Pago { Orden = ord3, MetodoPago = MetodoPago.Efectivo, Monto = 50000m });
+                ord3.Pagos.Add(new Pago { Orden = ord3, MetodoPago = MetodoPago.Debito, Monto = 30000m });
+                var ord4 = new Orden { Turno = turno2, Fecha = turno2.FechaApertura.AddHours(4), Total = 65000m, Estado = EstadoOrden.Pagada };
+                ord4.Pagos.Add(new Pago { Orden = ord4, MetodoPago = MetodoPago.Credito, Monto = 65000m });
+
+                // 3. Turno de Hace 2 Días Mañana (Sobrante de $500)
+                var turno3 = new Turno
+                {
+                    EmpleadoId = admin.Id,
+                    FechaApertura = hoy.AddDays(-2).Date.AddHours(9),
+                    FechaCierre = hoy.AddDays(-2).Date.AddHours(14),
+                    SaldoInicial = 10000m,
+                    SaldoFinal = 35500m,
+                    GastosTurno = 0m,
+                    Estado = EstadoTurno.Cerrado
+                };
+                var ord5 = new Orden { Turno = turno3, Fecha = turno3.FechaApertura.AddHours(2), Total = 25000m, Estado = EstadoOrden.Pagada };
+                ord5.Pagos.Add(new Pago { Orden = ord5, MetodoPago = MetodoPago.Efectivo, Monto = 25000m });
+
+                context.Turnos.AddRange(turno1, turno2, turno3);
+                context.Ordenes.AddRange(ord1, ord2, ord3, ord4, ord5);
+                await context.SaveChangesAsync();
+            }
+        }
     }
 }

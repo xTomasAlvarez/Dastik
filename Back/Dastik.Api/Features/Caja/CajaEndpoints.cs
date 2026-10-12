@@ -214,5 +214,94 @@ public static class CajaEndpoints
             .WithName("CerrarTurnoAlias")
             .WithSummary("Alias directo para cerrar turno de caja.")
             .WithOpenApi();
+
+        // 5. Historial de Arqueos de Caja (Turnos Cerrados)
+        group.MapGet("/arqueos", async (
+            AppDbContext context,
+            CancellationToken ct) =>
+        {
+            var turnosCerrados = await context.Turnos
+                .AsNoTracking()
+                .Where(t => t.Estado == EstadoTurno.Cerrado)
+                .Include(t => t.Ordenes)
+                    .ThenInclude(o => o.Pagos)
+                .OrderByDescending(t => t.FechaCierre ?? t.FechaApertura)
+                .ToListAsync(ct);
+
+            var usuariosDict = await context.Usuarios
+                .AsNoTracking()
+                .ToDictionaryAsync(u => u.Id, u => u.Nombre, ct);
+
+            var listaArqueos = turnosCerrados.Select(t =>
+            {
+                var nombreOperador = usuariosDict.TryGetValue(t.EmpleadoId, out var nom) ? nom : "Operador";
+                var horaLocal = t.FechaApertura.AddHours(-3).Hour;
+                var nombreTurno = horaLocal < 14 ? "Turno Mañana" : "Turno Tarde";
+
+                var ordenesPagadas = t.Ordenes.Where(o => o.Estado == EstadoOrden.Pagada).ToList();
+                var pagos = ordenesPagadas.SelectMany(o => o.Pagos).ToList();
+
+                decimal totalEfectivo = pagos.Where(p => p.MetodoPago == MetodoPago.Efectivo).Sum(p => p.Monto);
+                decimal totalTransferencia = pagos.Where(p => p.MetodoPago == MetodoPago.Transferencia).Sum(p => p.Monto);
+                decimal totalDebito = pagos.Where(p => p.MetodoPago == MetodoPago.Debito).Sum(p => p.Monto);
+                decimal totalCredito = pagos.Where(p => p.MetodoPago == MetodoPago.Credito || p.MetodoPago == MetodoPago.Tarjeta).Sum(p => p.Monto);
+                decimal totalVentas = totalEfectivo + totalTransferencia + totalDebito + totalCredito;
+
+                decimal gastosTurno = t.GastosTurno;
+                decimal saldoInicial = t.SaldoInicial;
+                decimal efectivoEsperado = saldoInicial + totalEfectivo - gastosTurno;
+                decimal efectivoRealDeclarado = t.SaldoFinal ?? 0m;
+                decimal diferencia = efectivoRealDeclarado - efectivoEsperado;
+
+                string estadoDiferencia = diferencia == 0 ? "CUADRADA" : (diferencia < 0 ? "FALTANTE" : "SOBRANTE");
+
+                return new ArqueoResumenResponse(
+                    TurnoId: t.Id,
+                    EmpleadoId: t.EmpleadoId,
+                    Operador: nombreOperador,
+                    Turno: nombreTurno,
+                    FechaApertura: t.FechaApertura,
+                    FechaCierre: t.FechaCierre,
+                    SaldoInicial: saldoInicial,
+                    TotalEfectivo: totalEfectivo,
+                    TotalTransferencia: totalTransferencia,
+                    TotalDebito: totalDebito,
+                    TotalCredito: totalCredito,
+                    TotalVentas: totalVentas,
+                    GastosTurno: gastosTurno,
+                    EfectivoEsperado: efectivoEsperado,
+                    EfectivoRealDeclarado: efectivoRealDeclarado,
+                    Diferencia: diferencia,
+                    CantidadOrdenes: ordenesPagadas.Count,
+                    EstadoDiferencia: estadoDiferencia
+                );
+            }).ToList();
+
+            return Results.Ok(listaArqueos);
+        })
+        .WithName("ListarHistorialArqueos")
+        .WithSummary("Devuelve el historial de turnos cerrados con sus desgloses de ingresos por método, gastos y diferencias de caja.")
+        .WithOpenApi();
     }
 }
+
+public record ArqueoResumenResponse(
+    int TurnoId,
+    int EmpleadoId,
+    string Operador,
+    string Turno,
+    DateTime FechaApertura,
+    DateTime? FechaCierre,
+    decimal SaldoInicial,
+    decimal TotalEfectivo,
+    decimal TotalTransferencia,
+    decimal TotalDebito,
+    decimal TotalCredito,
+    decimal TotalVentas,
+    decimal GastosTurno,
+    decimal EfectivoEsperado,
+    decimal EfectivoRealDeclarado,
+    decimal Diferencia,
+    int CantidadOrdenes,
+    string EstadoDiferencia
+);

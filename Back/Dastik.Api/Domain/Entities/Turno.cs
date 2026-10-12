@@ -8,6 +8,7 @@ public class Turno
     public DateTime? FechaCierre { get; set; }
     public decimal SaldoInicial { get; set; }
     public decimal? SaldoFinal { get; set; }
+    public decimal GastosTurno { get; set; } = 0m;
     public EstadoTurno Estado { get; set; } = EstadoTurno.Abierto;
 
     // Propiedades de navegación

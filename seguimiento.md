@@ -718,5 +718,42 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Backend: 96 pruebas superadas (0 fallos).
   - Frontend: Compilación limpia con 0 errores TypeScript (`npm run build`).
 
+---
+
+### [feature/admin-arqueos] Módulo de Control de Arqueos y Gastos en el Panel de Administración
+- **1. Backend - Entidad y Persistencia (`Turno.cs`, `TurnoConfiguration.cs`, `CerrarTurnoCommandHandler.cs`):**
+  - Incorporación del campo `GastosTurno` (`decimal(18,2)`) en la entidad `Turno` para registrar y asentar salidas y retiros en efectivo de la gaveta (Uber, almuerzos, insumos).
+  - Migración tolerante en desarrollo (`Program.cs`) con fallback SQLite para agregar la columna en bases existentes sin resetear datos.
+  - Actualización del handler de cierre de turno para persistir y auditar los gastos del turno.
+- **2. Backend - Endpoint de Historial de Arqueos (`CajaEndpoints.cs`):**
+  - `GET /api/caja/arqueos`:
+    - Consulta optimizada de turnos cerrados ordenados descendentemente por fecha de cierre (`FechaCierre ?? FechaApertura`).
+    - DTO de respuesta `ArqueoResumenResponse`:
+      - Identificadores y operador: `TurnoId`, `EmpleadoId`, `Operador`, `Turno` (determinado como "Turno Mañana" o "Turno Tarde" según el huso local).
+      - Ingresos desglosados por método: `TotalEfectivo`, `TotalTransferencia` (Alias), `TotalDebito`, `TotalCredito` (incluye Posnet) y `TotalVentas`.
+      - Retiros y gastos del turno: `GastosTurno`.
+      - Métricas de balance y conciliación: `SaldoInicial`, `EfectivoEsperado` (`SaldoInicial + TotalEfectivo - GastosTurno`), `EfectivoRealDeclarado` (`SaldoFinal`), `Diferencia` (`EfectivoRealDeclarado - EfectivoEsperado`), `CantidadOrdenes` y `EstadoDiferencia` (`CUADRADA`, `FALTANTE`, `SOBRANTE`).
+- **3. Backend - Seeding y Datos de Prueba (`DataSeeder.cs`, `CajaHandlersTests.cs`):**
+  - Generación de turnos históricos cerrados de demostración con diferentes operadores, horarios, métodos de pago, gastos y balances (cuadrada, faltante y sobrante).
+  - Pruebas unitarias ampliadas en `CajaHandlersTests.cs` para validar la persistencia de gastos y el balance de arqueo exacto. Suite ampliada a 97 pruebas en verde.
+- **4. Frontend - Servicio API (`arqueosApi.ts`):**
+  - Cliente Axios tipado `arqueosApi.obtenerArqueos()` consumiendo `GET /api/caja/arqueos`.
+- **5. Frontend - Vista de Auditoría y Arqueos (`ArqueosPage.tsx`):**
+  - **Diseño Avant-Garde Master-Detail / Accordion:**
+    - Fila resumida con identificador de estado, fecha/hora, horario de turno, operador, volumen de ventas, efectivo declarado y badge resumido.
+    - Desglose financiero expandible en 3 columnas estilizadas:
+      - **Columna Verde (INGRESOS):** Separación visual de cobros en Efectivo en Mostrador, Transferencias / Alias bancarios, Tarjetas de Débito y Crédito / Posnet, con total facturado.
+      - **Columna Roja/Naranja (SALIDAS):** Detalle de retiros autorizados y gastos operativos de caja (Uber, almuerzos, insumos).
+      - **Recuadro Destacado (CONCILIACIÓN & DIFERENCIA):** Fórmula matemática paso a paso (`Saldo Inicial + Ventas Efectivo - Gastos = Efectivo Esperado` vs `Efectivo Declarado`).
+      - **Badge Principal de Auditoría:** Verde si `$0.00` (Caja Cuadrada), Rojo si `< $0` (Faltante), Amarillo si `> $0` (Sobrante).
+    - Métricas KPI superiores: Turnos Auditados, Cajas Cuadradas (% de efectividad), Desvíos / Faltantes acumulados y Total Gastos de Caja.
+    - Filtros instantáneos por estado (`TODOS`, `CUADRADA`, `FALTANTE`, `SOBRANTE`), horario (`MAÑANA`, `TARDE`) y buscador por operador o ID.
+- **6. Frontend - Integración y Rutas (`App.tsx`, `AdminLayout.tsx`):**
+  - Enlazado de la ruta `/admin/arqueos` montando `ArqueosPage`.
+  - Icono `Receipt` activo en la barra lateral del Back-Office.
+- **7. Verificación de Calidad:**
+  - Backend: 97/97 tests completados con éxito (`dotnet test`).
+  - Frontend: 0 errores TypeScript y bundle de producción generado con éxito (`npm run build`).
+
 
 

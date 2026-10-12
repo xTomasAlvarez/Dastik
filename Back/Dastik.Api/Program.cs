@@ -178,6 +178,14 @@ try
         if (db.Database.IsSqlite())
         {
             await db.Database.EnsureCreatedAsync();
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Turnos\" ADD COLUMN \"GastosTurno\" TEXT DEFAULT '0' NOT NULL;");
+            }
+            catch
+            {
+                // La columna ya existe o recién fue creada
+            }
         }
     }
     await DataSeeder.SeedInitialDataAsync(app.Services);

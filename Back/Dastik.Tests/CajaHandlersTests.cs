@@ -601,6 +601,66 @@ public class CajaHandlersTests : IDisposable
         resultFaltante.Value!.Diferencia.Should().Be(-2_000.00m);
     }
 
+    [Fact]
+    public async Task CerrarTurno_ConGastosTurno_DeberiaPersistirGastosYCalcularDiferenciaCorrectamente()
+    {
+        // Arrange
+        var turno = new Turno
+        {
+            EmpleadoId = 1,
+            FechaApertura = DateTime.UtcNow.AddHours(-4),
+            SaldoInicial = 10_000.00m,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turno);
+
+        // Ventas: 30.000 en Efectivo, 15.000 en Transferencia, 20.000 en Débito
+        var ordenEfectivo = new Orden
+        {
+            Turno = turno,
+            Fecha = DateTime.UtcNow.AddHours(-2),
+            Total = 30_000.00m,
+            Estado = EstadoOrden.Pagada,
+            Pagos = new List<Pago> { new() { MetodoPago = MetodoPago.Efectivo, Monto = 30_000.00m } }
+        };
+        var ordenTransferencia = new Orden
+        {
+            Turno = turno,
+            Fecha = DateTime.UtcNow.AddHours(-1),
+            Total = 15_000.00m,
+            Estado = EstadoOrden.Pagada,
+            Pagos = new List<Pago> { new() { MetodoPago = MetodoPago.Transferencia, Monto = 15_000.00m } }
+        };
+        _context.Ordenes.AddRange(ordenEfectivo, ordenTransferencia);
+        await _context.SaveChangesAsync();
+
+        var handler = new CerrarTurnoCommandHandler(_context);
+
+        // Gastos: 5.000 (Uber / Almuerzo)
+        // Saldo Inicial = 10.000, Efectivo = 30.000, Gastos = 5.000 -> Efectivo Esperado en gaveta = 35.000
+        // Cajero declara en gaveta: 35.000 (Caja Cuadrada)
+        var command = new CerrarTurnoCommand(
+            TurnoId: turno.Id,
+            SaldoFinal: 35_000.00m,
+            GastosTurno: 5_000.00m
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.SaldoFinal.Should().Be(35_000.00m);
+        result.Value.Diferencia.Should().Be(0m);
+
+        var turnoEnBd = await _context.Turnos.FindAsync(turno.Id);
+        turnoEnBd.Should().NotBeNull();
+        turnoEnBd!.GastosTurno.Should().Be(5_000.00m);
+        turnoEnBd.SaldoFinal.Should().Be(35_000.00m);
+        turnoEnBd.Estado.Should().Be(EstadoTurno.Cerrado);
+    }
+
     private (UnidadNegocio, Categoria, Marca, Proveedor) CrearDependenciasCatalogo()
     {
         var unidad = new UnidadNegocio { Nombre = "Dastik" };

@@ -48,10 +48,11 @@ public class CerrarTurnoCommandHandler : IRequestHandler<CerrarTurnoCommand, Res
         // 3. Comparar con el SaldoFinal (arqueo reportado por el cajero) y calcular la Diferencia
         decimal diferencia = request.SaldoFinal - saldoEsperado;
 
-        // 4. Establecer FechaCierre, SaldoFinal y Estado = Cerrado
+        // 4. Establecer FechaCierre, SaldoFinal, GastosTurno y Estado = Cerrado
         var fechaCierre = DateTime.UtcNow;
         turno.FechaCierre = fechaCierre;
         turno.SaldoFinal = request.SaldoFinal;
+        turno.GastosTurno = request.GastosTurno;
         turno.Estado = EstadoTurno.Cerrado;
 
         // 5. Guardar en PostgreSQL

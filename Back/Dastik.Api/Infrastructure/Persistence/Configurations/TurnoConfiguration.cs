@@ -18,6 +18,7 @@ public class TurnoConfiguration : IEntityTypeConfiguration<Turno>
         // Tipos de datos financieros estrictos decimal(18,2)
         builder.Property(t => t.SaldoInicial).HasColumnType("decimal(18,2)").IsRequired();
         builder.Property(t => t.SaldoFinal).HasColumnType("decimal(18,2)");
+        builder.Property(t => t.GastosTurno).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
 
         builder.Property(t => t.Estado).HasConversion<int>().IsRequired();
 
