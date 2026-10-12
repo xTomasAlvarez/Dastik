@@ -209,7 +209,7 @@ public class TiendanubeApiClientTests
 
         handler.LastRequest.Should().NotBeNull();
         handler.LastRequest!.Method.Should().Be(HttpMethod.Get);
-        handler.LastRequest.RequestUri!.ToString().Should().Be($"https://api.tiendanube.com/v1/{storeId}/products?per_page=200");
+        handler.LastRequest.RequestUri!.ToString().Should().Be($"https://api.tiendanube.com/v1/{storeId}/products?per_page=200&page=1");
         handler.LastRequest.Headers.GetValues("Authentication").Should().Contain($"bearer {accessToken}");
     }
 
@@ -309,5 +309,74 @@ public class TiendanubeApiClientTests
         result.IsSuccess.Should().BeTrue();
         requestCapturado.Should().NotBeNull();
         requestCapturado!.Headers.GetValues("Authentication").Should().Contain("bearer b0b1c5f8e482ed372168badfe114d2cf97254bd5");
+    }
+
+    [Fact]
+    public async Task ObtenerProductosAsync_CuandoHayMultiplesPaginas_DebeAcumularTodosLosProductos()
+    {
+        // Arrange
+        const string storeId = "5686318";
+        const string accessToken = "token123";
+
+        // Simular página 1 con 200 productos y página 2 con 5 productos
+        var prodsPagina1 = Enumerable.Range(1, 200).Select(i => new
+        {
+            id = (long)i,
+            name = new { es = $"Producto {i}" },
+            variants = new[] { new { id = (long)(i * 10), product_id = (long)i, price = "1000.00", stock = 1 } }
+        }).ToList();
+
+        var prodsPagina2 = Enumerable.Range(201, 5).Select(i => new
+        {
+            id = (long)i,
+            name = new { es = $"Producto {i}" },
+            variants = new[] { new { id = (long)(i * 10), product_id = (long)i, price = "1000.00", stock = 1 } }
+        }).ToList();
+
+        var jsonPagina1 = JsonSerializer.Serialize(prodsPagina1);
+        var jsonPagina2 = JsonSerializer.Serialize(prodsPagina2);
+
+        var paginasLlamadas = new List<string>();
+
+        var handler = new MockHttpMessageHandler(req =>
+        {
+            paginasLlamadas.Add(req.RequestUri!.ToString());
+            if (req.RequestUri!.ToString().Contains("page=1"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(jsonPagina1, System.Text.Encoding.UTF8, "application/json")
+                };
+            }
+            if (req.RequestUri!.ToString().Contains("page=2"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(jsonPagina2, System.Text.Encoding.UTF8, "application/json")
+                };
+            }
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("[]", System.Text.Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.tiendanube.com/v1/")
+        };
+
+        var client = new TiendanubeApiClient(httpClient, NullLogger<TiendanubeApiClient>.Instance);
+
+        // Act
+        var result = await client.ObtenerProductosAsync(storeId, accessToken);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Should().HaveCount(205);
+        paginasLlamadas.Should().HaveCount(2);
+        paginasLlamadas[0].Should().Contain("page=1");
+        paginasLlamadas[1].Should().Contain("page=2");
     }
 }

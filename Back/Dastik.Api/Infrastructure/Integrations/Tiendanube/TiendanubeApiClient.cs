@@ -102,38 +102,61 @@ public class TiendanubeApiClient : ITiendanubeApiClient
             return Result<List<TiendanubeProductResponse>>.Success(GenerarCatalogoMock());
         }
 
-        // 2. Request REST: GET https://api.tiendanube.com/v1/{store_id}/products?per_page=200
-        var endpointUrl = $"{storeId}/products?per_page=200";
-        using var request = new HttpRequestMessage(HttpMethod.Get, endpointUrl);
-
+        // 2. Request REST con bucle de paginación acumulativa: GET {storeId}/products?per_page=200&page={page}
+        var todosLosProductos = new List<TiendanubeProductResponse>();
         var tokenLimpio = TiendanubeTokenHelper.NormalizarToken(accessToken)?.Trim() ?? accessToken.Trim();
-        request.Headers.TryAddWithoutValidation("Authentication", $"bearer {tokenLimpio}");
+        int page = 1;
 
-        try
+        while (!ct.IsCancellationRequested)
         {
-            var response = await _httpClient.SendAsync(request, ct);
+            var endpointUrl = $"{storeId}/products?per_page=200&page={page}";
+            using var request = new HttpRequestMessage(HttpMethod.Get, endpointUrl);
+            request.Headers.TryAddWithoutValidation("Authentication", $"bearer {tokenLimpio}");
 
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                var errorBody = await response.Content.ReadAsStringAsync(ct);
-                _logger.LogWarning(
-                    "Tiendanube API respondió con error {(int)StatusCode} {StatusCode} al obtener productos para Store {StoreId}: {ErrorBody}",
-                    (int)response.StatusCode, response.StatusCode, storeId, errorBody);
+                var response = await _httpClient.SendAsync(request, ct);
 
-                return Result<List<TiendanubeProductResponse>>.Failure(
-                    $"Tiendanube respondió con {(int)response.StatusCode}: {errorBody}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync(ct);
+                    _logger.LogWarning(
+                        "Tiendanube API respondió con error {(int)StatusCode} {StatusCode} al obtener productos (página {Page}) para Store {StoreId}: {ErrorBody}",
+                        (int)response.StatusCode, response.StatusCode, page, storeId, errorBody);
+
+                    return Result<List<TiendanubeProductResponse>>.Failure(
+                        $"Tiendanube respondió con {(int)response.StatusCode}: {errorBody}");
+                }
+
+                var responseBody = await response.Content.ReadAsStringAsync(ct);
+                var productos = ParsearProductosJson(responseBody);
+
+                if (productos.Count == 0)
+                {
+                    break;
+                }
+
+                todosLosProductos.AddRange(productos);
+                _logger.LogInformation(
+                    "Página {Page} de Tiendanube importada ({Cantidad} productos). Total acumulado: {Total}",
+                    page, productos.Count, todosLosProductos.Count);
+
+                // Si la página devolvió menos de 200 items, se alcanzó el final del catálogo
+                if (productos.Count < 200)
+                {
+                    break;
+                }
+
+                page++;
             }
-
-            var responseBody = await response.Content.ReadAsStringAsync(ct);
-            var productos = ParsearProductosJson(responseBody);
-
-            return Result<List<TiendanubeProductResponse>>.Success(productos);
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Excepción de red al obtener productos de Tiendanube API (página {Page}) para Store {StoreId}", page, storeId);
+                return Result<List<TiendanubeProductResponse>>.Failure($"Fallo de conexión con Tiendanube: {ex.Message}");
+            }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            _logger.LogError(ex, "Excepción de red al obtener productos de Tiendanube API para Store {StoreId}", storeId);
-            return Result<List<TiendanubeProductResponse>>.Failure($"Fallo de conexión con Tiendanube: {ex.Message}");
-        }
+
+        return Result<List<TiendanubeProductResponse>>.Success(todosLosProductos);
     }
 
     private static List<TiendanubeProductResponse> ParsearProductosJson(string json)

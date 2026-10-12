@@ -540,6 +540,25 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Pruebas unitarias de normalización con `TiendanubeTokenHelper`.
   - Pruebas de integración comprobando que `TiendanubeSyncService` lee y suministra las credenciales de la entidad `UnidadNegocio` de Dastik.
 
+---
+
+### Paginación en Backend y Miniaturas en Frontend - COMPLETADA
+
+**Objetivo:** Permitir la descarga exhaustiva de catálogos grandes de Tiendanube mediante paginación acumulativa e incorporar renderizado de miniaturas visuales de productos en la tabla central de inventario.
+
+- **Rama:** `feature/tiendanube-pagination-and-thumbnails` (creada a partir de `develop`).
+- **1. Paginación en Backend (`TiendanubeApiClient.cs`):**
+  - Bucle de paginación con `page = 1` y endpoint `GET {storeId}/products?per_page=200&page={page}`.
+  - Acumula los resultados en una lista global hasta agotar las páginas (`Count == 0` o `Count < 200`).
+  - Mantiene el bypass seguro de modo Mock para pruebas y entornos sandbox.
+- **2. Miniaturas Avant-Garde en Frontend (`InventarioPage.tsx`):**
+  - Contenedor de imagen cuadrado `w-12 h-12` con bordes rectos y marco `border border-[#333333]`.
+  - Carga diferida (`loading="lazy"`) y ajuste de aspecto `object-cover`.
+  - Fallback elegante si no tiene imagen o si falla la carga: contenedor con fondo `#111111` e ícono Phosphor `Image` (`#71717A`).
+- **3. Verificación y Cobertura (89 pruebas superadas, 0 fallos):**
+  - Pruebas unitarias para paginación de página 1 y acumulación multi-página en `TiendanubeApiClientTests.cs`.
+  - Compilación de frontend sin errores de TypeScript (`npm run build`).
+
 
 
 
