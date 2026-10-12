@@ -105,8 +105,23 @@ public static class SandboxDataSeeder
         var unidadDastik = await context.UnidadesNegocio.FirstOrDefaultAsync(u => u.Nombre == "Dastik");
         if (unidadDastik is null)
         {
-            unidadDastik = new UnidadNegocio { Nombre = "Dastik", TieneTiendaNube = false };
+            unidadDastik = new UnidadNegocio
+            {
+                Nombre = "Dastik",
+                TieneTiendaNube = true,
+                TiendanubeStoreId = "sandbox-dastik",
+                TiendanubeAccessToken = "mock-token-dastik"
+            };
             context.UnidadesNegocio.Add(unidadDastik);
+        }
+        else
+        {
+            unidadDastik.TieneTiendaNube = true;
+            if (string.IsNullOrEmpty(unidadDastik.TiendanubeStoreId))
+            {
+                unidadDastik.TiendanubeStoreId = "sandbox-dastik";
+                unidadDastik.TiendanubeAccessToken = "mock-token-dastik";
+            }
         }
 
         var unidadHidden = await context.UnidadesNegocio.FirstOrDefaultAsync(u => u.Nombre == "Hidden Sneakers");
@@ -114,6 +129,10 @@ public static class SandboxDataSeeder
         {
             unidadHidden = new UnidadNegocio { Nombre = "Hidden Sneakers", TieneTiendaNube = false };
             context.UnidadesNegocio.Add(unidadHidden);
+        }
+        else
+        {
+            unidadHidden.TieneTiendaNube = false;
         }
 
         // 3. Marcas
