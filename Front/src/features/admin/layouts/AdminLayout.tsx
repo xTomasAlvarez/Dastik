@@ -19,6 +19,13 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     {
+      to: '/admin',
+      label: 'Dashboard',
+      icon: <ChartBar size={18} weight="light" />,
+      description: 'Métricas & Alertas',
+      end: true
+    },
+    {
       to: '/admin/inventario',
       label: 'Inventario',
       icon: <Package size={18} weight="light" />,
@@ -29,12 +36,6 @@ export const AdminLayout: React.FC = () => {
       label: 'Arqueos',
       icon: <Receipt size={18} weight="light" />,
       description: 'Cierres de Caja'
-    },
-    {
-      to: '/admin/metricas',
-      label: 'Métricas',
-      icon: <ChartBar size={18} weight="light" />,
-      description: 'Reportes & Ventas'
     }
   ];
 
@@ -83,6 +84,7 @@ export const AdminLayout: React.FC = () => {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               className={({ isActive }) =>
                 `w-full px-3 py-3 flex items-center justify-between text-xs transition-fast ${
                   isActive

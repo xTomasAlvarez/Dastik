@@ -6,6 +6,7 @@ using Dastik.Api.Features.Auth;
 using Dastik.Api.Features.Caja;
 using Dastik.Api.Features.Inventario.CrearProducto;
 using Dastik.Api.Features.Inventario.SincronizarTiendanube;
+using Dastik.Api.Features.Metricas;
 using Dastik.Api.Infrastructure.BackgroundServices;
 using Dastik.Api.Infrastructure.Integrations.Tiendanube;
 using Dastik.Api.Infrastructure.Persistence;
@@ -166,6 +167,7 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapCrearProductoEndpoint();
 app.MapCajaEndpoints();
+app.MapMetricasEndpoints();
 
 // Seeder de datos iniciales (Usuario Fundador)
 try

@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { DashboardPos } from './features/pos/pages/DashboardPos';
 import { AdminLayout } from './features/admin/layouts/AdminLayout';
+import { DashboardPage } from './features/admin/pages/DashboardPage';
 import { InventarioPage } from './features/admin/pages/InventarioPage';
 import { CambiarPasswordModal } from './features/auth/components/CambiarPasswordModal';
 import { useAuthStore } from './stores/useAuthStore';
@@ -75,10 +76,11 @@ export function App() {
               </RutaProtegida>
             }
           >
-            <Route index element={<Navigate to="inventario" replace />} />
+            <Route index element={<DashboardPage />} />
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route path="inventario" element={<InventarioPage />} />
-            <Route path="arqueos" element={<Navigate to="inventario" replace />} />
-            <Route path="metricas" element={<Navigate to="inventario" replace />} />
+            <Route path="arqueos" element={<Navigate to="/admin" replace />} />
+            <Route path="metricas" element={<DashboardPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

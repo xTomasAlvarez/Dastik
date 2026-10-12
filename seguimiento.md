@@ -674,4 +674,44 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Backend: 94 pruebas unitarias superadas con 0 fallos (`dotnet test`).
   - Frontend: Compilación limpia con 0 errores TypeScript (`npm run build`).
 
+---
+
+### Fase 3: Panel de Métricas y Dashboard del Dueño (MVP) - COMPLETADA
+
+**Objetivo:** Proveer al dueño del local una visión ejecutiva en tiempo real sobre la salud comercial y financiera del negocio (Ingresos, Ganancia Neta basada en costos, Cantidad de Ventas y volumen de los últimos 7 días) junto a un monitor estricto de reposición de stock crítico (unidades ≤ 3).
+
+- **Rama:** `feature/admin-dashboard-mvp` (creada a partir de `develop`).
+- **1. Backend - Endpoints y Lógica de Métricas (`MetricasEndpoints.cs`, `MetricasDtos.cs`):**
+  - `GET /api/metricas/dashboard`:
+    - `IngresosHoy`: sumatoria de ventas brutas cobradas durante la jornada local (UTC-3).
+    - `GananciaNetaHoy`: ingresos brutos menos el costo base de reposición de las unidades vendidas (`Ingresos - CostoBase`).
+    - `CantidadVentasHoy`: conteo de órdenes pagadas hoy.
+    - `MargenPorcentajeHoy`: porcentaje de rentabilidad sobre venta.
+    - `VentasUltimos7Dias`: histórico diario de los últimos 7 días discriminado por día de la semana y monto facturado para alimentar la gráfica.
+  - `GET /api/metricas/alertas-stock`:
+    - Consulta de variantes con `StockFisico <= 3` (regla de negocio del documento de requerimientos).
+    - Incluye nombre del producto, marca, talle, color, código de barras EAN-13, miniatura y stock físico.
+- **2. Backend - Pruebas Unitarias (`MetricasTests.cs`):**
+  - Test validando el cálculo exacto de Ingresos, CostoBase y Ganancia Neta con órdenes y detalles reales en SQLite en memoria.
+  - Test validando el filtrado estricto de variantes con stock ≤ 3 unidades y exclusión de variantes con stock saludable.
+  - Suite de backend ampliada a 96 pruebas en verde sin fallos (`dotnet test`).
+- **3. Frontend - Cliente de Métricas (`metricasApi.ts`):**
+  - Métodos tipados `obtenerDashboard()` y `obtenerAlertasStock()`.
+- **4. Frontend - Dashboard Principal (`DashboardPage.tsx`):**
+  - Página principal del Back-Office renderizada en la ruta `/admin` por defecto.
+  - **Fila 1 (Tarjetas Financieras):**
+    - Ingresos Hoy: tipografía gigante con ticket promedio.
+    - Ganancia Neta Hoy: cifra destacada en acento ámbar con badge de margen porcentual.
+    - Ventas Realizadas: conteo de órdenes cobradas en el mostrador.
+  - **Fila 2 (Panel Dividido):**
+    - *Columna Izquierda (70%):* Gráfico de barras interactivo de "Volumen de Ventas (Últimos 7 días)" con barras estilizadas, tooltip de montos y distinción dorada para la jornada actual.
+    - *Columna Derecha (30%):* Panel de **"🔥 ALERTAS DE STOCK"** con scroll vertical, miniaturas cuadradas, talles destacados y badges de stock crítico (rojo para quiebre total / ámbar para crítico).
+- **5. Frontend - Navegación y Rutas (`App.tsx`, `AdminLayout.tsx`):**
+  - `/admin` renderiza directamente `DashboardPage`.
+  - Sidebar actualizada con acceso directo a "Dashboard" y a "Inventario".
+- **6. Cobertura y Verificación:**
+  - Backend: 96 pruebas superadas (0 fallos).
+  - Frontend: Compilación limpia con 0 errores TypeScript (`npm run build`).
+
+
 
