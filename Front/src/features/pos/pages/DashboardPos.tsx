@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Receipt, ShoppingCart, Trash, CheckCircle, X } from '@phosphor-icons/react';
 import { PosHeader } from '../components/PosHeader';
@@ -17,6 +17,9 @@ export const DashboardPos: React.FC = () => {
 
   const [isModalPagoOpen, setIsModalPagoOpen] = useState(false);
   const [isModalCerrarTurnoOpen, setIsModalCerrarTurnoOpen] = useState(false);
+  const [confirmandoVaciar, setConfirmandoVaciar] = useState(false);
+  const vaciarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [ventaExitosa, setVentaExitosa] = useState<{
     ordenId: number;
     total: number;
@@ -43,6 +46,47 @@ export const DashboardPos: React.FC = () => {
       minimumFractionDigits: 2,
     }).format(monto);
   };
+
+  // Manejo de confirmación en dos pasos para vaciar ticket
+  const handleVaciarClick = () => {
+    if (!confirmandoVaciar) {
+      setConfirmandoVaciar(true);
+      if (vaciarTimerRef.current) clearTimeout(vaciarTimerRef.current);
+      vaciarTimerRef.current = setTimeout(() => {
+        setConfirmandoVaciar(false);
+      }, 3500);
+    } else {
+      clearCart();
+      setConfirmandoVaciar(false);
+      if (vaciarTimerRef.current) clearTimeout(vaciarTimerRef.current);
+    }
+  };
+
+  // Limpiar timer de vaciado al desmontar
+  useEffect(() => {
+    return () => {
+      if (vaciarTimerRef.current) clearTimeout(vaciarTimerRef.current);
+    };
+  }, []);
+
+  // Atajo de teclado POS: F2 para abrir modal de cobro
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.key === 'F2' || e.key === 'F4') &&
+        items.length > 0 &&
+        turnoActivo &&
+        !isModalPagoOpen &&
+        !isModalCerrarTurnoOpen
+      ) {
+        e.preventDefault();
+        setIsModalPagoOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [items.length, turnoActivo, isModalPagoOpen, isModalCerrarTurnoOpen]);
 
   return (
     <div className="h-screen w-screen bg-[#000000] text-[#FAFAFA] flex flex-col overflow-hidden selection:bg-[#FAFAFA] selection:text-[#000000]">
@@ -114,15 +158,33 @@ export const DashboardPos: React.FC = () => {
             </div>
 
             {items.length > 0 && (
-              <button
-                type="button"
-                onClick={clearCart}
-                className="text-[10px] uppercase font-sans tracking-widest text-red-400 hover:text-red-300 transition-fast flex items-center gap-1 cursor-pointer"
-                title="Vaciar ticket actual"
-              >
-                <Trash size={14} weight="light" />
-                <span>VACIAR</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                {confirmandoVaciar && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmandoVaciar(false);
+                      if (vaciarTimerRef.current) clearTimeout(vaciarTimerRef.current);
+                    }}
+                    className="text-[10px] uppercase font-mono px-1.5 py-0.5 border border-[#333333] text-[#A1A1AA] hover:text-[#FAFAFA] transition-fast cursor-pointer"
+                  >
+                    NO
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleVaciarClick}
+                  className={`text-[10px] uppercase font-sans tracking-widest flex items-center gap-1 cursor-pointer transition-fast px-2 py-0.5 border ${
+                    confirmandoVaciar
+                      ? 'bg-red-950/80 border-red-500 text-red-200 font-bold'
+                      : 'border-transparent text-red-400 hover:text-red-300 hover:border-red-900/50'
+                  }`}
+                  title={confirmandoVaciar ? 'Clic para confirmar vaciado de ticket' : 'Vaciar ticket actual'}
+                >
+                  <Trash size={14} weight={confirmandoVaciar ? 'bold' : 'light'} />
+                  <span>{confirmandoVaciar ? '¿VACIAR?' : 'VACIAR'}</span>
+                </button>
+              </div>
             )}
           </div>
 
@@ -228,7 +290,7 @@ export const DashboardPos: React.FC = () => {
             >
               {!turnoActivo
                 ? 'TURNO DE CAJA CERRADO'
-                : `COBRAR ORDEN ${items.length > 0 ? `(${formatearDinero(total)})` : ''}`}
+                : `COBRAR ORDEN [F2] ${items.length > 0 ? `(${formatearDinero(total)})` : ''}`}
             </Button>
           </div>
         </aside>

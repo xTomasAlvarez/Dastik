@@ -70,6 +70,25 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
     }
   }, [isOpen, totalFinal]);
 
+  // Manejo de tecla Escape para cerrar y bloqueo de scroll de fondo
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, isLoading, onClose]);
+
   if (!isOpen) return null;
 
   const formatearDinero = (monto: number) => {
@@ -187,7 +206,7 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
             type="button"
             onClick={onClose}
             className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1 cursor-pointer"
-            title="Cancelar y volver al POS"
+            title="Cancelar y volver al POS [ESC]"
           >
             <X size={18} weight="light" />
           </button>
@@ -510,7 +529,7 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
               disabled={isLoading}
               className="w-1/3 py-3 border border-[#333333] hover:border-[#555555] bg-transparent text-xs font-mono uppercase tracking-wider text-[#A1A1AA] hover:text-[#FAFAFA] transition-fast cursor-pointer disabled:opacity-40"
             >
-              CANCELAR
+              CANCELAR [ESC]
             </button>
             <Button
               type="submit"
