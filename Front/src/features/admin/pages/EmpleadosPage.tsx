@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Users,
@@ -134,6 +134,36 @@ export const EmpleadosPage: React.FC = () => {
   const horasNum = parseFloat(horasTrabajadas) || 0;
   const tarifaActual = empleadoParaLiquidar?.tarifaPorHora ?? 0;
   const totalCalculado = Math.round(horasNum * tarifaActual * 100) / 100;
+
+  // Manejo de tecla Escape para cerrar modales y bloqueo de scroll de fondo
+  useEffect(() => {
+    const algunModalAbierto = isModalCrearOpen || !!empleadoParaLiquidar;
+
+    if (algunModalAbierto) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isModalCrearOpen && !crearMutation.isPending) {
+          setIsModalCrearOpen(false);
+        } else if (empleadoParaLiquidar) {
+          setEmpleadoParaLiquidar(null);
+        }
+      }
+    };
+
+    if (algunModalAbierto) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isModalCrearOpen, empleadoParaLiquidar, crearMutation.isPending]);
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -437,7 +467,8 @@ export const EmpleadosPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setIsModalCrearOpen(false)}
-                className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1"
+                className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1 cursor-pointer"
+                title="Cerrar modal [ESC]"
               >
                 <X size={18} />
               </button>
@@ -535,9 +566,9 @@ export const EmpleadosPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalCrearOpen(false)}
-                  className="border border-[#333333] hover:bg-[#1A1A1A] text-[#FAFAFA] px-4 py-2.5 text-xs font-mono uppercase tracking-wider transition-fast"
+                  className="border border-[#333333] hover:bg-[#1A1A1A] text-[#FAFAFA] px-4 py-2.5 text-xs font-mono uppercase tracking-wider transition-fast cursor-pointer"
                 >
-                  CANCELAR
+                  CANCELAR [ESC]
                 </button>
                 <button
                   type="submit"
@@ -573,7 +604,8 @@ export const EmpleadosPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setEmpleadoParaLiquidar(null)}
-                className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1"
+                className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1 cursor-pointer"
+                title="Cerrar modal [ESC]"
               >
                 <X size={18} />
               </button>
@@ -667,9 +699,9 @@ export const EmpleadosPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setEmpleadoParaLiquidar(null)}
-                className="w-full sm:w-auto border border-[#333333] hover:bg-[#1A1A1A] text-[#FAFAFA] px-5 py-2.5 text-xs font-mono uppercase tracking-wider transition-fast"
+                className="w-full sm:w-auto border border-[#333333] hover:bg-[#1A1A1A] text-[#FAFAFA] px-5 py-2.5 text-xs font-mono uppercase tracking-wider transition-fast cursor-pointer"
               >
-                CERRAR
+                CERRAR [ESC]
               </button>
             </div>
           </div>

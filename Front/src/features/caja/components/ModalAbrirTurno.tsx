@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CurrencyDollar, WarningCircle, X, SignOut } from '@phosphor-icons/react';
 import { cajaApi, type TurnoActivoDto } from '../api/cajaApi';
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -15,6 +15,15 @@ export const ModalAbrirTurno: React.FC<ModalAbrirTurnoProps> = ({ isOpen, onTurn
   const [error, setError] = useState<string | null>(null);
 
   const { usuario, logout } = useAuthStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

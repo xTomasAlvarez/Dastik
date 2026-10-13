@@ -814,6 +814,31 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - `npm run build` ejecutado con éxito (0 errores TypeScript en `tsc -b` y bundle de Vite generado limpiamente).
   - Commit realizado: `605acde style(design): purgar sombras, gradientes, bordes redondeados y elevar tipografia minima a 10px segun Design_Base`.
 
+---
+
+### Atajos de Teclado y Ergonomía de Mostrador - PASO 2 COMPLETADO
+
+**Objetivo:** Agilizar la velocidad de cobro y operación de mostrador mediante atajos de teclado estandarizados (`Escape` para cerrar diálogos, `F2`/`F4` para cobrar orden), bloquear el robo de foco del escáner láser de código de barras cuando hay modales abiertos, y evitar la pérdida accidental de tickets mediante confirmación en dos pasos para la acción "VACIAR".
+
+- **Rama:** `refactor/front-keyboard-ergonomics` (creada desde `develop`).
+- **1. Manejo Universal de Tecla `Escape` y Bloqueo de Scroll (`document.body.style.overflow = 'hidden'`):**
+  - `ModalPago.tsx`: escucha `Escape` para cerrar el modal de cobro y retornar inmediatamente al mostrador si no se está procesando el cobro (`!isLoading`).
+  - `ModalCerrarTurno.tsx`: escucha `Escape` para cancelar el arqueo si no está en proceso de envío (`!isSubmitting` y `!cierreCompletado`).
+  - `ModalCrearProducto.tsx`: escucha `Escape` para descartar el formulario de nuevo producto (`!isLoading`).
+  - `EmpleadosPage.tsx`: escucha `Escape` para cerrar tanto el modal de nuevo empleado como el modal de liquidación de jornada.
+  - `ModalAbrirTurno.tsx`: activa bloqueo de scroll (`document.body.style.overflow = 'hidden'`) para impedir desplazamiento accidental y mantener el aislamiento de terminal.
+- **2. Prevención de Robo de Foco en `PosBarcodeScanner.tsx`:**
+  - Se incorporó la guardia `if (document.body.style.overflow === 'hidden') return;` en el listener global de clics para evitar que el auto-enfoque del lector de código de barras le robe el foco a los inputs interactivos de los modales (montos de pago, saldos o formularios).
+- **3. Atajo Global de Cobro `F2` / `F4` en `DashboardPos.tsx`:**
+  - El cajero u operador puede pulsar `F2` o `F4` desde cualquier parte del POS para abrir directamente la ventana de cobro si el carrito tiene artículos y el turno está abierto, sin requerir el mouse.
+  - Indicador visual explícito en el botón de acción principal: `COBRAR ORDEN [F2] ($ XX.XXX,XX)`.
+- **4. Confirmación Preventiva de Vaciado de Ticket ("VACIAR"):**
+  - Implementado patrón interactivo de 2 pasos en `DashboardPos.tsx`: al hacer clic en "VACIAR", el botón conmuta a `¿VACIAR?` (destacado en rojo brutalista de alto contraste) y habilita un botón adyacente `NO` para cancelar, con un temporizador automático de seguridad de 3.5 segundos tras el cual se restaura el estado original. Solo un segundo clic intencional ejecuta `clearCart()`.
+- **5. Verificación de Compilación:**
+  - `npm run build` ejecutado con éxito (código de salida 0, 4.10s, 0 errores TypeScript).
+  - Commit: `cf3b72b feat(ux): atajos de teclado F2 y Escape, prevencion de robo de foco y confirmacion de vaciado de ticket`.
+
+
 
 
 

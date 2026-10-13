@@ -58,6 +58,25 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
     }
   }, [isOpen, refetchResumen]);
 
+  // Manejo de tecla Escape para cerrar y bloqueo de scroll de fondo
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting && !cierreCompletado) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, isSubmitting, cierreCompletado, onClose]);
+
   // Cálculos de Arqueo y Gaveta
   const saldoInicial = resumen?.saldoInicial ?? 0;
   const ventasEfectivo = resumen?.totalVentasEfectivo ?? 0;
@@ -162,7 +181,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
               type="button"
               onClick={onClose}
               className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1 cursor-pointer"
-              title="Cancelar y volver al POS"
+              title="Cancelar y volver al POS [ESC]"
             >
               <X size={18} weight="light" />
             </button>
@@ -441,7 +460,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                   disabled={isSubmitting}
                   className="w-1/3 py-3 border border-[#333333] hover:border-[#555555] bg-transparent text-xs font-mono uppercase tracking-wider text-[#A1A1AA] hover:text-[#FAFAFA] transition-fast cursor-pointer disabled:opacity-40"
                 >
-                  CANCELAR
+                  CANCELAR [ESC]
                 </button>
                 <Button
                   type="submit"

@@ -30,6 +30,11 @@ export const PosBarcodeScanner: React.FC<PosBarcodeScannerProps> = ({ productos:
     inputRef.current?.focus();
 
     const handleWindowClick = (e: MouseEvent) => {
+      // Si hay un modal o diálogo abierto (body overflow hidden), no robar foco
+      if (document.body.style.overflow === 'hidden') {
+        return;
+      }
+
       const target = e.target as HTMLElement | null;
       // Si el usuario no está haciendo clic en otro input, textarea o botón, reenfocar el scanner
       if (target && !['INPUT', 'TEXTAREA', 'BUTTON', 'A'].includes(target.tagName)) {

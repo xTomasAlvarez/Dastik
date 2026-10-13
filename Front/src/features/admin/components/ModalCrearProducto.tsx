@@ -1,4 +1,4 @@
-import React, { useState, useId } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import {
   X,
   Plus,
@@ -200,6 +200,25 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     setErrorMessage(null);
   };
 
+  // Manejo de tecla Escape para cerrar y bloqueo de scroll de fondo
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, isLoading, onClose]);
+
   if (!isOpen) return null;
 
   // Guardar producto
@@ -311,8 +330,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             onClick={onClose}
             disabled={isLoading}
             className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1.5 cursor-pointer disabled:opacity-50"
-            title="Cerrar modal"
-            aria-label="Cerrar modal"
+            title="Cerrar modal [ESC]"
+            aria-label="Cerrar modal [ESC]"
           >
             <X size={20} weight="light" />
           </button>
@@ -745,7 +764,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               disabled={isLoading}
               className="text-xs"
             >
-              CANCELAR
+              CANCELAR [ESC]
             </Button>
 
             <Button
