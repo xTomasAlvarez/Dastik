@@ -28,4 +28,32 @@ public class ComisionesTests
         // Assert
         comisionObtenida.Should().Be(comisionEsperada);
     }
+
+    [Fact]
+    public void CalcularComision_CuandoEsSabadoNocheEnArgentinaPeroDomingoEnUtc_DeberiaAplicarComision()
+    {
+        // Arrange: Sábado 10 de octubre a las 21:30 hs de Argentina -> Domingo 11 a las 00:30 hs UTC
+        var fechaUtc = new DateTime(2026, 10, 11, 0, 30, 0, DateTimeKind.Utc);
+        var calculadora = new CalculadoraComisiones();
+
+        // Act
+        decimal comision = calculadora.Calcular(fechaUtc, 150_000.00m);
+
+        // Assert: 5% de 150.000 = 7.500
+        comision.Should().Be(7500.00m);
+    }
+
+    [Fact]
+    public void CalcularComision_CuandoEsViernesNocheEnArgentinaPeroSabadoEnUtc_NoDebeAplicarComision()
+    {
+        // Arrange: Viernes 9 de octubre a las 22:00 hs de Argentina -> Sábado 10 a la 01:00 hs UTC
+        var fechaUtc = new DateTime(2026, 10, 10, 1, 0, 0, DateTimeKind.Utc);
+        var calculadora = new CalculadoraComisiones();
+
+        // Act
+        decimal comision = calculadora.Calcular(fechaUtc, 150_000.00m);
+
+        // Assert: 0 porque localmente sigue siendo viernes
+        comision.Should().Be(0.00m);
+    }
 }

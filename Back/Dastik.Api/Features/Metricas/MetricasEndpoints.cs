@@ -10,7 +10,7 @@ public static class MetricasEndpoints
     {
         var group = app.MapGroup("/api/metricas")
             .WithTags("Métricas y Dashboard")
-            .RequireAuthorization();
+            .RequireAuthorization("AdminOnly");
 
         // 1. GET /api/metricas/dashboard
         group.MapGet("/dashboard", async (

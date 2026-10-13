@@ -186,10 +186,21 @@ public static class CajaEndpoints
         // 4. Cierre de Turno (Arqueo) - Soporta /turnos/cerrar y /cerrar-turno
         async Task<IResult> CerrarTurnoHandler(
             CerrarTurnoCommand command,
+            ClaimsPrincipal user,
             ISender sender,
             IValidator<CerrarTurnoCommand> validator,
             CancellationToken ct)
         {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? user.FindFirst("sub")?.Value;
+            int.TryParse(userIdClaim, out var claimId);
+            bool esAdmin = user.IsInRole("Admin");
+
+            if (claimId > 0)
+            {
+                command = command with { SolicitanteId = claimId, EsAdmin = esAdmin };
+            }
+
             var validationResult = await validator.ValidateAsync(command, ct);
             if (!validationResult.IsValid)
             {
@@ -281,6 +292,7 @@ public static class CajaEndpoints
         })
         .WithName("ListarHistorialArqueos")
         .WithSummary("Devuelve el historial de turnos cerrados con sus desgloses de ingresos por método, gastos y diferencias de caja.")
+        .RequireAuthorization("AdminOnly")
         .WithOpenApi();
     }
 }

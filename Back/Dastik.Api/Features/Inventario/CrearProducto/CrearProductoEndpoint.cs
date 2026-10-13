@@ -27,6 +27,7 @@ public static class CrearProductoEndpoint
         })
         .WithName("CrearProducto")
         .WithSummary("Crea un nuevo producto en el catálogo con sus variantes de inventario.")
+        .RequireAuthorization("AdminOnly")
         .WithOpenApi();
 
         // 1.b Alias Crear Producto en /api/inventario
@@ -47,6 +48,7 @@ public static class CrearProductoEndpoint
         })
         .WithName("CrearProductoInventario")
         .WithSummary("Crea un nuevo producto en el inventario.")
+        .RequireAuthorization("AdminOnly")
         .WithOpenApi();
 
         // 2. Listar Catálogo para el POS
@@ -59,6 +61,7 @@ public static class CrearProductoEndpoint
         })
         .WithName("ListarProductos")
         .WithSummary("Lista todos los productos activos con sus variantes, talles, códigos de barra y stock físico para el POS.")
+        .RequireAuthorization("OperadorCaja")
         .WithOpenApi();
 
         // 3. Sincronizar Catálogo desde Tiendanube
@@ -78,6 +81,7 @@ public static class CrearProductoEndpoint
         })
         .WithName("SincronizarCatalogoTiendanube")
         .WithSummary("Sincroniza e importa el catálogo de productos y variantes desde Tiendanube API asignándolo a Dastik.")
+        .RequireAuthorization("AdminOnly")
         .WithOpenApi();
     }
 }

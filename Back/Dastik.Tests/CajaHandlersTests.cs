@@ -661,6 +661,124 @@ public class CajaHandlersTests : IDisposable
         turnoEnBd.Estado.Should().Be(EstadoTurno.Cerrado);
     }
 
+    [Fact]
+    public async Task CerrarTurno_CuandoOtroEmpleadoIntentaCerrarTurno_DeberiaFallar()
+    {
+        // Arrange: Turno perteneciente al Empleado 10
+        var turno = new Turno
+        {
+            EmpleadoId = 10,
+            FechaApertura = DateTime.UtcNow,
+            SaldoInicial = 10_000.00m,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turno);
+        await _context.SaveChangesAsync();
+
+        var handler = new CerrarTurnoCommandHandler(_context);
+        // Empleado 99 intenta cerrar el turno del Empleado 10 (sin ser Admin)
+        var command = new CerrarTurnoCommand(
+            TurnoId: turno.Id,
+            SaldoFinal: 10_000.00m,
+            GastosTurno: 0m,
+            SolicitanteId: 99,
+            EsAdmin: false
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("No tienes permisos para cerrar el turno de otro operador");
+    }
+
+    [Fact]
+    public async Task CerrarTurno_CuandoAdminCierraTurnoDeOtroEmpleado_DeberiaPermitirse()
+    {
+        // Arrange: Turno perteneciente al Empleado 10
+        var turno = new Turno
+        {
+            EmpleadoId = 10,
+            FechaApertura = DateTime.UtcNow,
+            SaldoInicial = 10_000.00m,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turno);
+        await _context.SaveChangesAsync();
+
+        var handler = new CerrarTurnoCommandHandler(_context);
+        // Admin (Dueño) cierra el turno del Empleado 10
+        var command = new CerrarTurnoCommand(
+            TurnoId: turno.Id,
+            SaldoFinal: 10_000.00m,
+            GastosTurno: 0m,
+            SolicitanteId: 1, // ID del Admin
+            EsAdmin: true
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.SaldoFinal.Should().Be(10_000.00m);
+    }
+
+    [Fact]
+    public async Task CobrarOrden_ConPrecioInferiorAlMinimoDeCatalogo_DeberiaRetornarFallo()
+    {
+        // Arrange
+        var turno = new Turno
+        {
+            EmpleadoId = 1,
+            FechaApertura = DateTime.UtcNow,
+            SaldoInicial = 5_000.00m,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turno);
+
+        var (unidad, categoria, marca, proveedor) = CrearDependenciasCatalogo();
+        var producto = new Producto
+        {
+            UnidadNegocio = unidad,
+            Categoria = categoria,
+            Marca = marca,
+            Proveedor = proveedor,
+            Nombre = "Buzo Hoodie Oversize",
+            CostoBase = 20_000.00m,
+            MarkupAplicado = 1.5m,
+            PrecioVenta = 30_000.00m,
+            Activo = true
+        };
+        var variante = new Variante
+        {
+            Producto = producto,
+            Talle = "M",
+            Color = "Gris",
+            CodigoBarras = "2000000000093",
+            StockFisico = 10
+        };
+        _context.Variantes.Add(variante);
+        await _context.SaveChangesAsync();
+
+        var handler = new CobrarOrdenCommandHandler(_context, _calculadoraComisiones);
+        // Intento de cobrar a $5.000 cuando el precio de catálogo es $30.000 (mínimo permitido $15.000)
+        var command = new CobrarOrdenCommand(
+            TurnoId: turno.Id,
+            Items: new List<ItemCobroDto> { new(VarianteId: variante.Id, Cantidad: 1, PrecioUnitario: 5_000.00m) },
+            Pagos: new List<PagoCobroDto> { new(MetodoPago.Efectivo, 5_000.00m) }
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("inferior al mínimo permitido");
+    }
+
     private (UnidadNegocio, Categoria, Marca, Proveedor) CrearDependenciasCatalogo()
     {
         var unidad = new UnidadNegocio { Nombre = "Dastik" };

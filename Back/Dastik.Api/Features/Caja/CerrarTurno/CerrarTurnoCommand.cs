@@ -6,7 +6,9 @@ namespace Dastik.Api.Features.Caja.CerrarTurno;
 public record CerrarTurnoCommand(
     int TurnoId,
     decimal SaldoFinal,
-    decimal GastosTurno = 0
+    decimal GastosTurno = 0,
+    int? SolicitanteId = null,
+    bool EsAdmin = false
 ) : IRequest<Result<CerrarTurnoResult>>;
 
 public record CerrarTurnoResult(

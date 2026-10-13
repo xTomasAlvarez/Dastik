@@ -7,7 +7,10 @@ public class CalculadoraComisiones : ICalculadoraComisiones
 
     public decimal Calcular(DateTime fecha, decimal montoVenta)
     {
-        if (fecha.DayOfWeek == DayOfWeek.Saturday && montoVenta >= UmbralMontoSabado)
+        // En Argentina (UTC-3), si la fecha es UTC la convertimos al huso local para evaluar el día de la semana del mostrador
+        var fechaLocal = fecha.Kind == DateTimeKind.Utc ? fecha.AddHours(-3) : fecha;
+
+        if (fechaLocal.DayOfWeek == DayOfWeek.Saturday && montoVenta >= UmbralMontoSabado)
         {
             return decimal.Round(montoVenta * PorcentajeComisionSabado, 2, MidpointRounding.AwayFromZero);
         }
