@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { queryClient } from '../lib/react-query/queryClient';
 
 interface TenantState {
   isSandboxMode: boolean;
@@ -13,6 +14,7 @@ export const useTenantStore = create<TenantState>((set) => ({
 
   setSandboxMode: (isSandbox: boolean) => {
     localStorage.setItem(STORAGE_KEY, isSandbox ? 'true' : 'false');
+    queryClient.clear();
     set({ isSandboxMode: isSandbox });
   },
 
@@ -20,6 +22,7 @@ export const useTenantStore = create<TenantState>((set) => ({
     set((state) => {
       const next = !state.isSandboxMode;
       localStorage.setItem(STORAGE_KEY, next ? 'true' : 'false');
+      queryClient.clear();
       return { isSandboxMode: next };
     });
   },

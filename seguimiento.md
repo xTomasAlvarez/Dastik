@@ -869,6 +869,29 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Bundle frontend verificado: `npm run build` sin errores.
   - Commit: `4184897 feat(security): politica AdminOnly, propiedad de turnos, proteccion de precios y huso UTC-3 en comisiones`.
 
+---
+
+### Seguridad Frontend & Gestión de Caché (AdminRoute y TanStack Query) - COMPLETADO
+
+**Objetivo:** Restringir el acceso a rutas privadas del Back-Office (`/admin/*`) exclusivamente a usuarios con rol `Admin` mediante la guarda `AdminRoute` en React Router, ocultar accesos directos al panel para empleados, y purgar de manera reactiva la caché en memoria de TanStack Query (`queryClient.clear()`) al cerrar sesión (`logout`) y al alternar entre bases de datos de Sandbox y Producción.
+
+- **Rama:** `feature/front-security-cache` (creada desde `develop`).
+- **1. Guarda de Enrutamiento `AdminRoute` (`App.tsx`):**
+  - Implementado el componente de orden superior `AdminRoute`:
+    - Valida que el usuario esté autenticado.
+    - Intercepta y resuelve el cambio forzoso de contraseña (`debeCambiarPassword`).
+    - Valida que `usuario.rol === 'Admin'`. Si un usuario con rol de `Empleado` intenta navegar directamente a `/admin`, lo redirige de inmediato a la terminal POS (`/`).
+  - Todas las rutas anidadas del panel de administración (`/admin`, `/admin/inventario`, `/admin/arqueos`, `/admin/empleados`, `/admin/metricas`) quedan protegidas con `AdminRoute`.
+- **2. Control Visual de Privilegios en Cabecera (`PosHeader.tsx`):**
+  - El botón `"ADMIN"` solo se renderiza si `usuario?.rol === 'Admin'`, impidiendo la exposición innecesaria de accesos administrativos a cajeros o vendedores.
+- **3. Purga Automática de Caché en TanStack Query (`useAuthStore.ts` y `useTenantStore.ts`):**
+  - `useAuthStore.ts`: la acción `logout()` invoca `queryClient.clear()`, asegurando que al cerrar sesión no queden en memoria datos sensibles de turnos, arqueos o sueldos.
+  - `useTenantStore.ts`: las acciones `setSandboxMode()` y `toggleSandboxMode()` invocan `queryClient.clear()`, previniendo que productos ficticios de Sandbox se muestren en Producción (o viceversa) al alternar entre bases de datos.
+- **4. Verificación de Compilación:**
+  - `npm run build` ejecutado con éxito (código de salida 0, 1.17s, 0 errores TypeScript).
+  - Commit: `f206a17 feat(security): implementar AdminRoute y purga de cache de TanStack Query en logout y cambio de tenant`.
+
+
 
 
 

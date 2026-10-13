@@ -106,15 +106,17 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCi
           </span>
         </div>
 
-        {/* Acceso a Back-Office Admin */}
-        <Link
-          to="/admin/inventario"
-          className="border border-[#333333] bg-[#111111] hover:bg-[#1A1A1A] hover:border-[#555555] text-[#FAFAFA] px-2.5 py-1 flex items-center gap-1.5 text-[10px] font-heading font-semibold uppercase tracking-wider transition-fast shrink-0 whitespace-nowrap"
-          title="Ir al panel de administración e inventario"
-        >
-          <SlidersHorizontal size={14} weight="light" className="text-amber-400" />
-          <span>ADMIN</span>
-        </Link>
+        {/* Acceso a Back-Office Admin (Visible únicamente para Dueño / Admin) */}
+        {usuario?.rol === 'Admin' && (
+          <Link
+            to="/admin/inventario"
+            className="border border-[#333333] bg-[#111111] hover:bg-[#1A1A1A] hover:border-[#555555] text-[#FAFAFA] px-2.5 py-1 flex items-center gap-1.5 text-[10px] font-heading font-semibold uppercase tracking-wider transition-fast shrink-0 whitespace-nowrap"
+            title="Ir al panel de administración e inventario"
+          >
+            <SlidersHorizontal size={14} weight="light" className="text-amber-400" />
+            <span>ADMIN</span>
+          </Link>
+        )}
 
         {/* Cierre de Sesión */}
         <Button
