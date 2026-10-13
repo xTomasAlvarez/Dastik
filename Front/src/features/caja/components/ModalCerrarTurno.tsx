@@ -133,7 +133,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-[#000000]/95 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-[#090909] border border-[#333333] p-6 md:p-8 flex flex-col gap-5 text-left relative my-auto shadow-2xl">
+      <div className="w-full max-w-lg bg-[#090909] border border-[#333333] p-6 md:p-8 flex flex-col gap-5 text-left relative my-auto">
         {/* Header con Lenguaje de Dominio */}
         <div className="flex items-start justify-between border-b border-[#222222] pb-4">
           <div className="flex items-center gap-3">
@@ -145,14 +145,14 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                 <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-mono block">
                   TERMINAL // ARQUEO DE CAJA
                 </span>
-                <span className="text-[9px] uppercase tracking-wider font-mono border border-[#333333] bg-[#141414] px-1.5 py-0.2 text-amber-300">
+                <span className="text-[10px] uppercase tracking-wider font-mono border border-[#333333] bg-[#141414] px-1.5 py-0.2 text-amber-300">
                   {nombreTurno}
                 </span>
               </div>
               <h2 className="text-xl font-heading font-extrabold text-[#FAFAFA] tracking-tight">
                 CIERRE DE {nombreTurno} (#{turnoId})
               </h2>
-              <span className="text-[10px] text-[#71717A] font-sans">
+              <span className="text-xs text-[#71717A] font-sans">
                 Responsable: <strong className="text-[#A1A1AA]">{usuario?.nombre}</strong> ({rolPersonal})
               </span>
             </div>
@@ -236,7 +236,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
 
             {/* 1. Resumen de Ventas del Turno */}
             <div className="border border-[#222222] bg-[#111111] p-4 flex flex-col gap-2.5">
-              <span className="text-[9px] uppercase tracking-widest text-[#71717A] font-mono flex items-center gap-1.5">
+              <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-mono flex items-center gap-1.5">
                 <Clock size={13} weight="light" />
                 MÉTRICAS DEL {nombreTurno} ({resumen?.cantidadOrdenes ?? 0} {resumen?.cantidadOrdenes === 1 ? 'VENTA' : 'VENTAS'})
               </span>
@@ -295,7 +295,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9.5px] uppercase font-sans tracking-wider text-[#71717A] block mb-1">
+                  <label className="text-[10px] uppercase font-sans tracking-wider text-[#71717A] block mb-1">
                     MONTO TOTAL GASTOS (ARS)
                   </label>
                   <div className="flex items-center border border-[#333333] focus-within:border-[#FAFAFA] bg-[#141414] px-3 py-2">
@@ -313,7 +313,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[9.5px] uppercase font-sans tracking-wider text-[#71717A] block mb-1">
+                  <label className="text-[10px] uppercase font-sans tracking-wider text-[#71717A] block mb-1">
                     MOTIVO / CONCEPTO
                   </label>
                   <input
@@ -328,7 +328,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
 
               {/* Botones de Presets Rápidos de Gastos */}
               <div className="flex items-center gap-2 pt-1 flex-wrap">
-                <span className="text-[9px] uppercase tracking-wider text-[#71717A]">PRESETS:</span>
+                <span className="text-[10px] uppercase tracking-wider text-[#71717A]">PRESETS:</span>
                 {[
                   { label: 'Desayuno ($1.500)', monto: 1500, motivo: 'Desayuno' },
                   { label: 'Uber ($3.500)', monto: 3500, motivo: 'Uber mercadería' },
@@ -341,7 +341,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                       setGastosTurno(preset.monto.toString());
                       setMotivoGastos(preset.motivo);
                     }}
-                    className="px-2 py-0.5 border border-[#222222] bg-[#141414] hover:border-[#444444] text-[9.5px] font-mono text-[#A1A1AA] hover:text-[#FAFAFA] transition-fast cursor-pointer"
+                    className="px-2 py-0.5 border border-[#222222] bg-[#141414] hover:border-[#444444] text-[10px] font-mono text-[#A1A1AA] hover:text-[#FAFAFA] transition-fast cursor-pointer"
                   >
                     +{preset.label}
                   </button>
@@ -352,10 +352,10 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
             {/* Display de Efectivo Esperado en Gaveta con Fórmula del Negocio */}
             <div className="border border-[#2A2A2A] bg-[#111111] p-3.5 flex items-center justify-between">
               <div>
-                <span className="text-[9.5px] uppercase font-mono tracking-widest text-[#71717A] block">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-[#71717A] block">
                   EFECTIVO ESPERADO EN GAVETA FÍSICA:
                 </span>
-                <span className="text-[10px] text-[#555555] font-sans">
+                <span className="text-[11px] text-[#555555] font-sans">
                   (Saldo Inicial + Ventas Efectivo) - Gastos
                 </span>
               </div>
@@ -410,7 +410,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                 `}
               >
                 <div>
-                  <span className="text-[9px] uppercase tracking-widest block opacity-75">
+                  <span className="text-[10px] uppercase tracking-widest block opacity-75">
                     BALANCE DE GAVETA
                   </span>
                   <span className="font-heading font-bold text-sm">
@@ -422,7 +422,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[9px] uppercase tracking-widest block opacity-75">
+                  <span className="text-[10px] uppercase tracking-widest block opacity-75">
                     DIFERENCIA
                   </span>
                   <span className="font-heading font-bold text-sm">

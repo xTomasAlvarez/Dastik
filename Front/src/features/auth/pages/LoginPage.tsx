@@ -33,7 +33,7 @@ export const LoginPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <TestTube size={17} weight="light" className={isSandboxMode ? 'text-amber-400' : 'text-[#71717A]'} />
             <div>
-              <span className="text-[8px] uppercase tracking-widest text-[#71717A] block">MODO BASE DE DATOS</span>
+              <span className="text-[10px] uppercase tracking-widest text-[#71717A] block">MODO BASE DE DATOS</span>
               <span className="font-heading text-xs font-semibold tracking-wider">
                 {isSandboxMode ? 'SANDBOX (ENTRENAMIENTO)' : 'PRODUCCIÓN (OFICIAL)'}
               </span>
@@ -42,7 +42,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={toggleSandboxMode}
-            className="text-[9px] uppercase font-sans tracking-wider border border-[#333333] px-2.5 py-1 text-[#FAFAFA] hover:bg-[#222222] transition-fast cursor-pointer"
+            className="text-[10px] uppercase font-sans tracking-wider border border-[#333333] px-2.5 py-1 text-[#FAFAFA] hover:bg-[#222222] transition-fast cursor-pointer"
           >
             Alternar
           </button>
@@ -54,7 +54,7 @@ export const LoginPage: React.FC = () => {
         {/* Developer Sandbox Accounts Helper */}
         <div className="mt-6 pt-4 border-t border-[#1F1F1F] text-left">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] uppercase tracking-widest text-[#555555] font-semibold">
+            <span className="text-[10px] uppercase tracking-widest text-[#555555] font-semibold">
               ACCESOS RÁPIDOS (CLIC PARA AUTOLLENAR):
             </span>
           </div>
@@ -67,9 +67,9 @@ export const LoginPage: React.FC = () => {
             >
               <div>
                 <span className="text-[#FAFAFA] font-medium block">Dueño tomiDev (Directo)</span>
-                <code className="text-[#A1A1AA] text-[9.5px]">tomidev@dastik.com</code>
+                <code className="text-[#A1A1AA] text-[10px]">tomidev@dastik.com</code>
               </div>
-              <span className="text-emerald-400 font-mono text-[9px] bg-emerald-950/40 border border-emerald-900/50 px-1.5 py-0.5">DUEÑO</span>
+              <span className="text-emerald-400 font-mono text-[10px] bg-emerald-950/40 border border-emerald-900/50 px-1.5 py-0.5">DUEÑO</span>
             </button>
 
             <button
@@ -80,9 +80,9 @@ export const LoginPage: React.FC = () => {
             >
               <div>
                 <span className="text-[#E4E4E7] block">Dueño Fundador (Reseteo)</span>
-                <code className="text-[#71717A] text-[9.5px]">admin@dastik.com</code>
+                <code className="text-[#71717A] text-[10px]">admin@dastik.com</code>
               </div>
-              <span className="text-[#71717A] font-mono text-[9px] border border-[#222222] px-1.5 py-0.5">RESETEO</span>
+              <span className="text-[#71717A] font-mono text-[10px] border border-[#222222] px-1.5 py-0.5">RESETEO</span>
             </button>
 
             <button
@@ -93,9 +93,9 @@ export const LoginPage: React.FC = () => {
             >
               <div>
                 <span className="text-[#E4E4E7] block">Empleado Sandbox (Directo)</span>
-                <code className="text-[#71717A] text-[9.5px]">cajero.sandbox@dastik.com</code>
+                <code className="text-[#71717A] text-[10px]">cajero.sandbox@dastik.com</code>
               </div>
-              <span className="text-amber-400 font-mono text-[9px] bg-amber-950/40 border border-amber-900/50 px-1.5 py-0.5">EMPLEADO</span>
+              <span className="text-amber-400 font-mono text-[10px] bg-amber-950/40 border border-amber-900/50 px-1.5 py-0.5">EMPLEADO</span>
             </button>
           </div>
         </div>

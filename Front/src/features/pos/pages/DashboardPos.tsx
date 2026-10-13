@@ -107,7 +107,7 @@ export const DashboardPos: React.FC = () => {
                 <h3 className="font-heading text-xs font-extrabold tracking-wider text-[#FAFAFA] uppercase">
                   ORDEN EN CURSO
                 </h3>
-                <span className="text-[9px] uppercase tracking-widest text-[#71717A] font-mono block">
+                <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-mono block">
                   {itemCount} {itemCount === 1 ? 'ARTÍCULO' : 'ARTÍCULOS'}
                 </span>
               </div>
@@ -146,7 +146,7 @@ export const DashboardPos: React.FC = () => {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="text-[9px] uppercase tracking-widest text-[#71717A] font-sans block">
+                      <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-sans block">
                         {item.marca}
                       </span>
                       <h4 className="font-heading text-xs font-bold text-[#FAFAFA] leading-tight">

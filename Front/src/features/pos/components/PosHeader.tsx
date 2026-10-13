@@ -27,11 +27,11 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCi
             <h1 className="text-base md:text-lg font-heading font-extrabold tracking-tight text-[#FAFAFA] whitespace-nowrap">
               DASTIK <span className="text-[#71717A] font-normal">//</span> HIDDEN SNEAKERS
             </h1>
-            <span className="border border-[#222222] bg-[#111111] px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-[#71717A] font-sans">
+            <span className="border border-[#222222] bg-[#111111] px-1.5 py-0.5 text-[10px] uppercase tracking-widest text-[#71717A] font-sans">
               POS V1.0
             </span>
           </div>
-          <span className="text-[9.5px] uppercase tracking-[0.2em] text-[#71717A] font-sans block whitespace-nowrap">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-sans block whitespace-nowrap">
             TERMINAL DE COBRO & CONTROL DE INVENTARIO
           </span>
         </div>
@@ -49,7 +49,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCi
         >
           <span
             className={`inline-block w-2 h-2 rounded-none ${
-              turnoActivo ? 'bg-green-400 animate-pulse' : 'bg-amber-400'
+              turnoActivo ? 'bg-green-400' : 'bg-amber-400'
             }`}
           />
           <span className="text-[10px] uppercase tracking-widest text-[#71717A]">CAJA:</span>
@@ -88,7 +88,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCi
           <button
             type="button"
             onClick={toggleSandboxMode}
-            className="text-[9px] uppercase font-sans tracking-widest border-l border-[#222222] pl-2 text-[#71717A] hover:text-[#FAFAFA] transition-fast cursor-pointer"
+            className="text-[10px] uppercase font-sans tracking-widest border-l border-[#222222] pl-2 text-[#71717A] hover:text-[#FAFAFA] transition-fast cursor-pointer"
             title="Alternar entre base de pruebas y producción"
           >
             Cambiar

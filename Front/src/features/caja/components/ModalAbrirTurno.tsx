@@ -64,7 +64,7 @@ export const ModalAbrirTurno: React.FC<ModalAbrirTurnoProps> = ({ isOpen, onTurn
             <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-mono">
               TERMINAL POS // APERTURA DE CAJA
             </span>
-            <span className="text-[9px] font-mono border border-emerald-900 bg-emerald-950/40 text-emerald-400 px-2 py-0.5 uppercase tracking-wider">
+            <span className="text-[10px] font-mono border border-emerald-900 bg-emerald-950/40 text-emerald-400 px-2 py-0.5 uppercase tracking-wider">
               {new Date().getHours() < 14 ? 'TURNO MAÑANA' : 'TURNO TARDE'}
             </span>
           </div>
@@ -79,7 +79,7 @@ export const ModalAbrirTurno: React.FC<ModalAbrirTurnoProps> = ({ isOpen, onTurn
         {/* Banner de Usuario / Responsable */}
         <div className="border border-[#222222] bg-[#111111] p-3 flex items-center justify-between">
           <div>
-            <span className="text-[9px] uppercase tracking-widest text-[#71717A] font-sans block">
+            <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-sans block">
               RESPONSABLE DE APERTURA
             </span>
             <span className="text-xs font-heading font-bold text-[#FAFAFA]">

@@ -60,7 +60,7 @@ export const AdminLayout: React.FC = () => {
               <h1 className="text-base font-heading font-extrabold tracking-tight text-[#FAFAFA]">
                 DASTIK <span className="text-[#71717A] font-normal">//</span> ADMIN
               </h1>
-              <span className="text-[9px] uppercase tracking-[0.25em] text-[#71717A] font-sans block">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-sans block">
                 BACK-OFFICE & CONTROL
               </span>
             </div>
@@ -109,7 +109,7 @@ export const AdminLayout: React.FC = () => {
                     <span className="uppercase tracking-wider">{item.label}</span>
                   </div>
                   <span
-                    className={`text-[9px] tracking-widest uppercase font-mono ${
+                    className={`text-[10px] tracking-widest uppercase font-mono ${
                       isActive ? 'text-[#000000]/60' : 'text-[#555555]'
                     }`}
                   >
@@ -127,7 +127,7 @@ export const AdminLayout: React.FC = () => {
           <div className="border border-[#222222] bg-[#111111] px-3 py-2 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <TestTube size={15} weight="light" className={isSandboxMode ? 'text-amber-400' : 'text-[#71717A]'} />
-              <span className="text-[9px] uppercase tracking-widest text-[#71717A]">BASE:</span>
+              <span className="text-[10px] uppercase tracking-widest text-[#71717A]">BASE:</span>
               <span className={`text-[11px] font-heading font-semibold tracking-wider ${isSandboxMode ? 'text-amber-400' : 'text-[#FAFAFA]'}`}>
                 {isSandboxMode ? 'SANDBOX' : 'PROD'}
               </span>
@@ -135,7 +135,7 @@ export const AdminLayout: React.FC = () => {
             <button
               type="button"
               onClick={toggleSandboxMode}
-              className="text-[9px] uppercase font-sans tracking-widest text-[#71717A] hover:text-[#FAFAFA] transition-fast cursor-pointer"
+              className="text-[10px] uppercase font-sans tracking-widest text-[#71717A] hover:text-[#FAFAFA] transition-fast cursor-pointer"
             >
               Cambiar
             </button>
@@ -149,7 +149,7 @@ export const AdminLayout: React.FC = () => {
                 <div className="text-xs font-heading font-medium text-[#FAFAFA] truncate">
                   {usuario?.nombre || 'Dueño'}
                 </div>
-                <div className="text-[9px] text-[#71717A] uppercase tracking-widest font-mono">
+                <div className="text-[10px] text-[#71717A] uppercase tracking-widest font-mono">
                   {usuario?.rol === 'Admin' ? 'Dueño' : 'Empleado'}
                 </div>
               </div>
