@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { LoginResponse, UsuarioDto } from '../types/auth.types';
+import { queryClient } from '../lib/react-query/queryClient';
 
 interface AuthState {
   token: string | null;
@@ -70,6 +71,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    queryClient.clear();
     set({
       token: null,
       usuario: null,

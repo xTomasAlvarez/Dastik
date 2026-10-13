@@ -33,6 +33,31 @@ const RutaProtegida: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   return <>{children}</>;
 };
 
+// Componente para proteger rutas exclusivas del Dueño/Admin
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, debeCambiarPassword, usuario } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (debeCambiarPassword) {
+    return (
+      <>
+        {children}
+        <CambiarPasswordModal isOpen={true} />
+      </>
+    );
+  }
+
+  // Si el usuario no es Admin (es Empleado/Cajero), se redirige inmediatamente a la terminal POS
+  if (usuario?.rol !== 'Admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 export function App() {
   const { isAuthenticated, debeCambiarPassword } = useAuthStore();
 
@@ -69,13 +94,13 @@ export function App() {
             }
           />
 
-          {/* Panel de Administración (Back-Office) */}
+          {/* Panel de Administración (Back-Office) - Exclusivo Admin */}
           <Route
             path="/admin"
             element={
-              <RutaProtegida>
+              <AdminRoute>
                 <AdminLayout />
-              </RutaProtegida>
+              </AdminRoute>
             }
           >
             <Route index element={<DashboardPage />} />
