@@ -232,7 +232,7 @@ export const ArqueosPage: React.FC = () => {
         {/* Filtros de Estado */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 border border-[#333333] bg-[#000000] p-1">
-            <span className="text-[9px] font-mono uppercase text-[#71717A] px-2">ESTADO:</span>
+            <span className="text-[10px] font-mono uppercase text-[#71717A] px-2">ESTADO:</span>
             {(['TODOS', 'CUADRADA', 'FALTANTE', 'SOBRANTE'] as const).map((estado) => (
               <button
                 key={estado}
@@ -256,7 +256,7 @@ export const ArqueosPage: React.FC = () => {
 
           {/* Filtro de Turno */}
           <div className="flex items-center gap-1 border border-[#333333] bg-[#000000] p-1">
-            <span className="text-[9px] font-mono uppercase text-[#71717A] px-2">HORARIO:</span>
+            <span className="text-[10px] font-mono uppercase text-[#71717A] px-2">HORARIO:</span>
             {(['TODOS', 'Turno Mañana', 'Turno Tarde'] as const).map((t) => (
               <button
                 key={t}
@@ -369,7 +369,7 @@ export const ArqueosPage: React.FC = () => {
                   <div className="flex items-center justify-between lg:justify-end gap-6 border-t lg:border-t-0 pt-3 lg:pt-0 border-[#1A1A1A]">
                     {/* Ventas Totales */}
                     <div className="text-left lg:text-right">
-                      <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] block">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] block">
                         VENTAS TOTALES
                       </span>
                       <span className="font-mono text-sm font-bold text-[#FAFAFA]">
@@ -379,7 +379,7 @@ export const ArqueosPage: React.FC = () => {
 
                     {/* Efectivo Real Declarado */}
                     <div className="text-left lg:text-right hidden sm:block">
-                      <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] block">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] block">
                         EFECTIVO DECLARADO
                       </span>
                       <span className="font-mono text-sm font-medium text-[#A1A1AA]">
@@ -389,7 +389,7 @@ export const ArqueosPage: React.FC = () => {
 
                     {/* Badge Destacado de Diferencia */}
                     <div className="shrink-0 text-right">
-                      <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] block mb-0.5">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] block mb-0.5">
                         DIFERENCIA
                       </span>
                       <span

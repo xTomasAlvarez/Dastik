@@ -112,7 +112,7 @@ export const DashboardPage: React.FC = () => {
               <CurrencyDollar size={15} weight="light" className="text-emerald-400" />
               INGRESOS HOY
             </span>
-            <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 border border-emerald-900/60 bg-emerald-950/30 text-emerald-300">
+            <span className="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 border border-emerald-900/60 bg-emerald-950/30 text-emerald-300">
               VENTAS DEL DÍA
             </span>
           </div>
@@ -141,7 +141,7 @@ export const DashboardPage: React.FC = () => {
               <TrendUp size={15} weight="light" className="text-amber-400" />
               GANANCIA NETA HOY
             </span>
-            <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 border border-amber-900/60 bg-amber-950/30 text-amber-300">
+            <span className="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 border border-amber-900/60 bg-amber-950/30 text-amber-300">
               MARGEN: {margenPorcentaje}%
             </span>
           </div>
@@ -170,7 +170,7 @@ export const DashboardPage: React.FC = () => {
               <Receipt size={15} weight="light" className="text-blue-400" />
               VENTAS REALIZADAS
             </span>
-            <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 border border-[#333333] bg-[#141414] text-[#D4D4D8]">
+            <span className="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 border border-[#333333] bg-[#141414] text-[#D4D4D8]">
               OPERACIONES HOY
             </span>
           </div>
@@ -238,7 +238,7 @@ export const DashboardPage: React.FC = () => {
                   return (
                     <div key={v.fecha} className="flex flex-col items-center h-full justify-end group">
                       {/* Tooltip con valor al hacer hover */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-mono text-[#FAFAFA] bg-[#181818] border border-[#333333] px-1.5 py-0.5 rounded-none mb-1 pointer-events-none whitespace-nowrap shadow-lg">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-mono text-[#FAFAFA] bg-[#181818] border border-[#333333] px-1.5 py-0.5 rounded-none mb-1 pointer-events-none whitespace-nowrap">
                         ${v.total.toLocaleString('es-AR')}
                       </div>
 
@@ -246,7 +246,7 @@ export const DashboardPage: React.FC = () => {
                       <div className="w-full max-w-[48px] bg-[#141414] border border-[#2B2B2B] flex flex-col justify-end p-0.5 relative h-full">
                         <div
                           style={{ height: `${alturaPorcentaje}%` }}
-                          className={`w-full transition-all duration-500 ${
+                          className={`w-full transition-all duration-150 ${
                             esHoy
                               ? 'bg-amber-400 group-hover:bg-amber-300'
                               : 'bg-[#FAFAFA] group-hover:bg-white'
@@ -263,7 +263,7 @@ export const DashboardPage: React.FC = () => {
                         >
                           {v.diaSemana}
                         </span>
-                        <span className="text-[9px] font-mono text-[#71717A] block">
+                        <span className="text-[10px] font-mono text-[#71717A] block">
                           {v.fecha.slice(5)}
                         </span>
                       </div>
@@ -291,7 +291,7 @@ export const DashboardPage: React.FC = () => {
                 </h2>
               </div>
               <span
-                className={`text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 border ${
+                className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 border ${
                   alertasStock.length > 0
                     ? 'border-amber-900/80 bg-amber-950/40 text-amber-300 font-bold'
                     : 'border-emerald-900/80 bg-emerald-950/30 text-emerald-300'
@@ -359,11 +359,11 @@ export const DashboardPage: React.FC = () => {
                             {alerta.nombreProducto}
                           </span>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[9px] font-mono text-amber-400 font-bold uppercase">
+                            <span className="text-[10px] font-mono text-amber-400 font-bold uppercase">
                               TALLE {alerta.talle}
                             </span>
-                            <span className="text-[9px] text-[#555555]">|</span>
-                            <span className="text-[9px] font-mono text-[#71717A] truncate">
+                            <span className="text-[10px] text-[#555555]">|</span>
+                            <span className="text-[10px] font-mono text-[#71717A] truncate">
                               {alerta.color}
                             </span>
                           </div>
@@ -373,7 +373,7 @@ export const DashboardPage: React.FC = () => {
                       {/* Badge de Stock Físico */}
                       <div className="text-right shrink-0">
                         <span
-                          className={`text-[9px] font-mono uppercase tracking-widest px-2 py-1 border block text-center ${
+                          className={`text-[10px] font-mono uppercase tracking-widest px-2 py-1 border block text-center ${
                             sinStock
                               ? 'border-red-900/80 bg-red-950/50 text-red-300 font-bold'
                               : 'border-amber-900/80 bg-amber-950/40 text-amber-300 font-bold'

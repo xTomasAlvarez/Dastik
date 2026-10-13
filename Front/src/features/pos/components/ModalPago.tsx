@@ -172,7 +172,7 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-[#000000]/95 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-[#090909] border border-[#333333] p-6 md:p-8 flex flex-col gap-6 text-left relative my-auto shadow-2xl">
+      <div className="w-full max-w-lg bg-[#090909] border border-[#333333] p-6 md:p-8 flex flex-col gap-6 text-left relative my-auto">
         {/* Header del Modal */}
         <div className="flex items-start justify-between border-b border-[#222222] pb-4">
           <div>
@@ -210,12 +210,12 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
 
         {/* ALERTA DESTACADA: Comisión de Sábado */}
         {calificaComisionSabado && (
-          <div className="border border-amber-500/80 bg-gradient-to-r from-amber-950/50 to-orange-950/40 p-3.5 flex items-center justify-between gap-3 text-amber-200 shadow-lg animate-pulse">
+          <div className="border border-amber-500/80 bg-[#141008] p-3.5 flex items-center justify-between gap-3 text-amber-200">
             <div className="flex items-center gap-2.5">
               <Flame size={22} weight="fill" className="text-amber-400 shrink-0" />
               <div>
                 <span className="text-xs font-heading font-extrabold tracking-wider block text-amber-300">
-                  🔥 VENTA CALIFICADA: 5% COMISIÓN PARA EMPLEADO
+                  VENTA CALIFICADA: 5% COMISIÓN PARA EMPLEADO
                 </span>
                 <span className="text-[11px] font-sans text-amber-200/90">
                   Venta en sábado mayor a $120.000 · Comisión ganada:{' '}
@@ -457,7 +457,7 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                       key={monto}
                       type="button"
                       onClick={() => agregarEfectivo(monto)}
-                      className="px-2 py-0.5 border border-[#222222] bg-[#090909] text-[9px] font-mono text-[#71717A] hover:text-[#FAFAFA] hover:border-[#444444] transition-fast cursor-pointer"
+                      className="px-2 py-0.5 border border-[#222222] bg-[#090909] text-[10px] font-mono text-[#71717A] hover:text-[#FAFAFA] hover:border-[#444444] transition-fast cursor-pointer"
                     >
                       +${monto.toLocaleString('es-AR')}
                     </button>
@@ -468,7 +468,7 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
               {/* Display de Vuelto en Vivo */}
               <div className="border-t border-[#1F1F1F] pt-3 flex items-center justify-between">
                 <div>
-                  <span className="text-[9px] uppercase font-sans tracking-widest text-[#71717A] block">
+                  <span className="text-[10px] uppercase font-sans tracking-widest text-[#71717A] block">
                     VUELTO / CAMBIO A ENTREGAR
                   </span>
                   <span
@@ -491,7 +491,7 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
           )}
 
           {/* Test helper discreto para simular sábado */}
-          <div className="flex items-center justify-between text-[9px] text-[#555555] font-mono pt-1">
+          <div className="flex items-center justify-between text-[10px] text-[#555555] font-mono pt-1">
             <span>Día detectado: {hoyEsSabadoReal ? 'SÁBADO (Activo)' : 'Día de semana'}</span>
             <button
               type="button"

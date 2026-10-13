@@ -283,7 +283,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-[#000000]/85 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 overflow-y-auto">
       <div
-        className="w-full max-w-4xl bg-[#090909] border border-[#333333] max-h-[92vh] flex flex-col text-left shadow-2xl relative my-auto"
+        className="w-full max-w-4xl bg-[#090909] border border-[#333333] max-h-[92vh] flex flex-col text-left relative my-auto"
         role="dialog"
         aria-modal="true"
         aria-labelledby={modalHeadingId}
@@ -355,7 +355,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-heading font-bold text-sm tracking-wide">DASTIK</span>
-                    <span className="text-[9px] uppercase tracking-wider bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 px-1.5 py-0.5">
+                    <span className="text-[10px] uppercase tracking-wider bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 px-1.5 py-0.5">
                       TIENDANUBE + POS
                     </span>
                   </div>
@@ -378,7 +378,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-heading font-bold text-sm tracking-wide">HIDDEN SNEAKERS</span>
-                    <span className="text-[9px] uppercase tracking-wider bg-amber-950/40 border border-amber-900/50 text-amber-400 px-1.5 py-0.5">
+                    <span className="text-[10px] uppercase tracking-wider bg-amber-950/40 border border-amber-900/50 text-amber-400 px-1.5 py-0.5">
                       EXCLUSIVO LOCAL
                     </span>
                   </div>
@@ -515,7 +515,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
 
             {/* Accesos rápidos de Markup */}
             <div className="flex items-center gap-2 pt-1 text-xs text-[#71717A]">
-              <span className="text-[9.5px] uppercase tracking-wider font-sans">MARKUP RÁPIDO:</span>
+              <span className="text-[10px] uppercase tracking-wider font-sans">MARKUP RÁPIDO:</span>
               <button
                 type="button"
                 onClick={() => setPrecioVenta(Math.round(costoNum * 1.5).toString())}
@@ -556,13 +556,13 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               {/* Selector de Curvas Oficiales y Talles */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <div className="flex items-center gap-1 flex-wrap">
-                  <span className="text-[9px] uppercase tracking-wider text-[#71717A]">CURVA:</span>
+                  <span className="text-[10px] uppercase tracking-wider text-[#71717A]">CURVA:</span>
                   {CURVAS_DISPONIBLES.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setCurvaActivaId(c.id)}
-                      className={`px-2 py-0.5 text-[9.5px] font-mono border transition-fast cursor-pointer ${
+                      className={`px-2 py-0.5 text-[10px] font-mono border transition-fast cursor-pointer ${
                         curvaActivaId === c.id
                           ? 'border-[#FAFAFA] bg-[#222222] text-[#FAFAFA] font-bold'
                           : 'border-[#222222] bg-[#0E0E0E] text-[#71717A] hover:border-[#444444]'
@@ -578,7 +578,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             {/* Fila de Talles Rápidos de la Curva Activa y Botón de Lote */}
             <div className="bg-[#0E0E0E] border border-[#222222] p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[9px] uppercase tracking-wider text-[#71717A]">
+                <span className="text-[10px] uppercase tracking-wider text-[#71717A]">
                   TALLES {curvaActiva.shortLabel.toUpperCase()}:
                 </span>
                 {curvaActiva.talles.map((t) => (
@@ -597,7 +597,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               <button
                 type="button"
                 onClick={() => handleAgregarCurvaCompleta(curvaActiva.talles)}
-                className="text-[9.5px] uppercase font-mono tracking-wider border border-[#333333] hover:border-emerald-500 bg-[#161616] hover:bg-emerald-950/30 text-emerald-300 px-2.5 py-1 transition-fast cursor-pointer shrink-0"
+                className="text-[10px] uppercase font-mono tracking-wider border border-[#333333] hover:border-emerald-500 bg-[#161616] hover:bg-emerald-950/30 text-emerald-300 px-2.5 py-1 transition-fast cursor-pointer shrink-0"
                 title="Generar todas las variantes de esta curva con códigos EAN-13"
               >
                 + AGREGAR CURVA COMPLETA ({curvaActiva.talles.length} TALLES)
@@ -606,7 +606,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
 
             {/* Mini-Formulario para Añadir Variante */}
             <div className="bg-[#111111] border border-[#222222] p-3.5 space-y-3">
-              <span className="text-[9.5px] uppercase tracking-wider text-[#A1A1AA] font-heading font-semibold block">
+              <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-heading font-semibold block">
                 + CONFIGURAR NUEVA VARIANTE
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -689,7 +689,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               <div className="overflow-x-auto border border-[#222222]">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-[#222222] bg-[#141414] text-[#71717A] text-[9.5px] uppercase tracking-wider font-sans">
+                    <tr className="border-b border-[#222222] bg-[#141414] text-[#71717A] text-[10px] uppercase tracking-wider font-sans">
                       <th className="py-2.5 px-3">Talle</th>
                       <th className="py-2.5 px-3">Color</th>
                       <th className="py-2.5 px-3 text-right">Stock Físico</th>

@@ -268,7 +268,7 @@ export const EmpleadosPage: React.FC = () => {
 
         {/* Filtro por Turno */}
         <div className="flex items-center gap-1 border border-[#333333] bg-[#000000] p-1">
-          <span className="text-[9px] font-mono uppercase text-[#71717A] px-2">TURNO:</span>
+          <span className="text-[10px] font-mono uppercase text-[#71717A] px-2">TURNO:</span>
           {(['TODOS', 'Mañana', 'Tarde', 'Completo'] as const).map((t) => (
             <button
               key={t}
@@ -387,7 +387,7 @@ export const EmpleadosPage: React.FC = () => {
 
                       {/* Estado */}
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono border border-emerald-600/40 bg-emerald-950/30 text-emerald-400 uppercase">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono border border-emerald-600/40 bg-emerald-950/30 text-emerald-400 uppercase">
                           <CheckCircle size={10} weight="bold" />
                           ACTIVO
                         </span>
@@ -419,7 +419,7 @@ export const EmpleadosPage: React.FC = () => {
       {/* MODAL 1: NUEVO EMPLEADO */}
       {isModalCrearOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="border border-[#333333] bg-[#0A0A0A] w-full max-w-lg p-6 space-y-6 shadow-2xl">
+          <div className="border border-[#333333] bg-[#0A0A0A] w-full max-w-lg p-6 space-y-6">
             {/* Header del Modal */}
             <div className="flex items-center justify-between pb-3 border-b border-[#222222]">
               <div className="flex items-center gap-2.5">
@@ -427,7 +427,7 @@ export const EmpleadosPage: React.FC = () => {
                   <UserPlus size={18} weight="light" />
                 </div>
                 <div>
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] block">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] block">
                     ALTA DE PERSONAL
                   </span>
                   <h2 className="font-heading font-extrabold text-lg text-[#FAFAFA] uppercase">
@@ -555,7 +555,7 @@ export const EmpleadosPage: React.FC = () => {
       {/* MODAL 2: LIQUIDAR JORNADA */}
       {empleadoParaLiquidar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn">
-          <div className="border border-[#333333] bg-[#0A0A0A] w-full max-w-lg p-6 space-y-6 shadow-2xl">
+          <div className="border border-[#333333] bg-[#0A0A0A] w-full max-w-lg p-6 space-y-6">
             {/* Header del Modal */}
             <div className="flex items-center justify-between pb-3 border-b border-[#222222]">
               <div className="flex items-center gap-2.5">
@@ -563,7 +563,7 @@ export const EmpleadosPage: React.FC = () => {
                   <Calculator size={18} weight="bold" />
                 </div>
                 <div>
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] block">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] block">
                     LIQUIDACIÓN DIARIA
                   </span>
                   <h2 className="font-heading font-extrabold text-lg text-[#FAFAFA] uppercase">
@@ -590,7 +590,7 @@ export const EmpleadosPage: React.FC = () => {
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] block">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] block">
                   TARIFA PERSONALIZADA
                 </span>
                 <span className="font-mono font-bold text-emerald-400 text-sm">
@@ -646,7 +646,7 @@ export const EmpleadosPage: React.FC = () => {
             </div>
 
             {/* RECUADRO GIGANTE AVANT-GARDE: TOTAL A PAGAR */}
-            <div className="border border-emerald-500 bg-gradient-to-b from-emerald-950/60 to-[#0A1A0F] p-6 text-center space-y-2">
+            <div className="border border-emerald-500/80 bg-[#0A1A0F] p-6 text-center space-y-2">
               <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-emerald-400 block font-semibold">
                 TOTAL A PAGAR POR LA JORNADA
               </span>

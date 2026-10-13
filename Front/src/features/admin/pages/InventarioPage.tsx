@@ -430,7 +430,7 @@ export const InventarioPage: React.FC = () => {
                         <div className="flex flex-col gap-1">
                           <span>{producto.marca}</span>
                           <span
-                            className={`inline-block w-fit text-[8px] font-mono uppercase tracking-widest px-1.5 py-0.5 border ${
+                            className={`inline-block w-fit text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 border ${
                               producto.unidadNegocio?.toLowerCase().includes('hidden')
                                 ? 'border-amber-900/60 bg-amber-950/30 text-amber-300'
                                 : 'border-[#333333] bg-[#141414] text-[#A1A1AA]'
@@ -479,7 +479,7 @@ export const InventarioPage: React.FC = () => {
                                 {producto.descripcion}
                               </span>
                             )}
-                            <span className="text-[9px] uppercase tracking-widest text-[#555555] font-mono mt-0.5">
+                            <span className="text-[10px] uppercase tracking-widest text-[#555555] font-mono mt-0.5">
                               CATEGORÍA: {producto.categoria}
                             </span>
                           </div>
@@ -501,7 +501,7 @@ export const InventarioPage: React.FC = () => {
                             {producto.variantes?.map((v) => (
                               <span
                                 key={v.id}
-                                className={`text-[9px] font-mono px-1.5 py-0.5 border ${
+                                className={`text-[10px] font-mono px-1.5 py-0.5 border ${
                                   v.stockFisico === 0
                                     ? 'border-red-950 bg-red-950/20 text-red-400 line-through'
                                     : 'border-[#222222] bg-[#141414] text-[#D4D4D8]'
@@ -526,7 +526,7 @@ export const InventarioPage: React.FC = () => {
                             {stockTotal} u.
                           </span>
                           <span
-                            className={`text-[8px] font-mono uppercase tracking-widest px-1.5 py-0.5 border ${
+                            className={`text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 border ${
                               sinStock
                                 ? 'border-red-900/60 bg-red-950/40 text-red-300'
                                 : stockTotal <= 5

@@ -67,12 +67,12 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop con Blur y Oscuridad Avant-Garde */}
       <div
-        className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity duration-300"
+        className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity duration-150"
         onClick={onClose}
       />
 
       {/* Slide-Over Drawer Lateral */}
-      <div className="relative w-full max-w-xl bg-[#090909] border-l border-[#333333] flex flex-col h-full shadow-2xl z-10 animate-in slide-in-from-right duration-300">
+      <div className="relative w-full max-w-xl bg-[#090909] border-l border-[#333333] flex flex-col h-full z-10 animate-in slide-in-from-right duration-150">
         {/* 1. Header del Drawer */}
         <div className="p-5 border-b border-[#222222] bg-[#0C0C0C] flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
@@ -128,7 +128,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
             {/* Badges de Unidad y Categoría */}
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 border ${
+                className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 border ${
                   producto.unidadNegocio?.toLowerCase().includes('hidden')
                     ? 'border-amber-900/80 bg-amber-950/40 text-amber-300'
                     : 'border-[#333333] bg-[#141414] text-[#A1A1AA]'
@@ -137,12 +137,12 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
                 UNIDAD: {producto.unidadNegocio}
               </span>
 
-              <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 border border-[#333333] bg-[#141414] text-[#A1A1AA]">
+              <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 border border-[#333333] bg-[#141414] text-[#A1A1AA]">
                 CATEGORÍA: {producto.categoria}
               </span>
 
               <span
-                className={`text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 border ml-auto ${
+                className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 border ml-auto ${
                   sinStockGlobal
                     ? 'border-red-900/80 bg-red-950/40 text-red-300'
                     : stockTotal <= 5
@@ -169,42 +169,42 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
           <div className="grid grid-cols-3 gap-2.5">
             {/* Precio al Público */}
             <div className="border border-[#333333] bg-[#0D0D0D] p-3.5 flex flex-col justify-between">
-              <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1">
                 <CurrencyDollar size={12} weight="light" className="text-emerald-400" />
                 PRECIO VENTA
               </span>
               <span className="text-lg md:text-xl font-heading font-black text-[#FAFAFA] mt-2">
                 ${producto.precioVenta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
               </span>
-              <span className="text-[8px] font-mono uppercase text-[#555555] mt-1">
+              <span className="text-[10px] font-mono uppercase text-[#555555] mt-1">
                 PÚBLICO FINAL
               </span>
             </div>
 
             {/* Costo Base */}
             <div className="border border-[#333333] bg-[#0D0D0D] p-3.5 flex flex-col justify-between">
-              <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1">
                 <TrendUp size={12} weight="light" className="text-amber-400" />
                 COSTO BASE
               </span>
               <span className="text-lg md:text-xl font-heading font-black text-[#D4D4D8] mt-2">
                 ${costoBase.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
               </span>
-              <span className="text-[8px] font-mono uppercase text-[#555555] mt-1">
+              <span className="text-[10px] font-mono uppercase text-[#555555] mt-1">
                 VALOR REPOSICIÓN
               </span>
             </div>
 
             {/* Markup y Margen */}
             <div className="border border-[#333333] bg-[#0D0D0D] p-3.5 flex flex-col justify-between">
-              <span className="text-[9px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1">
                 <Percent size={12} weight="light" className="text-blue-400" />
                 MARKUP / MARGEN
               </span>
               <span className="text-lg md:text-xl font-heading font-black text-amber-400 mt-2">
                 {markupCalculado.toFixed(2)}x
               </span>
-              <span className="text-[8px] font-mono uppercase text-emerald-400/90 mt-1">
+              <span className="text-[10px] font-mono uppercase text-emerald-400/90 mt-1">
                 MARGEN: {margenPorcentaje}%
               </span>
             </div>
@@ -279,7 +279,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
                             {v.stockFisico} u.
                           </span>
                           <span
-                            className={`text-[8px] font-mono uppercase tracking-widest px-1.5 py-0.5 border mt-0.5 ${
+                            className={`text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 border mt-0.5 ${
                               sinStockVar
                                 ? 'border-red-900/60 bg-red-950/30 text-red-300'
                                 : stockCritico

@@ -136,7 +136,7 @@ export const PosBarcodeScanner: React.FC<PosBarcodeScannerProps> = ({ productos:
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-none bg-emerald-400" />
               <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-mono">
                 LECTOR ÓPTICO EAN-13 ONLINE
               </span>
@@ -172,7 +172,7 @@ export const PosBarcodeScanner: React.FC<PosBarcodeScannerProps> = ({ productos:
             {codigoIngresado && (
               <button
                 type="submit"
-                className="text-[9px] font-mono uppercase bg-[#FAFAFA] text-[#000000] px-2 py-0.5 font-bold hover:bg-[#E5E5E5] transition-fast cursor-pointer shrink-0 ml-2"
+                className="text-[10px] font-mono uppercase bg-[#FAFAFA] text-[#000000] px-2 py-0.5 font-bold hover:bg-[#E5E5E5] transition-fast cursor-pointer shrink-0 ml-2"
               >
                 INGRESAR
               </button>

@@ -786,5 +786,34 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Backend: 100/100 tests completados con éxito (`dotnet test`).
   - Frontend: 0 errores TypeScript y bundle de producción generado con éxito (`npm run build`).
 
+---
+
+### Refactor de Diseño y Ergonomía Frontend (Design_Base.md) - PASO 1 COMPLETADO
+
+**Objetivo:** Purgar cualquier residuo de diseño no plano (sombras difuminadas, gradientes y redondeos suaves) y elevar los tamaños tipográficos mínimos a $\ge 10\text{px}-11\text{px}$ para garantizar legibilidad en terminales táctiles y monitores de mostrador, en estricto cumplimiento con `Design_Base.md` (100% Flat Design, bordes rectos `#333333`, paleta brutalista de alto contraste).
+
+- **Rama:** `refactor/front-design-system` (creada desde `develop`).
+- **1. Purgado de Sombras Difuminadas (`shadow-*`):**
+  - Eliminadas todas las clases de sombras difuminadas (`shadow-2xl`, `shadow-lg`, etc.) en modales y contenedores:
+    - `ModalPago.tsx`: eliminado `shadow-2xl` del diálogo principal y `shadow-lg` de la alerta de sábado.
+    - `ModalCerrarTurno.tsx`, `ModalCrearProducto.tsx`, `ModalDetalleProducto.tsx`: eliminados `shadow-2xl`.
+    - `DashboardPage.tsx`: eliminadas sombras `shadow-lg` en tarjetas métricas y paneles.
+    - `EmpleadosPage.tsx`: eliminadas `shadow-2xl` en ambos modales (Nuevo Empleado y Liquidar Jornada).
+- **2. Eliminación de Gradientes y Reemplazo por Fondos Planos Sólidos:**
+  - `ModalPago.tsx`: la alerta de sábado pasó de un gradiente difuso a un bloque plano brutalista con fondo sólido `#0A1A0F` y borde nítido `border border-emerald-500/80`.
+  - `EmpleadosPage.tsx`: el banner de desglose de liquidación pasó de `bg-gradient-to-r` a fondo sólido `#0A1A0F` con borde `border border-emerald-500/80`.
+- **3. Eliminación de Bordes Redondeados Suaves (`rounded-full`, etc.):**
+  - `PosBarcodeScanner.tsx`: el pill de estado pasó de `rounded-full` a `rounded-none`.
+  - Eliminadas transiciones lentas innecesarias (`duration-300`, `duration-500` pasadas a `duration-150`) y efectos de escala táctil (`active:scale-95`).
+- **4. Ajuste Ergonómico de Tipografía Mínima ($\ge 10\text{px}$):**
+  - Subidas todas las fuentes ilegibles de 8px, 9px y 9.5px a `10px` / `11px` en 15 componentes del sistema:
+    - `PosBarcodeScanner.tsx`, `ModalPago.tsx`, `ModalCerrarTurno.tsx`, `ModalAbrirTurno.tsx`, `PosHeader.tsx`, `ProductCard.tsx`, `DashboardPos.tsx`.
+    - `ModalCrearProducto.tsx`, `ModalDetalleProducto.tsx`, `InventarioPage.tsx`, `DashboardPage.tsx`, `ArqueosPage.tsx`, `EmpleadosPage.tsx`, `AdminLayout.tsx`.
+    - `LoginPage.tsx`: botones de credenciales rápidas subidos a `10px`.
+- **5. Verificación de Compilación:**
+  - `npm run build` ejecutado con éxito (0 errores TypeScript en `tsc -b` y bundle de Vite generado limpiamente).
+  - Commit realizado: `605acde style(design): purgar sombras, gradientes, bordes redondeados y elevar tipografia minima a 10px segun Design_Base`.
+
+
 
 
