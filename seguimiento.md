@@ -838,6 +838,38 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - `npm run build` ejecutado con éxito (código de salida 0, 4.10s, 0 errores TypeScript).
   - Commit: `cf3b72b feat(ux): atajos de teclado F2 y Escape, prevencion de robo de foco y confirmacion de vaciado de ticket`.
 
+---
+
+### Seguridad, Autorización y Lógica Financiera Backend (.NET 8) - PASO 3 COMPLETADO
+
+**Objetivo:** Proteger endpoints críticos de administración bajo política estricta `AdminOnly`, blindar la transacción de cobro contra alteración maliciosa de precios, auditar la pertenencia de turnos de caja para impedir que un cajero cierre el turno de otro, y corregir el cálculo de comisiones de sábado ajustando fechas UTC al huso local de Argentina (UTC-3).
+
+- **Rama:** `feature/backend-security-and-pricing` (creada desde `develop`).
+- **1. Política de Autorización Restrictiva `AdminOnly` (`Program.cs`):**
+  - Se registró la política `options.AddPolicy("AdminOnly", policy => policy.RequireRole(nameof(RolUsuario.Admin)))`.
+  - Aplicada a los endpoints sensibles del sistema:
+    - `MetricasEndpoints.cs`: `GET /api/metricas/*` (ganancias netas y márgenes de negocio protegidos exclusivamente para el Dueño).
+    - `UsuariosEndpoints.cs`: `GET/POST /api/usuarios/empleados/*` (salarios, tarifas horarias, altas de personal y liquidación restringidas al Dueño).
+    - `CajaEndpoints.cs`: `GET /api/caja/arqueos` (auditoría histórica de todos los arqueos de gaveta restringida a Admin).
+    - `CrearProductoEndpoint.cs`: `POST /api/productos`, `POST /api/inventario` y `POST /api/inventario/sincronizar-tiendanube` restringidos a Admin. El catálogo POS de lectura (`GET /api/productos`) queda asegurado con la política `OperadorCaja`.
+- **2. Blindaje de Precios en el Servidor (`CobrarOrdenCommandHandler.cs`):**
+  - Validación de integridad de importes: Cada artículo en la orden debe tener `PrecioUnitario > 0`.
+  - Control de umbral mínimo de catálogo: Si el artículo tiene precio de venta en catálogo (`PrecioVenta > 0`), el servidor rechaza cualquier solicitud donde `PrecioUnitario < 0.5 * PrecioVenta`, impidiendo manipulación de precios desde el cliente o descuentos no autorizados.
+- **3. Auditoría de Propiedad de Turno (`CerrarTurnoCommandHandler.cs`):**
+  - `CerrarTurnoCommand` extendido con `SolicitanteId` y flag `EsAdmin`.
+  - El handler valida que solo el operador que abrió el turno pueda cerrarlo (`turno.EmpleadoId == SolicitanteId`), reservando la potestad de anulación/cierre extraordinario únicamente a usuarios con rol `Admin`.
+- **4. Corrección de Timezone en Comisiones de Sábado (`CalculadoraComisiones.cs`):**
+  - Detección de huso horario: Si la fecha suministrada es UTC, se traslada a la zona horaria comercial de Argentina (`UTC-3`) antes de evaluar si el día corresponde a `DayOfWeek.Saturday`.
+  - Resuelve el caso de ventas nocturnas de sábado (ej. 21:30 hs local = 00:30 hs domingo UTC) que anteriormente perdían la comisión del 5%.
+- **5. Cobertura y Suite de Pruebas (105 tests superados, 0 fallos):**
+  - 5 nuevas pruebas unitarias añadidas y verificadas:
+    - `ComisionesTests.cs`: Cálculo exitoso de comisión para venta en sábado a la noche (domingo en UTC) y exclusión para venta en viernes por la noche (sábado en UTC).
+    - `CajaHandlersTests.cs`: Rechazo a un empleado que intenta cerrar el turno de otro, autorización a Admin para cerrar turno ajeno, y rechazo a ventas con precios adulterados por debajo del umbral mínimo del catálogo.
+  - Suite completa: 105/105 tests en verde (`dotnet test`).
+  - Bundle frontend verificado: `npm run build` sin errores.
+  - Commit: `4184897 feat(security): politica AdminOnly, propiedad de turnos, proteccion de precios y huso UTC-3 en comisiones`.
+
+
 
 
 
