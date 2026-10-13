@@ -33,6 +33,12 @@ public class CerrarTurnoCommandHandler : IRequestHandler<CerrarTurnoCommand, Res
             return Result<CerrarTurnoResult>.Failure($"El turno con ID {request.TurnoId} ya se encuentra cerrado.");
         }
 
+        // Validar propiedad del turno: un empleado solo puede cerrar su propio turno (a menos que sea Admin)
+        if (request.SolicitanteId.HasValue && !request.EsAdmin && turno.EmpleadoId != request.SolicitanteId.Value)
+        {
+            return Result<CerrarTurnoResult>.Failure("No tienes permisos para cerrar el turno de otro operador.");
+        }
+
         // 2. Calcular el total acumulado en efectivo de las órdenes pagadas del turno
         var ordenesPagadas = turno.Ordenes
             .Where(o => o.Estado == EstadoOrden.Pagada)

@@ -59,6 +59,22 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
                 return Result<CobrarOrdenResult>.Failure($"La variante con ID {item.VarianteId} no existe en el catálogo.");
             }
 
+            if (item.PrecioUnitario <= 0)
+            {
+                return Result<CobrarOrdenResult>.Failure($"El precio unitario de venta para la variante ID {variante.Id} debe ser mayor a $0.");
+            }
+
+            // Validación de integridad de precios: el precio no puede ser inferior al 50% del valor de catálogo
+            if (variante.Producto != null && variante.Producto.PrecioVenta > 0)
+            {
+                var precioMinimoPermitido = Math.Round(variante.Producto.PrecioVenta * 0.50m, 2);
+                if (item.PrecioUnitario < precioMinimoPermitido)
+                {
+                    return Result<CobrarOrdenResult>.Failure(
+                        $"El precio unitario informado (${item.PrecioUnitario:N2}) para '{variante.Producto.Nombre}' es inferior al mínimo permitido por catálogo (${precioMinimoPermitido:N2}).");
+                }
+            }
+
             if (variante.StockFisico < item.Cantidad)
             {
                 return Result<CobrarOrdenResult>.Failure(

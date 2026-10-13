@@ -117,6 +117,10 @@ builder.Services.AddAuthorization(options =>
     // Jerarquía de roles: Dueño/Admin también opera la caja heredando permisos de Empleado
     options.AddPolicy("OperadorCaja", policy =>
         policy.RequireRole(nameof(RolUsuario.Admin), nameof(RolUsuario.Empleado)));
+
+    // Política restrictiva: exclusiva para el Dueño/Admin (métricas financieras, liquidaciones, arqueos y sync)
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole(nameof(RolUsuario.Admin)));
 });
 
 // Swagger con soporte para Bearer Token

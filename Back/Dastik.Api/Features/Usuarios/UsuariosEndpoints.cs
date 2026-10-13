@@ -11,7 +11,7 @@ public static class UsuariosEndpoints
     {
         var group = app.MapGroup("/api/usuarios")
             .WithTags("Gestión de Empleados y Sueldos")
-            .RequireAuthorization();
+            .RequireAuthorization("AdminOnly");
 
         // 1. GET /api/usuarios/empleados: Listar todos los empleados
         group.MapGet("/empleados", async (
