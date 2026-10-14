@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Archive, ShieldCheck, SignOut, Storefront, TestTube, SlidersHorizontal } from '@phosphor-icons/react';
+import { Archive, ShieldCheck, SignOut, Storefront, TestTube, SlidersHorizontal, ArrowsLeftRight } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useTenantStore } from '../../../stores/useTenantStore';
@@ -9,9 +9,10 @@ import type { TurnoActivoDto } from '../api/cajaApi';
 interface PosHeaderProps {
   turnoActivo?: TurnoActivoDto | null;
   onSolicitarCierreTurno?: () => void;
+  onSolicitarCambio?: () => void;
 }
 
-export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCierreTurno }) => {
+export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCierreTurno, onSolicitarCambio }) => {
   const { usuario, logout } = useAuthStore();
   const { isSandboxMode, toggleSandboxMode } = useTenantStore();
 
@@ -75,6 +76,20 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCi
           >
             <Archive size={14} weight="light" />
             <span>CERRAR TURNO</span>
+          </Button>
+        )}
+
+        {/* Botón de Cambio de Prenda */}
+        {turnoActivo && onSolicitarCambio && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onSolicitarCambio}
+            className="gap-1.5 text-[10px] tracking-wider py-1 px-2.5 border-[#333333] hover:border-amber-400 text-amber-300 hover:text-amber-200 bg-[#111111] shrink-0 whitespace-nowrap font-heading font-bold"
+            title="Registrar cambio de prenda mano a mano o con diferencia"
+          >
+            <ArrowsLeftRight size={14} weight="bold" className="text-amber-400" />
+            <span>CAMBIO DE PRENDA</span>
           </Button>
         )}
 

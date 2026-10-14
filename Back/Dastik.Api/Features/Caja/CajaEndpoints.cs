@@ -3,6 +3,7 @@ using Dastik.Api.Domain.Entities;
 using Dastik.Api.Features.Caja.AbrirTurno;
 using Dastik.Api.Features.Caja.CerrarTurno;
 using Dastik.Api.Features.Caja.CobrarOrden;
+using Dastik.Api.Features.Caja.RegistrarCambio;
 using Dastik.Api.Infrastructure.Persistence;
 using FluentValidation;
 using MediatR;
@@ -123,6 +124,77 @@ public static class CajaEndpoints
         group.MapPost("/cobrar", CobrarOrdenHandler)
             .WithName("CobrarOrdenAlias")
             .WithSummary("Alias directo para cobrar orden en caja.")
+            .WithOpenApi();
+
+        // 2.1 Registro de Cambio de Prenda (Soporta /cambios, /cambio y /api/ventas/cambio)
+        async Task<IResult> RegistrarCambioHandler(
+            RegistrarCambioCommand command,
+            ClaimsPrincipal user,
+            AppDbContext context,
+            ISender sender,
+            IValidator<RegistrarCambioCommand> validator,
+            CancellationToken ct)
+        {
+            // Si TurnoId no vino especificado, buscar el turno abierto activo del operador o el general
+            if (command.TurnoId <= 0)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                    ?? user.FindFirst("sub")?.Value;
+                int.TryParse(userIdClaim, out var empleadoId);
+
+                var turnoActivoId = await context.Turnos
+                    .AsNoTracking()
+                    .Where(t => t.Estado == EstadoTurno.Abierto && (empleadoId == 0 || t.EmpleadoId == empleadoId))
+                    .OrderByDescending(t => t.FechaApertura)
+                    .Select(t => t.Id)
+                    .FirstOrDefaultAsync(ct);
+
+                if (turnoActivoId == 0)
+                {
+                    turnoActivoId = await context.Turnos
+                        .AsNoTracking()
+                        .Where(t => t.Estado == EstadoTurno.Abierto)
+                        .OrderByDescending(t => t.FechaApertura)
+                        .Select(t => t.Id)
+                        .FirstOrDefaultAsync(ct);
+                }
+
+                if (turnoActivoId > 0)
+                {
+                    command = command with { TurnoId = turnoActivoId };
+                }
+            }
+
+            var validationResult = await validator.ValidateAsync(command, ct);
+            if (!validationResult.IsValid)
+            {
+                return Results.ValidationProblem(validationResult.ToDictionary());
+            }
+
+            var result = await sender.Send(command, ct);
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { error = result.Error });
+            }
+
+            return Results.Created($"/api/caja/ordenes/{result.Value!.OrdenId}", result.Value);
+        }
+
+        group.MapPost("/cambios", RegistrarCambioHandler)
+            .WithName("RegistrarCambio")
+            .WithSummary("Registra un cambio de prendas con ajuste dual de stock y liquidación contable de diferencia.")
+            .WithOpenApi();
+
+        group.MapPost("/cambio", RegistrarCambioHandler)
+            .WithName("RegistrarCambioAlias")
+            .WithSummary("Alias directo para registrar cambio de prendas.")
+            .WithOpenApi();
+
+        app.MapPost("/api/ventas/cambio", RegistrarCambioHandler)
+            .WithName("RegistrarCambioVentasAlias")
+            .WithTags("Caja y POS")
+            .RequireAuthorization("OperadorCaja")
+            .WithSummary("Alias en módulo de ventas para registrar cambio de prendas.")
             .WithOpenApi();
 
         // 3. Resumen en Vivo del Turno (para Arqueo)

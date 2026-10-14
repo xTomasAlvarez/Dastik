@@ -36,9 +36,39 @@ export interface CobrarOrdenResponse {
   cantidadItems: number;
 }
 
+export interface RegistrarCambioRequest {
+  turnoId: number;
+  varianteDevueltaId: number;
+  cantidadDevuelta: number;
+  varianteNuevaId: number;
+  cantidadNueva: number;
+  motivoCambio: string;
+  metodoPagoDiferencia?: MetodoPagoTipo | null;
+  montoDiferenciaPagada?: number | null;
+}
+
+export interface RegistrarCambioResponse {
+  ordenId: number;
+  turnoId: number;
+  fecha: string;
+  subtotalDevuelto: number;
+  subtotalNuevo: number;
+  diferencia: number;
+  montoCobrado: number;
+  metodoPago?: MetodoPagoTipo | null;
+  motivoCambio: string;
+  stockDevueltoFinal: number;
+  stockNuevoFinal: number;
+}
+
 export const posApi = {
   cobrarOrden: async (data: CobrarOrdenRequest): Promise<CobrarOrdenResponse> => {
     const response = await apiClient.post<CobrarOrdenResponse>('/api/caja/cobrar', data);
+    return response.data;
+  },
+
+  registrarCambio: async (data: RegistrarCambioRequest): Promise<RegistrarCambioResponse> => {
+    const response = await apiClient.post<RegistrarCambioResponse>('/api/caja/cambios', data);
     return response.data;
   },
 };
