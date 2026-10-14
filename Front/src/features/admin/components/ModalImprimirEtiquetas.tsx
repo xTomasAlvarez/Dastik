@@ -294,14 +294,15 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             width: '100%',
-            margin: '1px 0',
+            marginTop: '3.5px',
+            marginBottom: '1px',
           }}
         >
           {formato === 'ean13' ? (
             <BarcodeEan13Svg
               code={codigoBarrasSeguro}
-              height={28}
-              style={{ height: '28px', width: '100%', maxWidth: '130px' }}
+              height={26}
+              style={{ height: '26px', width: '100%', maxWidth: '130px' }}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

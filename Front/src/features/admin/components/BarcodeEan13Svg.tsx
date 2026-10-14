@@ -73,7 +73,7 @@ export const BarcodeEan13Svg: React.FC<BarcodeEan13SvgProps> = ({
   code,
   className = '',
   style,
-  height = 28,
+  height = 26,
 }) => {
   const { modules, isValid, firstDigit, left6, right6 } = useMemo(() => {
     // Normalizar código eliminando caracteres no numéricos
