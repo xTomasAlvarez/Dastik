@@ -945,7 +945,11 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
     - Layout de alta legibilidad para impresión en hojas autoadhesivas estándar (A4 o rollos térmicos de 65x40mm): Marca (`DASTIK` / `HIDDEN SNEAKERS`), nombre de la prenda, **TALLE bien grande en badge de alto contraste**, gráfico SVG nítido y código numérico `CodigoBarras` debajo.
 - **5. Verificación de Compilación y Calidad:**
   - `dotnet test`: 112/112 pruebas superadas con 0 errores.
-  - `npm run build`: compilación de producción exitosa en 1.39s (código de salida 0, 0 errores TypeScript).
+  - `npm run build`: compilación de producción exitosa en 1.71s (código de salida 0, 0 errores TypeScript).
+  - **Refinamiento de Plantilla 38x21mm (144x80px):**
+    - Resuelto crash por violación de orden de hooks en React.
+    - Plantilla calibrada exactamente a 144px x 80px: TALLE limpio sin caja negra invasiva, fuentes `5px`/`6px`/`7px`/`9.5px` inline, `whiteSpace: 'nowrap'`, precios apilados (Lista vs Contado) sin desbordes horizontales ni verticales, y exportación a PDF vía `html2canvas` + `jsPDF`.
+
 
 
 
