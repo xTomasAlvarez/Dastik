@@ -946,9 +946,12 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **5. Verificación de Compilación y Calidad:**
   - `dotnet test`: 112/112 pruebas superadas con 0 errores.
   - `npm run build`: compilación de producción exitosa en 1.71s (código de salida 0, 0 errores TypeScript).
-  - **Refinamiento de Plantilla 38x21mm (144x80px):**
+  - **Refinamiento de Plantilla 38x21mm (144x80px) y Geometría EAN-13 Comercial:**
     - Resuelto crash por violación de orden de hooks en React.
-    - Plantilla calibrada exactamente a 144px x 80px: TALLE limpio sin caja negra invasiva, fuentes `5px`/`6px`/`7px`/`9.5px` inline, `whiteSpace: 'nowrap'`, precios apilados (Lista vs Contado) sin desbordes horizontales ni verticales, y exportación a PDF vía `html2canvas` + `jsPDF`.
+    - **Geometría Real EAN-13:** Barras de guardia largas (`height="26"`) en bits 0-2, 45-49 y 92-94, y barras de datos cortas (`height="20"`), encajando los dígitos en el hueco a `y="26.5"` con `'JetBrains Mono', 'Courier New', monospace` (dígito 1 a la izquierda de la primera guardia, bloque 1 de 6 dígitos centrado a la izquierda y bloque 2 de 6 dígitos centrado a la derecha).
+    - **Tipografía Avant-Garde Streetwear:** Fuente `'Space Grotesk', 'Inter', system-ui, sans-serif` en el contenedor, Marca con `fontSize: '5.5px'`, `fontWeight: 800`, `letterSpacing: '1.2px'`, Prenda con `fontSize: '6.5px'`, `fontWeight: 900`, `letterSpacing: '-0.2px'`, y Talle con `fontSize: '7.5px'`, `fontWeight: 900`, `letterSpacing: '0.3px'`.
+    - **Margen Inferior Protegido:** Contenedor con `padding: '4px 7px 6px 7px'`, precios apilados en columna a la derecha con `paddingBottom: '2px'` para garantizar que `Contado: $ ...` nunca toque el borde inferior de la etiqueta.
+    - Exportación a PDF vía `html2canvas` (scale 3, 300 DPI) + `jsPDF` y modo nativo `@media print`.
 
 
 
