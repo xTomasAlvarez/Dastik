@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Image as ImageIcon,
@@ -8,8 +8,10 @@ import {
   TrendUp,
   CurrencyDollar,
   Percent,
+  Printer,
 } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
+import { ModalImprimirEtiquetas } from './ModalImprimirEtiquetas';
 import type { ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 
 interface ModalDetalleProductoProps {
@@ -23,6 +25,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
   onClose,
   producto,
 }) => {
+  const [isModalEtiquetasOpen, setIsModalEtiquetasOpen] = useState(false);
   // Manejo de tecla Escape para cerrar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -304,10 +307,18 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
         </div>
 
         {/* 3. Footer del Drawer */}
-        <div className="p-4 border-t border-[#222222] bg-[#0C0C0C] flex items-center justify-between">
-          <span className="text-[10px] font-mono text-[#555555] uppercase tracking-wider">
-            ESC PARA SALIR
-          </span>
+        <div className="p-4 border-t border-[#222222] bg-[#0C0C0C] flex items-center justify-between gap-3">
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => setIsModalEtiquetasOpen(true)}
+            className="gap-2 text-xs font-heading font-bold tracking-wider px-4 border-amber-400 text-amber-300 hover:text-amber-200 hover:bg-amber-950/30 cursor-pointer"
+            title="Generar etiquetas de código de barras o QR para imprimir"
+          >
+            <Printer size={16} weight="bold" />
+            <span>IMPRIMIR ETIQUETAS</span>
+          </Button>
+
           <Button
             variant="secondary"
             size="md"
@@ -318,6 +329,13 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Modal de Impresión de Etiquetas de Código de Barras / QR */}
+      <ModalImprimirEtiquetas
+        isOpen={isModalEtiquetasOpen}
+        onClose={() => setIsModalEtiquetasOpen(false)}
+        producto={producto}
+      />
     </div>
   );
 };

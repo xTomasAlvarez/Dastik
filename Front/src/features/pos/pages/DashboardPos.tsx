@@ -7,7 +7,9 @@ import { CatalogoGrid } from '../components/CatalogoGrid';
 import { ModalAbrirTurno } from '../components/ModalAbrirTurno';
 import { ModalPago } from '../components/ModalPago';
 import { ModalCerrarTurno } from '../components/ModalCerrarTurno';
+import { ModalCambio } from '../components/ModalCambio';
 import { cajaApi } from '../api/cajaApi';
+import { type RegistrarCambioResponse } from '../api/posApi';
 import { useCartStore } from '../stores/useCartStore';
 import { Button } from '../../../components/ui/Button';
 import { queryClient } from '../../../lib/react-query/queryClient';
@@ -17,6 +19,7 @@ export const DashboardPos: React.FC = () => {
 
   const [isModalPagoOpen, setIsModalPagoOpen] = useState(false);
   const [isModalCerrarTurnoOpen, setIsModalCerrarTurnoOpen] = useState(false);
+  const [isModalCambioOpen, setIsModalCambioOpen] = useState(false);
   const [confirmandoVaciar, setConfirmandoVaciar] = useState(false);
   const vaciarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -25,6 +28,8 @@ export const DashboardPos: React.FC = () => {
     total: number;
     vuelto: number;
   } | null>(null);
+
+  const [cambioExitoso, setCambioExitoso] = useState<RegistrarCambioResponse | null>(null);
 
   // 1. Consulta Reactiva del Turno Activo de Caja
   const {
@@ -94,6 +99,7 @@ export const DashboardPos: React.FC = () => {
       <PosHeader
         turnoActivo={turnoActivo}
         onSolicitarCierreTurno={() => setIsModalCerrarTurnoOpen(true)}
+        onSolicitarCambio={() => setIsModalCambioOpen(true)}
       />
 
       {/* 2. Banner de Venta Exitosa (Toast Discreto) */}
@@ -118,6 +124,35 @@ export const DashboardPos: React.FC = () => {
           <button
             type="button"
             onClick={() => setVentaExitosa(null)}
+            className="text-[#71717A] hover:text-[#FAFAFA] p-1 cursor-pointer"
+            title="Descartar aviso"
+          >
+            <X size={16} weight="light" />
+          </button>
+        </div>
+      )}
+
+      {/* 2.1 Banner de Cambio Exitoso */}
+      {cambioExitoso && (
+        <div className="bg-[#12130F] border-b border-amber-600/80 px-6 py-3 flex items-center justify-between text-xs font-mono transition-fast">
+          <div className="flex items-center gap-3">
+            <CheckCircle size={20} weight="bold" className="text-amber-400 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold block">
+                CAMBIO DE PRENDA ASENTADO // OPERACIÓN #{cambioExitoso.ordenId} — {cambioExitoso.motivoCambio}
+              </span>
+              <span className="text-xs font-heading font-bold text-[#FAFAFA]">
+                {cambioExitoso.diferencia === 0
+                  ? 'Cambio mano a mano ($0 diferencia). Stock actualizado.'
+                  : cambioExitoso.diferencia > 0
+                  ? `Diferencia cobrada: ${formatearDinero(cambioExitoso.montoCobrado)} (${cambioExitoso.metodoPago === 1 ? 'Efectivo' : cambioExitoso.metodoPago === 2 ? 'Transferencia' : cambioExitoso.metodoPago === 4 ? 'Débito' : 'Crédito'})`
+                  : `Saldo a favor del cliente registrado: ${formatearDinero(Math.abs(cambioExitoso.diferencia))}`}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCambioExitoso(null)}
             className="text-[#71717A] hover:text-[#FAFAFA] p-1 cursor-pointer"
             title="Descartar aviso"
           >
@@ -325,6 +360,16 @@ export const DashboardPos: React.FC = () => {
         isOpen={isModalCerrarTurnoOpen}
         onClose={() => setIsModalCerrarTurnoOpen(false)}
         turnoId={turnoActivo?.turnoId ?? 0}
+      />
+
+      {/* 7. Modal de Gestión de Cambios de Prendas */}
+      <ModalCambio
+        isOpen={isModalCambioOpen}
+        onClose={() => setIsModalCambioOpen(false)}
+        turnoId={turnoActivo?.turnoId ?? 0}
+        onCambioExitoso={(res) => {
+          setCambioExitoso(res);
+        }}
       />
     </div>
   );

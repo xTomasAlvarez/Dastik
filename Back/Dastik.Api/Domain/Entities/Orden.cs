@@ -7,6 +7,8 @@ public class Orden
     public DateTime Fecha { get; set; }
     public decimal Total { get; set; }
     public EstadoOrden Estado { get; set; } = EstadoOrden.Pagada;
+    public bool EsCambio { get; set; } = false;
+    public string? MotivoCambio { get; set; }
 
     // Propiedades de navegación
     public Turno Turno { get; set; } = null!;

@@ -891,6 +891,63 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - `npm run build` ejecutado con éxito (código de salida 0, 1.17s, 0 errores TypeScript).
   - Commit: `f206a17 feat(security): implementar AdminRoute y purga de cache de TanStack Query en logout y cambio de tenant`.
 
+---
+
+### Módulo de Gestión de Cambios (POS) + Generador Casero de Etiquetas (EAN-13 / QR) - COMPLETADO
+
+**Objetivo:** Desarrollar el motor integral de cambios de prendas en mostrador con impacto contable exacto en caja, sincronización omnicanal con Tiendanube (Outbox + Tenant Guard), y generador casero de etiquetas imprimibles de códigos de barras (EAN-13) y QR bajo estética Avant-Garde High-End Streetwear.
+
+- **Rama:** `feature/pos-cambios-y-etiquetas` (creada desde `develop`).
+- **1. Backend: Motor de Cambios (`RegistrarCambioCommand` y Endpoints):**
+  - Entidad `Orden` extendida con `EsCambio` (bool, default false) y `MotivoCambio` (string?).
+  - Mapeo en `OrdenConfiguration` y scripts de migración SQLite tolerante en `Program.cs`.
+  - Feature slice `Features/Caja/RegistrarCambio/`:
+    - `RegistrarCambioCommand` y `RegistrarCambioResult`.
+    - `RegistrarCambioCommandValidator`: valida turno, variante devuelta, cantidad devuelta > 0, variante nueva, cantidad nueva > 0 y motivo obligatorio.
+    - `RegistrarCambioCommandHandler`:
+      - **Ajuste Dual de Stock:** Incrementa stock físico de la prenda devuelta (`+CantidadDevuelta`) y descuenta stock físico de la nueva prenda (`-CantidadNueva`), verificando existencia y stock disponible efectivo.
+      - **Tenant Guard Omnicanal (Outbox Pattern):** Si la variante devuelta o nueva pertenece a "Dastik" (`TieneTiendaNube == true` y posee `TiendanubeVariantId`), encola mensajes `StockIncrementadoPorCambio` / `StockReducidoPorCambio` en `OutboxMessages` para sincronización con la API de Tiendanube. Si pertenece a "Hidden Sneakers", la operación opera exclusivamente a nivel de inventario local.
+      - **Impacto Contable Exacto en Caja y Arqueo:** Calcula `Diferencia = SubtotalNuevo - SubtotalDevuelto`. Si la diferencia es positiva (`> 0`), asienta en `Orden.Pagos` **únicamente la diferencia cobrada** en el método de pago seleccionado, evitando inflar falsamente la recaudación ni el arqueo del día con el valor total de la prenda. Si la diferencia es nula ($0) o negativa (saldo a favor del cliente), no se generan registros de pago en la caja.
+      - Transaccionalidad ACID atómica (`BeginTransactionAsync` + `CommitAsync`).
+  - Endpoints expuestos y protegidos con la política `OperadorCaja`:
+    - `POST /api/caja/cambios`
+    - `POST /api/caja/cambio`
+    - `POST /api/ventas/cambio`
+- **2. Cobertura de Pruebas Unitarias Backend (112 tests superados en verde):**
+  - Suite de pruebas `CambiosTests.cs` (7 casos de negocio exhaustivos):
+    - `RegistrarCambio_ManoAMano_MismoPrecio_ActualizaStockYNoGeneraPagos`: verifica incremento de stock devuelto (+1), descuento de stock nuevo (-1), orden marcada con `EsCambio = true`, total = 0 y pagos vacíos.
+    - `RegistrarCambio_ConDiferenciaAFavorDelLocal_CobraDiferenciaYAsientaPagoEnCaja`: verifica cobro de la diferencia exacta ($4.500) y registro en pagos.
+    - `RegistrarCambio_StockInsuficienteNuevaVariante_RetornaFalloYSinCambios`: verifica rechazo seguro sin alterar stocks.
+    - `RegistrarCambio_TenantGuardTiendanube_DastikEncolaOutbox_HiddenSneakersNo`: verifica que solo la variante de Dastik genere evento en Outbox.
+    - `RegistrarCambio_TurnoCerrado_RetornaFallo`: bloqueo de cambios en turnos inactivos.
+    - `RegistrarCambio_SinMetodoPagoCuandoHayDiferencia_RetornaFallo`: validación de método de pago obligatorio ante saldos a pagar.
+    - `RegistrarCambio_SaldoAFavorDelCliente_NoGeneraPagosNiInflaCaja`: verificación de saldo a favor sin alterar la gaveta de efectivo.
+  - Total: 112/112 tests en verde (`dotnet test`).
+- **3. Frontend: Modal de Gestión de Cambios en Mostrador (`ModalCambio.tsx`):**
+  - Botón prominente `"CAMBIO DE PRENDA"` con icono `ArrowsLeftRight` en `PosHeader.tsx` (visible con turno activo).
+  - Wizard interactivo de 4 pasos con estética 100% flat Avant-Garde (sin sombras ni gradientes, `rounded-none`, listener `Escape` y fuentes $\ge 10\text{px}$):
+    - **Paso 1 (Devuelve):** Escaneo óptico EAN-13 o buscador rápido en catálogo con auto-selección, selector de cantidad devuelta (+1 stock).
+    - **Paso 2 (Lleva):** Escaneo óptico o buscador de la nueva prenda, validación de stock disponible en tiempo real, selector de cantidad a llevar (-1 stock).
+    - **Paso 3 (Motivo):** Textarea obligatorio con botones rápidos de 1 clic (pills: `"Cambio de Talle"`, `"Cambio de Color"`, `"Regalo"`, `"Falla de Costura"`, `"Preferencia de Modelo"`).
+    - **Paso 4 (Liquidación):**
+      - Si diferencia = $0: Badge verde `CAMBIO MANO A MANO ($0 DIFERENCIA)` y botón directo de confirmación.
+      - Si diferencia > $0: Panel de cobro de diferencia con métodos reales (`Efectivo` con cálculo automático de vuelto, `Transferencia` con recordatorio de alias Ale/Gordo, `Débito`, y `Crédito` con switch de +25% de interés en cuotas).
+      - Si diferencia < $0: Alerta de saldo a favor del cliente con constancia de crédito para futuras compras.
+  - Integración en `DashboardPos.tsx`: banner de confirmación tras el cambio e invalidación reactiva de caché en TanStack Query (`catalogo-pos`, `turno-activo`, `turnos`, `dashboard-resumen`).
+- **4. Frontend: Generador Casero de Etiquetas Imprimibles (`ModalImprimirEtiquetas.tsx`):**
+  - Botón `"IMPRIMIR ETIQUETAS"` con icono `Printer` integrado en el cajón de ficha técnica (`ModalDetalleProducto.tsx`).
+  - Opciones de formato visual:
+    - `Código de Barras (EAN-13)`: Generador vectorial SVG puro (`BarcodeEan13Svg.tsx`) que calcula las 95 barras estándar de GS1 con checksum Módulo 10, guard bars y zonas de silencio para lectura láser garantizada.
+    - `Código QR`: Generador vectorial SVG (`QrCodeSvg.tsx`) vía biblioteca `qrcode` (Módulo 21x21 / 25x25).
+  - Control de cantidades y curva de talles:
+    - Selectores individuales por talle con botones rápidos: `"Cargar según stock actual"` y `"1 por talle (Curva)"`.
+  - Vista previa en pantalla y contenedor dedicado `@media print`:
+    - Layout de alta legibilidad para impresión en hojas autoadhesivas estándar (A4 o rollos térmicos de 65x40mm): Marca (`DASTIK` / `HIDDEN SNEAKERS`), nombre de la prenda, **TALLE bien grande en badge de alto contraste**, gráfico SVG nítido y código numérico `CodigoBarras` debajo.
+- **5. Verificación de Compilación y Calidad:**
+  - `dotnet test`: 112/112 pruebas superadas con 0 errores.
+  - `npm run build`: compilación de producción exitosa en 1.39s (código de salida 0, 0 errores TypeScript).
+
+
 
 
 

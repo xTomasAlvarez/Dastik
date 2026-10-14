@@ -18,6 +18,8 @@ public class OrdenConfiguration : IEntityTypeConfiguration<Orden>
         builder.Property(o => o.Total).HasColumnType("decimal(18,2)").IsRequired();
 
         builder.Property(o => o.Estado).HasConversion<int>().IsRequired();
+        builder.Property(o => o.EsCambio).HasDefaultValue(false);
+        builder.Property(o => o.MotivoCambio).HasMaxLength(500);
 
         // Relaciones
         builder.HasOne(o => o.Turno)

@@ -210,6 +210,24 @@ try
             {
                 // La columna ya existe
             }
+
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Ordenes\" ADD COLUMN \"EsCambio\" INTEGER DEFAULT 0 NOT NULL;");
+            }
+            catch
+            {
+                // La columna ya existe
+            }
+
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Ordenes\" ADD COLUMN \"MotivoCambio\" TEXT NULL;");
+            }
+            catch
+            {
+                // La columna ya existe
+            }
         }
     }
     await DataSeeder.SeedInitialDataAsync(app.Services);
