@@ -953,6 +953,52 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
     - **Margen Inferior Protegido:** Contenedor con `padding: '4px 7px 6px 7px'`, precios apilados en columna a la derecha con `paddingBottom: '2px'` para garantizar que `Contado: $ ...` nunca toque el borde inferior de la etiqueta.
     - Exportación a PDF vía `html2canvas` (scale 3, 300 DPI) + `jsPDF` y modo nativo `@media print`.
 
+---
+
+### [feature/admin-metricas-avanzadas] Módulo de Finanzas Reales y Velocidad de Rotación (`/admin/metricas`) - COMPLETADO
+
+**Objetivo:** Desarrollar el centro de inteligencia comercial y financiera para el dueño del local (`/admin/metricas`) bajo metodología TDD estricta, permitiendo calcular la ganancia neta real de bolsillo (descontando costos ocultos de pauta, logística y pasarelas), auditar la velocidad de venta diaria y detectar el capital inmovilizado en stock clavo.
+
+- **Rama:** `feature/admin-metricas-avanzadas` (creada a partir de `develop`).
+- **1. Backend - CQRS y Endpoint (`GET /api/metricas/avanzadas`):**
+  - Feature slice en `Features/Metricas/ObtenerMetricasAvanzadas/`:
+    - `MetricasAvanzadasDtos.cs`:
+      - `MetricasAvanzadasResponse`: `IngresosBrutos`, `CostoMercaderiaVendida`, `GananciaBruta`, `GastosCajaRegistrados`, `CantidadOperaciones`, `TicketPromedio`, desgloses de pagos (`TotalEfectivo`, `TotalTransferencia`, `TotalDebito`, `TotalCredito`), comparativa por Unidad de Negocio (`IngresosDastik` vs `IngresosHiddenSneakers`), y colecciones `TopMasVendidos` y `ProductosEstancados`.
+      - `TopVendidoDto`: variantes ordenadas por mayor volumen de ventas con cálculo de `VelocidadDiaria` (unidades / días de período), `SugerenciaReposicion` (alerta si stock < 7 días de demanda o stock <= 3) y `CantidadSugerida`.
+      - `ProductoEstancadoDto`: variantes activas con stock físico > 0 que tuvieron 0 ventas en el período seleccionado, ordenadas por mayor `CapitalInmovilizado` (`StockFisico * CostoBase`).
+    - `ObtenerMetricasAvanzadasQuery.cs`: query con soporte para `Periodo` (`hoy`, `semana`, `mes`, `temporada`) y filtro opcional por `UnidadNegocioId`.
+    - `ObtenerMetricasAvanzadasHandler.cs`:
+      - Cálculo de ventana temporal precisa en UTC-3 Argentina.
+      - Aislamiento y agregación transaccional por tenant si `UnidadNegocioId` está presente.
+      - Agrupación y ordenamiento en memoria de ventas, rotación y capital inmovilizado.
+  - Endpoint expuesto en `MetricasEndpoints.cs`:
+    - `GET /api/metricas/avanzadas` con `.RequireAuthorization("AdminOnly")`.
+- **2. Cobertura de Pruebas Unitarias Backend (Fase RED y GREEN):**
+  - Nueva suite `MetricasAvanzadasTests.cs` (4 pruebas unitarias de negocio exhaustivas):
+    - `ObtenerMetricasAvanzadas_CalculaFinanzasYMediosDePagoCorrectamente`: valida ingresos brutos, costo de mercadería vendida, ganancia bruta, gastos de caja y medios de pago (efectivo vs transferencia).
+    - `ObtenerMetricasAvanzadas_CalculaTopMasVendidosYVelocidadDiaria`: valida cálculo exacto de unidades/día y sugerencia de reposición preventiva para 7 días.
+    - `ObtenerMetricasAvanzadas_IdentificaProductosEstancadosConCapitalInmovilizado`: verifica la detección de stock clavo sin ventas y el capital total atrapado.
+    - `ObtenerMetricasAvanzadas_FiltraPorUnidadNegocioCorrectamente`: confirma el aislamiento contable al filtrar por unidad (`Dastik` vs `Hidden Sneakers`).
+  - Total: **116/116 tests en verde** (`dotnet test`).
+- **3. Frontend - Pantalla de Inteligencia Comercial (`MetricasPage.tsx` & `metricasApi.ts`):**
+  - `metricasApi.ts`: método tipado `obtenerMetricasAvanzadas(periodo?, unidadNegocioId?)`.
+  - `MetricasPage.tsx` con estética Avant-Garde High-End Streetwear:
+    - **Header & Filtros:** Selector de Período con pills (`HOY`, `7 DÍAS`, `30 DÍAS (MES)`, `90 DÍAS (TEMPORADA)`) y filtro de Unidad de Negocio (`TODAS`, `DASTIK`, `HIDDEN SNEAKERS`).
+    - **4 Top KPIs Financieros:** Facturación Bruta, CMV, Ganancia Bruta y Ganancia Neta Real de Bolsillo (con badge verde/rojo según margen).
+    - **Calculadora Interactiva de Ganancia Neta Real:**
+      - Parámetros persistidos automáticamente en `localStorage`: Gasto en Ads/Publicidad ($ ARS), Envíos Absorbidos ($ ARS), Comisión Pasarela (%) y Suscripción Tiendanube/Fijos ($ ARS).
+      - Fórmula visual explícita: `GANANCIA BRUTA - GASTOS DE CAJA - COSTOS DIGITALES Y ADS = GANANCIA NETA REAL`.
+    - **Distribución por Medios de Pago & Unidad:** Barras de progreso limpias para Efectivo, Transferencia (Ale/Gordo), Débito y Crédito (cuotas), más desglose Dastik vs Hidden Sneakers.
+    - **Inteligencia de Catálogo y Rotación (Tabs Duales):**
+      - Pestaña `ALTA ROTACIÓN & REPOSICIÓN`: ranking top 10 con velocidad diaria, unidades vendidas y alerta de reposición preventiva.
+      - Pestaña `STOCK INMOVILIZADO`: detector de stock clavo con cálculo del capital inmovilizado total y recomendación de promo flash.
+  - Integración en navegación:
+    - `AdminLayout.tsx`: nuevo enlace `Finanzas` (`/admin/metricas`) con icono `TrendUp`.
+    - `App.tsx`: ruta `/admin/metricas` montada con `MetricasPage` bajo `AdminRoute`.
+- **4. Verificación de Compilación:**
+  - `dotnet test`: 116/116 pruebas superadas en verde.
+  - `npm run build`: compilación de producción exitosa con 0 errores TypeScript.
+
 
 
 

@@ -8,6 +8,7 @@ import { DashboardPage } from './features/admin/pages/DashboardPage';
 import { InventarioPage } from './features/admin/pages/InventarioPage';
 import { ArqueosPage } from './features/admin/pages/ArqueosPage';
 import { EmpleadosPage } from './features/admin/pages/EmpleadosPage';
+import { MetricasPage } from './features/admin/pages/MetricasPage';
 import { CambiarPasswordModal } from './features/auth/components/CambiarPasswordModal';
 import { useAuthStore } from './stores/useAuthStore';
 import { queryClient } from './lib/react-query/queryClient';
@@ -108,7 +109,7 @@ export function App() {
             <Route path="inventario" element={<InventarioPage />} />
             <Route path="arqueos" element={<ArqueosPage />} />
             <Route path="empleados" element={<EmpleadosPage />} />
-            <Route path="metricas" element={<DashboardPage />} />
+            <Route path="metricas" element={<MetricasPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

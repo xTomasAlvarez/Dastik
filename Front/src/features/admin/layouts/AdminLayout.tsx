@@ -5,6 +5,7 @@ import {
   Storefront,
   Receipt,
   ChartBar,
+  TrendUp,
   Users,
   SignOut,
   ShieldCheck,
@@ -43,6 +44,12 @@ export const AdminLayout: React.FC = () => {
       label: 'Empleados',
       icon: <Users size={18} weight="light" />,
       description: 'Sueldos & Staff'
+    },
+    {
+      to: '/admin/metricas',
+      label: 'Finanzas',
+      icon: <TrendUp size={18} weight="light" />,
+      description: 'Rentabilidad & Rotación'
     }
   ];
 
