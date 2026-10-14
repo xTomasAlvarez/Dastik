@@ -5,21 +5,24 @@ interface QrCodeSvgProps {
   value: string;
   size?: number;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export const QrCodeSvg: React.FC<QrCodeSvgProps> = ({ value, size = 96, className = '' }) => {
+export const QrCodeSvg: React.FC<QrCodeSvgProps> = ({
+  value,
+  size = 48,
+  className = '',
+  style,
+}) => {
   const [svgString, setSvgString] = useState<string>('');
 
   useEffect(() => {
     let isMounted = true;
-    if (!value) {
-      setSvgString('');
-      return;
-    }
+    const safeValue = value && value.trim().length > 0 ? value.trim() : '0000000000000';
 
-    QRCode.toString(value, {
+    QRCode.toString(safeValue, {
       type: 'svg',
-      margin: 1,
+      margin: 0,
       width: size,
       errorCorrectionLevel: 'M',
       color: {
@@ -42,18 +45,38 @@ export const QrCodeSvg: React.FC<QrCodeSvgProps> = ({ value, size = 96, classNam
   if (!svgString) {
     return (
       <div
-        style={{ width: size, height: size }}
-        className={`bg-white border border-zinc-200 flex items-center justify-center text-[9px] font-mono text-zinc-400 ${className}`}
+        className={className}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          backgroundColor: '#FFFFFF',
+          color: '#000000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '6px',
+          fontFamily: 'monospace',
+          border: 'none',
+          ...style,
+        }}
       >
-        QR...
+        QR
       </div>
     );
   }
 
   return (
     <div
-      className={`inline-block select-none overflow-hidden bg-white ${className}`}
-      style={{ width: size, height: size }}
+      className={`inline-block select-none overflow-hidden ${className}`}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        backgroundColor: '#FFFFFF',
+        color: '#000000',
+        border: 'none',
+        lineHeight: 0,
+        ...style,
+      }}
       dangerouslySetInnerHTML={{ __html: svgString }}
     />
   );

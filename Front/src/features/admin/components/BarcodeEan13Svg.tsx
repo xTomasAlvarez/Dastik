@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 interface BarcodeEan13SvgProps {
   code: string;
   className?: string;
+  style?: React.CSSProperties;
   height?: number;
 }
 
@@ -71,24 +72,25 @@ function calcularChecksumEan13(first12: string): number {
 export const BarcodeEan13Svg: React.FC<BarcodeEan13SvgProps> = ({
   code,
   className = '',
+  style,
   height = 48,
 }) => {
   const { modules, isValid } = useMemo(() => {
     // Normalizar código eliminando caracteres no numéricos
     const clean = (code || '').replace(/\D/g, '');
-    let full = clean;
+    let full = clean.length === 0 ? '200000000000' : clean;
 
+    if (full.length < 12) {
+      full = full.padStart(12, '0');
+    }
     if (full.length === 12) {
       full = `${full}${calcularChecksumEan13(full)}`;
-    } else if (full.length < 12) {
-      const padded = full.padStart(12, '0');
-      full = `${padded}${calcularChecksumEan13(padded)}`;
     } else if (full.length > 13) {
       full = full.slice(0, 13);
     }
 
     if (full.length !== 13) {
-      return { ean13: full, modules: [], isValid: false };
+      full = '2000000000005';
     }
 
     const firstDigit = full[0];
@@ -96,18 +98,12 @@ export const BarcodeEan13Svg: React.FC<BarcodeEan13SvgProps> = ({
     const right6 = full.slice(7, 13);
     const parity = PARITY_MAP[firstDigit] || 'LLLLLL';
 
-    // Generar módulos:
-    // Guard inicial (101)
-    // 6 dígitos izquierda (7 módulos c/u)
-    // Guard central (01010)
-    // 6 dígitos derecha (7 módulos c/u)
-    // Guard final (101)
     const bits: { isBlack: boolean; isGuard: boolean }[] = [];
 
-    // Guard inicial
+    // Guard inicial (101)
     '101'.split('').forEach((b) => bits.push({ isBlack: b === '1', isGuard: true }));
 
-    // Izquierda
+    // Izquierda (6 dígitos x 7 módulos)
     for (let i = 0; i < 6; i++) {
       const digit = left6[i];
       const codeType = parity[i];
@@ -115,48 +111,65 @@ export const BarcodeEan13Svg: React.FC<BarcodeEan13SvgProps> = ({
       pattern.split('').forEach((b) => bits.push({ isBlack: b === '1', isGuard: false }));
     }
 
-    // Guard central
+    // Guard central (01010)
     '01010'.split('').forEach((b) => bits.push({ isBlack: b === '1', isGuard: true }));
 
-    // Derecha
+    // Derecha (6 dígitos x 7 módulos)
     for (let i = 0; i < 6; i++) {
       const digit = right6[i];
       const pattern = R_CODES[digit];
       pattern.split('').forEach((b) => bits.push({ isBlack: b === '1', isGuard: false }));
     }
 
-    // Guard final
+    // Guard final (101)
     '101'.split('').forEach((b) => bits.push({ isBlack: b === '1', isGuard: true }));
 
-    return { ean13: full, modules: bits, isValid: true };
+    return { modules: bits, isValid: true };
   }, [code]);
 
   if (!isValid) {
     return (
-      <div className={`flex items-center justify-center text-xs font-mono text-zinc-500 ${className}`}>
-        CÓDIGO INVÁLIDO
+      <div
+        className={className}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '6px',
+          color: '#000000',
+          backgroundColor: '#FFFFFF',
+          ...style,
+        }}
+      >
+        SIN CÓDIGO
       </div>
     );
   }
 
-  // Dimensiones: ancho de módulo = 1.2px, 95 módulos -> ~114px + quiet zones
-  const moduleWidth = 1.25;
-  const quietZone = 8;
-  const barHeight = height - 12;
-  const guardHeight = height - 4;
+  // Dimensiones: ancho de módulo = 1.15px, 95 módulos -> ~109px + quiet zones
+  const moduleWidth = 1.15;
+  const quietZone = 4;
+  const barHeight = Math.max(10, height - 3);
+  const guardHeight = height;
   const totalWidth = 95 * moduleWidth + quietZone * 2;
 
   return (
     <svg
       viewBox={`0 0 ${totalWidth} ${height}`}
-      className={`max-w-full select-none ${className}`}
-      style={{ shapeRendering: 'crispEdges' }}
+      className={`select-none ${className}`}
+      style={{
+        shapeRendering: 'crispEdges',
+        maxWidth: '100%',
+        height: `${height}px`,
+        backgroundColor: '#FFFFFF',
+        ...style,
+      }}
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Fondo blanco limpio para lectura láser óptima */}
+      {/* Fondo blanco duro */}
       <rect x="0" y="0" width={totalWidth} height={height} fill="#FFFFFF" />
 
-      {/* Barras verticales */}
+      {/* Barras verticales negras */}
       {modules.map((m, idx) => {
         if (!m.isBlack) return null;
         const x = quietZone + idx * moduleWidth;
@@ -165,7 +178,7 @@ export const BarcodeEan13Svg: React.FC<BarcodeEan13SvgProps> = ({
           <rect
             key={idx}
             x={x}
-            y={2}
+            y={0}
             width={moduleWidth}
             height={h}
             fill="#000000"

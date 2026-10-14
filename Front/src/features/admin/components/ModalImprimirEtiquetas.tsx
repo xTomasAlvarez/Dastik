@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   Printer,
@@ -6,7 +6,10 @@ import {
   QrCode as QrCodeIcon,
   ArrowsClockwise,
   ListNumbers,
+  DownloadSimple,
 } from '@phosphor-icons/react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { Button } from '../../../components/ui/Button';
 import { BarcodeEan13Svg } from './BarcodeEan13Svg';
 import { QrCodeSvg } from './QrCodeSvg';
@@ -20,13 +23,28 @@ interface ModalImprimirEtiquetasProps {
 
 type FormatoEtiqueta = 'ean13' | 'qr';
 
+interface EtiquetaItem {
+  varianteId: number;
+  talle: string;
+  color: string;
+  codigoBarras: string;
+  precioContado: number;
+  precioLista: number;
+  marca: string;
+  nombre: string;
+  unidadNegocio: string;
+}
+
 export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
   isOpen,
   onClose,
   producto,
 }) => {
+  // 1. TODOS LOS HOOKS SE DECLARAN INCONDICIONALMENTE AL INICIO
   const [formato, setFormato] = useState<FormatoEtiqueta>('ean13');
   const [cantidades, setCantidades] = useState<Record<number, number>>({});
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const printSheetRef = useRef<HTMLDivElement>(null);
 
   // Manejo de tecla Escape
   useEffect(() => {
@@ -47,38 +65,76 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
 
   // Inicializar cantidades con 1 por talle (curva base) al abrir
   useEffect(() => {
-    if (isOpen && producto && producto.variantes) {
+    if (isOpen && producto) {
       const init: Record<number, number> = {};
-      producto.variantes.forEach((v) => {
+      const variantes = producto.variantes ?? [];
+      variantes.forEach((v) => {
         init[v.id] = 1;
       });
       setCantidades(init);
       setFormato('ean13');
+      setIsExportingPdf(false);
     }
   }, [isOpen, producto]);
 
-  if (!isOpen || !producto) return null;
+  // Generar lista plana de etiquetas de forma defensiva
+  const listaEtiquetas = useMemo<EtiquetaItem[]>(() => {
+    if (!isOpen || !producto) return [];
+    const list: EtiquetaItem[] = [];
 
-  // Acciones rápidas de carga
+    const variantes = producto.variantes ?? [];
+    const precioBase = Math.round(producto.precioVenta ?? 0);
+    const precioListaBase = Math.round(precioBase * 1.25);
+
+    variantes.forEach((v) => {
+      const cant = cantidades[v.id] || 0;
+      const rawCode = v.codigoBarras ? v.codigoBarras.trim() : '';
+      const codigoSeguro = rawCode.length >= 6 ? rawCode : `20${String(v.id).padStart(10, '0')}`;
+
+      for (let i = 0; i < cant; i++) {
+        list.push({
+          varianteId: v.id,
+          talle: v.talle || 'U',
+          color: v.color || '',
+          codigoBarras: codigoSeguro,
+          precioContado: precioBase,
+          precioLista: precioListaBase,
+          marca: producto.marca || 'DASTIK',
+          nombre: producto.nombre || 'PRENDA',
+          unidadNegocio: producto.unidadNegocio || 'Dastik',
+        });
+      }
+    });
+
+    return list;
+  }, [isOpen, producto, cantidades]);
+
+  // Handlers para cantidades
   const handleCargarCurva = () => {
+    if (!producto) return;
     const next: Record<number, number> = {};
-    producto.variantes?.forEach((v) => {
+    const variantes = producto.variantes ?? [];
+    variantes.forEach((v) => {
       next[v.id] = 1;
     });
     setCantidades(next);
   };
 
   const handleCargarStockActual = () => {
+    if (!producto) return;
     const next: Record<number, number> = {};
-    producto.variantes?.forEach((v) => {
+    const variantes = producto.variantes ?? [];
+    variantes.forEach((v) => {
       next[v.id] = Math.max(0, v.stockFisico || 0);
     });
     setCantidades(next);
   };
 
   const handleLimpiarTodo = () => {
+    if (!producto) return;
     const next: Record<number, number> = {};
-    producto.variantes?.forEach((v) => {
+    const variantes = producto.variantes ?? [];
+    variantes.forEach((v) => {
       next[v.id] = 0;
     });
     setCantidades(next);
@@ -91,42 +147,234 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
     }));
   };
 
-  // Generar lista plana de etiquetas a imprimir
-  const listaEtiquetas = useMemo(() => {
-    const list: Array<{
-      varianteId: number;
-      talle: string;
-      color: string;
-      codigoBarras: string;
-      precio: number;
-      marca: string;
-      nombre: string;
-      unidadNegocio: string;
-    }> = [];
+  // Exportar a PDF con html2canvas y jsPDF
+  const handleExportarPdf = async () => {
+    if (!printSheetRef.current || listaEtiquetas.length === 0) return;
+    setIsExportingPdf(true);
 
-    producto.variantes?.forEach((v) => {
-      const cant = cantidades[v.id] || 0;
-      for (let i = 0; i < cant; i++) {
-        list.push({
-          varianteId: v.id,
-          talle: v.talle,
-          color: v.color,
-          codigoBarras: v.codigoBarras || `20${String(v.id).padStart(10, '0')}`,
-          precio: producto.precioVenta,
-          marca: producto.marca || 'DASTIK',
-          nombre: producto.nombre,
-          unidadNegocio: producto.unidadNegocio || 'Dastik',
-        });
+    try {
+      const canvas = await html2canvas(printSheetRef.current, {
+        scale: 3, // Calidad 300 DPI para escaneo láser óptimo
+        useCORS: true,
+        backgroundColor: '#FFFFFF',
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const marginX = 8;
+      const marginY = 8;
+      const printWidth = pageWidth - marginX * 2;
+      const printHeight = (canvas.height * printWidth) / canvas.width;
+
+      let heightLeft = printHeight;
+      let position = marginY;
+
+      pdf.addImage(imgData, 'PNG', marginX, position, printWidth, printHeight);
+      heightLeft -= (pageHeight - marginY * 2);
+
+      while (heightLeft > 0) {
+        position = heightLeft - printHeight + marginY;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', marginX, position, printWidth, printHeight);
+        heightLeft -= (pageHeight - marginY * 2);
       }
-    });
 
-    return list;
-  }, [producto, cantidades]);
+      const safeName = (producto?.nombre || 'Prenda').replace(/[^a-zA-Z0-9_-]/g, '_');
+      pdf.save(`Etiquetas_38x21_${safeName}.pdf`);
+    } catch (err) {
+      console.error('Error al exportar PDF con html2canvas/jsPDF:', err);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  const handleImprimirDirecto = () => {
+    window.print();
+  };
+
+  // SI NO ESTÁ ABIERTO O NO HAY PRODUCTO, RETORNAR NULL DESPUÉS DE DECLARAR TODOS LOS HOOKS
+  if (!isOpen || !producto) return null;
 
   const totalEtiquetas = listaEtiquetas.length;
+  const variantesDisponibles = producto.variantes ?? [];
 
-  const handleImprimir = () => {
-    window.print();
+  // Renderizador de una única etiqueta individual de 38mm x 21mm siguiendo las 6 REGLAS ESTRICTAS
+  const renderEtiqueta = (item: EtiquetaItem, index: number) => {
+    // Regla 1: Truncamiento matemático en JavaScript (PROHIBIDO truncate / text-overflow: ellipsis)
+    const nombreSeguro =
+      (item.nombre || '').length > 18 ? item.nombre.substring(0, 18) : (item.nombre || '');
+    const marcaSegura =
+      (item.marca || 'DASTIK').length > 12
+        ? item.marca.substring(0, 12).toUpperCase()
+        : (item.marca || 'DASTIK').toUpperCase();
+    const codigoSeguro =
+      (item.codigoBarras || '0000000000000').length > 13
+        ? item.codigoBarras.substring(0, 13)
+        : item.codigoBarras;
+
+    return (
+      <div
+        key={`${item.varianteId}-${index}`}
+        className="etiqueta-38x21"
+        style={{
+          width: '38mm',
+          height: '21mm',
+          minWidth: '38mm',
+          minHeight: '21mm',
+          maxWidth: '38mm',
+          maxHeight: '21mm',
+          backgroundColor: '#FFFFFF',
+          color: '#000000',
+          boxSizing: 'border-box',
+          padding: '1mm 1.5mm',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          overflow: 'hidden',
+          border: '1px solid #D4D4D8',
+          position: 'relative',
+          userSelect: 'none',
+        }}
+      >
+        {/* Fila Superior: Marca/Nombre a la izquierda, Talle explícito a la derecha */}
+        {/* Regla 3: Sin restricciones de width en flex items */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            lineHeight: '1.1',
+            border: 'none',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', border: 'none' }}>
+            {/* Regla 2 y 4: Fuentes microscópicas inline y colores duros en Hex */}
+            <span
+              style={{
+                fontSize: '6px',
+                fontWeight: '900',
+                color: '#000000',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                lineHeight: '1',
+              }}
+            >
+              {marcaSegura}
+            </span>
+            <span
+              style={{
+                fontSize: '6px',
+                fontWeight: 'bold',
+                color: '#000000',
+                textTransform: 'uppercase',
+                letterSpacing: '0.02em',
+                lineHeight: '1.1',
+              }}
+            >
+              {nombreSeguro}
+            </span>
+          </div>
+
+          {/* Regla 6: Jerarquía y Prefijo Explícito: TALLE: ${variante.talle} */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#000000',
+              color: '#FFFFFF',
+              padding: '0.4mm 0.8mm',
+              border: 'none',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '7px',
+                fontWeight: '900',
+                color: '#FFFFFF',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                whiteSpace: 'nowrap',
+                lineHeight: '1',
+              }}
+            >
+              TALLE: {item.talle}
+            </span>
+          </div>
+        </div>
+
+        {/* Fila Central: Gráfico Barcode EAN-13 o QR */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#FFFFFF',
+            border: 'none',
+            height: '14px',
+            overflow: 'hidden',
+          }}
+        >
+          {formato === 'ean13' ? (
+            <BarcodeEan13Svg
+              code={item.codigoBarras}
+              height={14}
+              style={{ height: '14px', maxWidth: '100%' }}
+            />
+          ) : (
+            <QrCodeSvg
+              value={item.codigoBarras}
+              size={14}
+              style={{ width: '14px', height: '14px' }}
+            />
+          )}
+        </div>
+
+        {/* Fila Inferior: Código numérico a la izquierda, Precios Apilados a la derecha */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            border: 'none',
+            lineHeight: '1',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '6px',
+              fontFamily: 'monospace',
+              fontWeight: 'bold',
+              color: '#000000',
+              letterSpacing: '0.04em',
+              border: 'none',
+            }}
+          >
+            {codigoSeguro}
+          </span>
+
+          {/* Reglas 5 y 6: Layout Compacto de Precios Apilados con estructura idéntica */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              lineHeight: '1.1',
+              border: 'none',
+            }}
+          >
+            <span style={{ fontSize: '7px', color: '#000000' }}>
+              Lista: $ {item.precioLista.toLocaleString('es-AR')}
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#000000' }}>
+              Contado: $ {item.precioContado.toLocaleString('es-AR')}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -137,31 +385,27 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
         onClick={onClose}
       />
 
-      {/* Estilos para impresión @media print */}
+      {/* Reglas CSS para impresión directa @media print */}
       <style>{`
         @media print {
           body * {
             visibility: hidden !important;
           }
-          #printable-labels-container, #printable-labels-container * {
+          #print-sheet-a4, #print-sheet-a4 * {
             visibility: visible !important;
           }
-          #printable-labels-container {
+          #print-sheet-a4 {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
             background: #FFFFFF !important;
-            color: #000000 !important;
             padding: 0 !important;
             margin: 0 !important;
           }
-          .label-print-card {
+          .etiqueta-38x21 {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            border: 1px dashed #444444 !important;
-            color: #000000 !important;
-            background: #FFFFFF !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -178,7 +422,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
             </div>
             <div>
               <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold block">
-                CONTROL DE STOCK // IMPRESIÓN CASERA DE ETIQUETAS
+                CONTROL DE STOCK // ETIQUETAS TÉRMICAS & A4 (38x21 MM)
               </span>
               <h2 className="font-heading font-extrabold text-base sm:text-lg text-[#FAFAFA] tracking-tight uppercase">
                 ETIQUETAS: {producto.nombre}
@@ -201,7 +445,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
             {/* Formato Visual (EAN-13 vs QR) */}
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] mr-1">
-                FORMATO VISUAL:
+                FORMATO:
               </span>
               <button
                 type="button"
@@ -230,7 +474,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               </button>
             </div>
 
-            {/* Botones rápidos de carga */}
+            {/* Acciones rápidas de carga */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -246,10 +490,10 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
                 type="button"
                 onClick={handleCargarStockActual}
                 className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1.5 border border-[#333333] bg-[#111111] hover:border-amber-400 text-amber-300 hover:text-amber-200 transition-fast cursor-pointer flex items-center gap-1"
-                title="Carga la cantidad exacta según el stock físico en tienda"
+                title="Carga la cantidad según stock físico en tienda"
               >
                 <ArrowsClockwise size={13} />
-                <span>CARGAR SEGÚN STOCK ACTUAL</span>
+                <span>SEGÚN STOCK ACTUAL</span>
               </button>
 
               <button
@@ -268,7 +512,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               CANTIDAD DE ETIQUETAS POR TALLE:
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
-              {producto.variantes?.map((v) => {
+              {variantesDisponibles.map((v) => {
                 const qty = cantidades[v.id] || 0;
                 return (
                   <div
@@ -277,10 +521,10 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="font-heading font-black text-sm text-[#FAFAFA]">
-                        {v.talle}
+                        {v.talle || 'U'}
                       </span>
                       <span className="text-[10px] font-mono text-[#71717A]">
-                        ({v.stockFisico}u)
+                        ({v.stockFisico || 0}u)
                       </span>
                     </div>
 
@@ -314,14 +558,14 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           </div>
         </div>
 
-        {/* Vista previa en pantalla de las etiquetas */}
+        {/* Vista previa de las etiquetas de 38x21mm */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#070707] space-y-3">
           <div className="flex items-center justify-between text-xs font-mono">
             <span className="text-[#71717A] uppercase tracking-wider">
-              VISTA PREVIA DE HOJA DE IMPRESIÓN ({totalEtiquetas} ETIQUETAS GENERADAS)
+              VISTA PREVIA ESTÁNDAR 38x21 MM ({totalEtiquetas} ETIQUETAS)
             </span>
             <span className="text-amber-400 font-bold">
-              FORMATO: {formato === 'ean13' ? 'EAN-13 LÁSER' : 'CÓDIGO QR ÓPTICO'}
+              ESPECIFICACIÓN: 38x21 MM // LISTA Y CONTADO
             </span>
           </div>
 
@@ -330,49 +574,8 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               No hay etiquetas seleccionadas para imprimir. Ajusta las cantidades arriba.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {listaEtiquetas.map((item, idx) => (
-                <div
-                  key={`${item.varianteId}-${idx}`}
-                  className="bg-white text-black p-3.5 border border-zinc-300 flex flex-col justify-between select-none shadow-none"
-                  style={{ minHeight: '140px' }}
-                >
-                  {/* Encabezado: Marca y Nombre */}
-                  <div className="border-b border-black pb-1.5 flex items-start justify-between gap-1">
-                    <div className="overflow-hidden">
-                      <span className="text-[10px] font-mono uppercase tracking-widest font-black block text-zinc-900 leading-none">
-                        {item.marca.toUpperCase()}
-                      </span>
-                      <h4 className="font-heading font-extrabold text-xs uppercase leading-tight mt-0.5 truncate text-black">
-                        {item.nombre}
-                      </h4>
-                    </div>
-                    {/* Talle BIEN GRANDE */}
-                    <div className="border-2 border-black px-2 py-0.5 font-heading font-black text-base leading-none shrink-0 bg-black text-white">
-                      {item.talle}
-                    </div>
-                  </div>
-
-                  {/* Cuerpo: Gráfico Barcode o QR */}
-                  <div className="py-2 flex flex-col items-center justify-center">
-                    {formato === 'ean13' ? (
-                      <BarcodeEan13Svg code={item.codigoBarras} height={42} className="w-full" />
-                    ) : (
-                      <QrCodeSvg value={item.codigoBarras} size={64} />
-                    )}
-                  </div>
-
-                  {/* Pie: Número legible y precio */}
-                  <div className="border-t border-black pt-1 flex items-center justify-between text-[10px] font-mono">
-                    <span className="tracking-widest font-bold text-zinc-900">
-                      {item.codigoBarras}
-                    </span>
-                    <span className="font-heading font-black text-xs text-black">
-                      ${item.precio.toLocaleString('es-AR', { minimumFractionDigits: 0 })}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-wrap gap-2.5 p-3 bg-[#111111] border border-[#222222] max-h-[360px] overflow-y-auto">
+              {listaEtiquetas.map((item, idx) => renderEtiqueta(item, idx))}
             </div>
           )}
         </div>
@@ -380,73 +583,74 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
         {/* Footer */}
         <div className="p-4 sm:p-5 border-t border-[#222222] bg-[#0C0C0C] flex items-center justify-between">
           <span className="text-[10px] font-mono text-[#555555] uppercase tracking-wider">
-            Total a imprimir: <strong className="text-white">{totalEtiquetas}</strong> etiquetas
+            Total a emitir: <strong className="text-white">{totalEtiquetas}</strong> etiquetas (38x21mm)
           </span>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <Button
               variant="secondary"
               size="md"
               onClick={onClose}
               className="text-xs font-mono tracking-wider border-[#333333]"
             >
-              CANCELAR
+              CERRAR
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="md"
+              disabled={totalEtiquetas === 0 || isExportingPdf}
+              onClick={handleImprimirDirecto}
+              className="gap-1.5 text-xs font-heading font-semibold tracking-wider border-[#444444] text-[#FAFAFA] hover:border-[#666666] cursor-pointer"
+              title="Abre la ventana de impresión nativa del navegador"
+            >
+              <Printer size={16} weight="light" />
+              <span>IMPRIMIR (CTRL+P)</span>
             </Button>
 
             <Button
               variant="primary"
               size="md"
-              disabled={totalEtiquetas === 0}
-              onClick={handleImprimir}
+              disabled={totalEtiquetas === 0 || isExportingPdf}
+              onClick={handleExportarPdf}
               className="gap-2 text-xs font-heading font-bold tracking-wider px-5 bg-amber-400 text-black hover:bg-amber-300 border-amber-400 cursor-pointer"
+              title="Genera y descarga un PDF en alta resolución con html2canvas y jsPDF"
             >
-              <Printer size={16} weight="bold" />
-              <span>IMPRIMIR / GUARDAR PDF</span>
+              <DownloadSimple size={16} weight="bold" />
+              <span>{isExportingPdf ? 'GENERANDO PDF...' : 'GUARDAR PDF (A4 / 38x21MM)'}</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* ======================================================== */}
-      {/* Contenedor Limpio Exclusivo para Impresión Física         */}
+      {/* Contenedor Oculto para Exportación en Alta Resolución    */}
+      {/* (Capturado por html2canvas / impreso por window.print)   */}
       {/* ======================================================== */}
-      <div id="printable-labels-container" className="hidden print:grid grid-cols-3 gap-2 p-2">
-        {listaEtiquetas.map((item, idx) => (
-          <div
-            key={`print-${item.varianteId}-${idx}`}
-            className="label-print-card p-3 flex flex-col justify-between bg-white text-black"
-            style={{ width: '65mm', height: '40mm', boxSizing: 'border-box' }}
-          >
-            <div className="border-b border-black pb-1 flex items-start justify-between gap-1">
-              <div className="overflow-hidden">
-                <span className="text-[9px] font-mono uppercase tracking-widest font-black block leading-none">
-                  {item.marca.toUpperCase()}
-                </span>
-                <h4 className="font-heading font-extrabold text-[11px] uppercase leading-tight truncate">
-                  {item.nombre}
-                </h4>
-              </div>
-              <div className="border-2 border-black px-1.5 py-0.5 font-heading font-black text-sm leading-none bg-black text-white shrink-0">
-                {item.talle}
-              </div>
-            </div>
-
-            <div className="py-1 flex items-center justify-center">
-              {formato === 'ean13' ? (
-                <BarcodeEan13Svg code={item.codigoBarras} height={36} className="w-full" />
-              ) : (
-                <QrCodeSvg value={item.codigoBarras} size={48} />
-              )}
-            </div>
-
-            <div className="border-t border-black pt-0.5 flex items-center justify-between text-[9px] font-mono">
-              <span className="tracking-widest font-bold">{item.codigoBarras}</span>
-              <span className="font-heading font-black text-[10px]">
-                ${item.precio.toLocaleString('es-AR', { minimumFractionDigits: 0 })}
-              </span>
-            </div>
-          </div>
-        ))}
+      <div
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          backgroundColor: '#FFFFFF',
+        }}
+      >
+        <div
+          ref={printSheetRef}
+          id="print-sheet-a4"
+          style={{
+            width: '194mm',
+            backgroundColor: '#FFFFFF',
+            color: '#000000',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '1mm',
+            padding: '2mm',
+            boxSizing: 'border-box',
+          }}
+        >
+          {listaEtiquetas.map((item, idx) => renderEtiqueta(item, idx))}
+        </div>
       </div>
     </div>
   );
