@@ -201,161 +201,123 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
   const totalEtiquetas = listaEtiquetas.length;
   const variantesDisponibles = producto.variantes ?? [];
 
-  // Renderizador de una única etiqueta individual de 38mm x 21mm siguiendo las 6 REGLAS ESTRICTAS
+  // Renderizador de cada etiqueta exacta de 38mm x 21mm (proporción 144px x 80px)
   const renderEtiqueta = (item: EtiquetaItem, index: number) => {
-    // Regla 1: Truncamiento matemático en JavaScript (PROHIBIDO truncate / text-overflow: ellipsis)
     const nombreSeguro =
-      (item.nombre || '').length > 18 ? item.nombre.substring(0, 18) : (item.nombre || '');
-    const marcaSegura =
-      (item.marca || 'DASTIK').length > 12
-        ? item.marca.substring(0, 12).toUpperCase()
-        : (item.marca || 'DASTIK').toUpperCase();
-    const codigoSeguro =
-      (item.codigoBarras || '0000000000000').length > 13
-        ? item.codigoBarras.substring(0, 13)
-        : item.codigoBarras;
+      (item.nombre || '').length > 18
+        ? (item.nombre || '').substring(0, 18).toUpperCase()
+        : (item.nombre || '').toUpperCase();
+
+    const unidadNegocioNombre =
+      item.unidadNegocio || item.marca || producto.unidadNegocio || 'DASTIK';
+
+    const codigoBarrasSeguro = item.codigoBarras;
+    const precioLista = item.precioLista;
+    const precioContado = item.precioContado;
 
     return (
       <div
         key={`${item.varianteId}-${index}`}
         className="etiqueta-38x21"
         style={{
-          width: '38mm',
-          height: '21mm',
-          minWidth: '38mm',
-          minHeight: '21mm',
-          maxWidth: '38mm',
-          maxHeight: '21mm',
+          width: '144px',
+          height: '80px',
           backgroundColor: '#FFFFFF',
           color: '#000000',
+          padding: '4px 6px',
           boxSizing: 'border-box',
-          padding: '1mm 1.5mm',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
+          border: '1px solid #E5E7EB',
+          fontFamily: 'Arial, Helvetica, sans-serif',
           overflow: 'hidden',
-          border: '1px solid #D4D4D8',
-          position: 'relative',
-          userSelect: 'none',
         }}
       >
-        {/* Fila Superior: Marca/Nombre a la izquierda, Talle explícito a la derecha */}
-        {/* Regla 3: Sin restricciones de width en flex items */}
+        {/* 1. ENCABEZADO: Marca + Nombre a la izquierda | TALLE limpio a la derecha (SIN FONDO NEGRO) */}
         <div
           style={{
             display: 'flex',
-            alignItems: 'flex-start',
+            flexDirection: 'row',
             justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            width: '100%',
             lineHeight: '1.1',
-            border: 'none',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', border: 'none' }}>
-            {/* Regla 2 y 4: Fuentes microscópicas inline y colores duros en Hex */}
-            <span
-              style={{
-                fontSize: '6px',
-                fontWeight: '900',
-                color: '#000000',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                lineHeight: '1',
-              }}
-            >
-              {marcaSegura}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.1' }}>
+            <span style={{ fontSize: '5px', fontWeight: 'bold', color: '#555555', whiteSpace: 'nowrap' }}>
+              {unidadNegocioNombre.toUpperCase()}
             </span>
-            <span
-              style={{
-                fontSize: '6px',
-                fontWeight: 'bold',
-                color: '#000000',
-                textTransform: 'uppercase',
-                letterSpacing: '0.02em',
-                lineHeight: '1.1',
-              }}
-            >
+            <span style={{ fontSize: '6px', fontWeight: 'bold', color: '#000000', whiteSpace: 'nowrap' }}>
               {nombreSeguro}
             </span>
           </div>
 
-          {/* Regla 6: Jerarquía y Prefijo Explícito: TALLE: ${variante.talle} */}
-          <div
+          <span
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              backgroundColor: '#000000',
-              color: '#FFFFFF',
-              padding: '0.4mm 0.8mm',
+              fontSize: '7px',
+              fontWeight: 'bold',
+              color: '#000000',
+              backgroundColor: 'transparent',
               border: 'none',
+              whiteSpace: 'nowrap',
+              lineHeight: '1',
             }}
           >
-            <span
-              style={{
-                fontSize: '7px',
-                fontWeight: '900',
-                color: '#FFFFFF',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                whiteSpace: 'nowrap',
-                lineHeight: '1',
-              }}
-            >
-              TALLE: {item.talle}
-            </span>
-          </div>
+            TALLE: {item.talle}
+          </span>
         </div>
 
-        {/* Fila Central: Gráfico Barcode EAN-13 o QR */}
+        {/* 2. CENTRO: Código de barras compacto */}
         <div
           style={{
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#FFFFFF',
-            border: 'none',
-            height: '14px',
-            overflow: 'hidden',
+            width: '100%',
+            margin: '1px 0',
           }}
         >
           {formato === 'ean13' ? (
             <BarcodeEan13Svg
-              code={item.codigoBarras}
-              height={14}
-              style={{ height: '14px', maxWidth: '100%' }}
+              code={codigoBarrasSeguro}
+              height={20}
+              style={{ height: '20px', width: '100%', maxWidth: '130px' }}
             />
           ) : (
             <QrCodeSvg
-              value={item.codigoBarras}
-              size={14}
-              style={{ width: '14px', height: '14px' }}
+              value={codigoBarrasSeguro}
+              size={20}
+              style={{ width: '20px', height: '20px' }}
             />
           )}
         </div>
 
-        {/* Fila Inferior: Código numérico a la izquierda, Precios Apilados a la derecha */}
+        {/* 3. PIE: Número EAN-13 pequeño a la izquierda | Precios apilados en 1 sola línea a la derecha */}
         <div
           style={{
             display: 'flex',
-            alignItems: 'flex-end',
+            flexDirection: 'row',
             justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            width: '100%',
             border: 'none',
-            lineHeight: '1',
           }}
         >
           <span
             style={{
-              fontSize: '6px',
+              fontSize: '5px',
               fontFamily: 'monospace',
-              fontWeight: 'bold',
               color: '#000000',
-              letterSpacing: '0.04em',
-              border: 'none',
+              whiteSpace: 'nowrap',
+              lineHeight: '1',
             }}
           >
-            {codigoSeguro}
+            {codigoBarrasSeguro}
           </span>
 
-          {/* Reglas 5 y 6: Layout Compacto de Precios Apilados con estructura idéntica */}
           <div
             style={{
               display: 'flex',
@@ -365,11 +327,11 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               border: 'none',
             }}
           >
-            <span style={{ fontSize: '7px', color: '#000000' }}>
-              Lista: $ {item.precioLista.toLocaleString('es-AR')}
+            <span style={{ fontSize: '6.5px', color: '#000000', whiteSpace: 'nowrap' }}>
+              Lista: $ {precioLista.toLocaleString('es-AR')}
             </span>
-            <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#000000' }}>
-              Contado: $ {item.precioContado.toLocaleString('es-AR')}
+            <span style={{ fontSize: '9.5px', fontWeight: 'bold', color: '#000000', whiteSpace: 'nowrap' }}>
+              Contado: $ {precioContado.toLocaleString('es-AR')}
             </span>
           </div>
         </div>
@@ -558,14 +520,14 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           </div>
         </div>
 
-        {/* Vista previa de las etiquetas de 38x21mm */}
+        {/* Vista previa de las etiquetas de 38x21mm (144x80 px) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#070707] space-y-3">
           <div className="flex items-center justify-between text-xs font-mono">
             <span className="text-[#71717A] uppercase tracking-wider">
               VISTA PREVIA ESTÁNDAR 38x21 MM ({totalEtiquetas} ETIQUETAS)
             </span>
             <span className="text-amber-400 font-bold">
-              ESPECIFICACIÓN: 38x21 MM // LISTA Y CONTADO
+              ESPECIFICACIÓN: 38x21 MM (144x80 PX) // LISTA Y CONTADO
             </span>
           </div>
 
@@ -639,13 +601,13 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           ref={printSheetRef}
           id="print-sheet-a4"
           style={{
-            width: '194mm',
+            width: '740px',
             backgroundColor: '#FFFFFF',
             color: '#000000',
             display: 'flex',
             flexWrap: 'wrap',
-            gap: '1mm',
-            padding: '2mm',
+            gap: '4px',
+            padding: '8px',
             boxSizing: 'border-box',
           }}
         >
