@@ -224,13 +224,13 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           height: '80px',
           backgroundColor: '#FFFFFF',
           color: '#000000',
-          padding: '4px 6px',
+          padding: '4px 7px 6px 7px',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
           border: '1px solid #E5E7EB',
-          fontFamily: 'Arial, Helvetica, sans-serif',
+          fontFamily: "'Space Grotesk', 'Inter', system-ui, sans-serif",
           overflow: 'hidden',
         }}
       >
@@ -246,18 +246,35 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.1' }}>
-            <span style={{ fontSize: '5px', fontWeight: 'bold', color: '#555555', whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                fontSize: '5.5px',
+                fontWeight: 800,
+                letterSpacing: '1.2px',
+                color: '#000000',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {unidadNegocioNombre.toUpperCase()}
             </span>
-            <span style={{ fontSize: '6px', fontWeight: 'bold', color: '#000000', whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                fontSize: '6.5px',
+                fontWeight: 900,
+                letterSpacing: '-0.2px',
+                color: '#000000',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {nombreSeguro}
             </span>
           </div>
 
           <span
             style={{
-              fontSize: '7px',
-              fontWeight: 'bold',
+              fontSize: '7.5px',
+              fontWeight: 900,
+              letterSpacing: '0.3px',
               color: '#000000',
               backgroundColor: 'transparent',
               border: 'none',
@@ -269,7 +286,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           </span>
         </div>
 
-        {/* 2. CENTRO: Código de barras compacto */}
+        {/* 2. CENTRO: Código de barras compacto con números EAN-13 encajados */}
         <div
           style={{
             display: 'flex',
@@ -283,57 +300,50 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           {formato === 'ean13' ? (
             <BarcodeEan13Svg
               code={codigoBarrasSeguro}
-              height={20}
-              style={{ height: '20px', width: '100%', maxWidth: '130px' }}
+              height={28}
+              style={{ height: '28px', width: '100%', maxWidth: '130px' }}
             />
           ) : (
-            <QrCodeSvg
-              value={codigoBarrasSeguro}
-              size={20}
-              style={{ width: '20px', height: '20px' }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <QrCodeSvg
+                value={codigoBarrasSeguro}
+                size={22}
+                style={{ width: '22px', height: '22px' }}
+              />
+              <span
+                style={{
+                  fontSize: '6px',
+                  fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+                  fontWeight: 'bold',
+                  color: '#000000',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {codigoBarrasSeguro}
+              </span>
+            </div>
           )}
         </div>
 
-        {/* 3. PIE: Número EAN-13 pequeño a la izquierda | Precios apilados en 1 sola línea a la derecha */}
+        {/* 3. PIE: Precios apilados a la derecha con margen inferior protegido */}
         <div
           style={{
             display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
             alignItems: 'flex-end',
+            justifyContent: 'flex-end',
             width: '100%',
+            lineHeight: '1.1',
+            paddingBottom: '2px',
             border: 'none',
           }}
         >
-          <span
-            style={{
-              fontSize: '5px',
-              fontFamily: 'monospace',
-              color: '#000000',
-              whiteSpace: 'nowrap',
-              lineHeight: '1',
-            }}
-          >
-            {codigoBarrasSeguro}
+          <span style={{ fontSize: '6.5px', fontWeight: 600, color: '#000000', whiteSpace: 'nowrap' }}>
+            Lista: $ {precioLista.toLocaleString('es-AR')}
           </span>
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-end',
-              lineHeight: '1.1',
-              border: 'none',
-            }}
-          >
-            <span style={{ fontSize: '6.5px', color: '#000000', whiteSpace: 'nowrap' }}>
-              Lista: $ {precioLista.toLocaleString('es-AR')}
-            </span>
-            <span style={{ fontSize: '9.5px', fontWeight: 'bold', color: '#000000', whiteSpace: 'nowrap' }}>
-              Contado: $ {precioContado.toLocaleString('es-AR')}
-            </span>
-          </div>
+          <span style={{ fontSize: '9.5px', fontWeight: 900, letterSpacing: '-0.2px', color: '#000000', whiteSpace: 'nowrap' }}>
+            Contado: $ {precioContado.toLocaleString('es-AR')}
+          </span>
         </div>
       </div>
     );
