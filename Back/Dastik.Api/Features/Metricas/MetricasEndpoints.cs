@@ -1,5 +1,7 @@
 using Dastik.Api.Domain.Entities;
+using Dastik.Api.Features.Metricas.ObtenerMetricasAvanzadas;
 using Dastik.Api.Infrastructure.Persistence;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dastik.Api.Features.Metricas;
@@ -122,6 +124,25 @@ public static class MetricasEndpoints
         })
         .WithName("ObtenerAlertasStock")
         .WithSummary("Devuelve la lista de variantes con stock físico menor o igual a 3 unidades (crítico o quiebre).")
+        .WithOpenApi();
+
+        // 3. GET /api/metricas/avanzadas
+        group.MapGet("/avanzadas", async (
+            string? periodo,
+            int? unidadNegocioId,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            var query = new ObtenerMetricasAvanzadasQuery(periodo, unidadNegocioId);
+            var result = await sender.Send(query, ct);
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { error = result.Error });
+            }
+            return Results.Ok(result.Value);
+        })
+        .WithName("ObtenerMetricasAvanzadas")
+        .WithSummary("Devuelve el reporte avanzado de finanzas reales, medios de pago, velocidad diaria de rotación y stock inmovilizado.")
         .WithOpenApi();
     }
 }
