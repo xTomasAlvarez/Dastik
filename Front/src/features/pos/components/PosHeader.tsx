@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Archive, ShieldCheck, SignOut, Storefront, TestTube, SlidersHorizontal, ArrowsLeftRight } from '@phosphor-icons/react';
+import { Archive, ShieldCheck, SignOut, Storefront, TestTube, SlidersHorizontal, ArrowsLeftRight, Sun, Moon } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useTenantStore } from '../../../stores/useTenantStore';
+import { useThemeStore } from '../../../stores/useThemeStore';
 import type { TurnoActivoDto } from '../api/cajaApi';
 
 interface PosHeaderProps {
@@ -15,6 +16,7 @@ interface PosHeaderProps {
 export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCierreTurno, onSolicitarCambio }) => {
   const { usuario, logout } = useAuthStore();
   const { isSandboxMode, toggleSandboxMode } = useTenantStore();
+  const { theme, toggleTheme } = useThemeStore();
 
   return (
     <header className="w-full bg-[#090909] border-b border-[#333333] px-4 lg:px-6 py-3 flex items-center justify-between gap-4 selection:bg-[#FAFAFA] selection:text-[#000000] overflow-x-auto">
@@ -109,6 +111,27 @@ export const PosHeader: React.FC<PosHeaderProps> = ({ turnoActivo, onSolicitarCi
             Cambiar
           </button>
         </div>
+
+        {/* Toggle Dark / Light Mode */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="border border-[#333333] bg-[#111111] hover:bg-[#1A1A1A] hover:border-[#555555] text-[#FAFAFA] px-2.5 py-1 flex items-center gap-1.5 text-[10px] font-heading font-semibold uppercase tracking-wider transition-fast cursor-pointer shrink-0 whitespace-nowrap"
+          title={theme === 'dark' ? 'Cambiar a modo claro (Light Mode)' : 'Cambiar a modo oscuro (Dark Mode)'}
+          aria-label="Alternar tema claro u oscuro"
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun size={14} weight="bold" className="text-amber-400" />
+              <span>LIGHT</span>
+            </>
+          ) : (
+            <>
+              <Moon size={14} weight="light" className="text-sky-400" />
+              <span>DARK</span>
+            </>
+          )}
+        </button>
 
         {/* Datos del Personal (Dueño / Empleado) */}
         <div className="border border-[#333333] bg-[#111111] px-2.5 py-1 flex items-center gap-2 text-xs font-sans shrink-0 whitespace-nowrap">

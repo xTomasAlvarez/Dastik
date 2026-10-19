@@ -998,12 +998,40 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **4. Verificación de Compilación:**
   - `dotnet test`: 116/116 pruebas superadas en verde.
   - `npm run build`: compilación de producción exitosa con 0 errores TypeScript.
+- **5. Merge a `develop`:**
+  - Rama `feature/admin-metricas-avanzadas` fusionada en `develop` con `--no-ff`.
 
+---
 
+### [feature/admin-configuracion-y-tema] Módulo de Configuración de Catálogos Base (`/admin/configuracion`) y Light/Dark Mode - COMPLETADO
 
+**Objetivo:** Completar el último módulo del sistema según los requerimientos: gestión de catálogos base (Proveedores con Markup % por defecto, Marcas y Categorías con Temporada y Esquema de Talles) y soporte nativo para modo claro ("Light Mode") y modo oscuro ("Dark Mode") tanto en la terminal POS como en el panel de Administración.
 
-
-
-
-
-
+- **Rama:** `feature/admin-configuracion-y-tema` (creada a partir de `develop`).
+- **1. Backend - Endpoints de Configuración (`ConfiguracionEndpoints.cs`):**
+  - Endpoints protegidos con la política `.RequireAuthorization("AdminOnly")` expuestos bajo `/api/inventario/*` (y alias `/api/configuracion/*`):
+    - **Proveedores:**
+      - `GET /api/inventario/proveedores`: devuelve `Id`, `Nombre`, `MarkupPorDefecto` y `CantidadProductos`.
+      - `POST /api/inventario/proveedores`: recibe `Nombre` y `MarkupPorDefecto`, valida unicidad case-insensitive y persiste el proveedor.
+    - **Marcas:**
+      - `GET /api/inventario/marcas`: devuelve `Id`, `Nombre` y `CantidadProductos`.
+      - `POST /api/inventario/marcas`: recibe `Nombre`, valida duplicados y crea la marca.
+    - **Categorías:**
+      - `GET /api/inventario/categorias`: devuelve `Id`, `Nombre`, `Temporada`, `EsquemaTalles` y `CantidadProductos`.
+      - `POST /api/inventario/categorias`: recibe `Nombre`, `Temporada` y `EsquemaTalles`, valida campos y persiste la categoría.
+  - Registrado en `Program.cs` mediante `app.MapConfiguracionEndpoints()`.
+  - Suite de pruebas `ConfiguracionEndpointsTests.cs`: **119/119 tests pasando en verde**.
+- **2. Frontend - Panel de Configuración (`ConfiguracionPage.tsx` & `configuracionApi.ts`):**
+  - Nueva página en `/admin/configuracion` agregada al sidebar de `AdminLayout.tsx` con icono `Gear` y protegida por `AdminRoute` en `App.tsx`.
+  - Diseño estructurado en 3 pestañas interactivas:
+    1. **Proveedores:** Grilla de proveedores con su factor/porcentaje de Markup y formulario `"Nuevo Proveedor"` con presets rápidos (+50%, +55%, +60%, +80%, +100%).
+    2. **Marcas:** Grilla de marcas comerciales ("Dastik", "Hidden Sneakers", "Nike", "Adidas", etc.) con alta rápida en línea.
+    3. **Categorías:** Tabla de categorías ("Remeras", "Pantalones", etc.) con selector de `"Temporada"` y `"Esquema de Talles"`.
+  - Integración dinámica en `ModalCrearProducto.tsx`: consume los catálogos desde `configuracionApi` y recalcula automáticamente el precio de venta sugerido al seleccionar un proveedor según su `MarkupPorDefecto`.
+- **3. Frontend - Toggle "Dark/Light Mode" (`useThemeStore.ts` & `index.css`):**
+  - Store `useThemeStore.ts` que persiste la preferencia en `localStorage` (`dastik-theme`) y alterna la clase `.dark` / `.light` en `document.documentElement` (`<html>`).
+  - Variables CSS y reglas de inversión en `index.css` (`html:not(.dark)`) que transforman los fondos oscuros (`#000000`, `#090909`, `#111111`) a grises claros y blancos (`#F3F4F6`, `#FFFFFF`, `#F9FAFB`), invirtiendo textos a `#111827` y bordes a `#E5E7EB` / `#D1D5DB`, preservando intactas las etiquetas de impresión de 38x21mm (`.etiqueta-38x21`).
+  - Botón de cambio rápido con icono de Sol (`Sun`) / Luna (`Moon`) integrado en `PosHeader.tsx`, `AdminLayout.tsx` y `ConfiguracionPage.tsx`.
+- **4. Verificación Final:**
+  - `dotnet test`: **119/119 pruebas superadas en verde**.
+  - `npm run build`: **0 errores TypeScript**, build de producción limpio.

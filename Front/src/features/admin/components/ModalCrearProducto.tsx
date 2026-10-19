@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useId } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   X,
   Plus,
@@ -16,6 +17,7 @@ import {
   type CrearVarianteItemRequest,
   type CrearProductoRequest
 } from '../../pos/api/inventarioApi';
+import { configuracionApi } from '../api/configuracionApi';
 import type { AxiosError } from 'axios';
 
 interface ModalCrearProductoProps {
@@ -122,6 +124,25 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Catálogos dinámicos desde /api/inventario/*
+  const { data: proveedoresCatalogo = [] } = useQuery({
+    queryKey: ['configuracion', 'proveedores'],
+    queryFn: configuracionApi.obtenerProveedores,
+    enabled: isOpen,
+  });
+
+  const { data: marcasCatalogo = [] } = useQuery({
+    queryKey: ['configuracion', 'marcas'],
+    queryFn: configuracionApi.obtenerMarcas,
+    enabled: isOpen,
+  });
+
+  const { data: categoriasCatalogo = [] } = useQuery({
+    queryKey: ['configuracion', 'categorias'],
+    queryFn: configuracionApi.obtenerCategorias,
+    enabled: isOpen,
+  });
+
   const curvaActiva = CURVAS_DISPONIBLES.find((c) => c.id === curvaActivaId) || CURVAS_DISPONIBLES[0];
 
   // Cálculos automáticos de Markup y Margen
@@ -130,6 +151,21 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   const markupCalculado = costoNum > 0 ? Number((ventaNum / costoNum).toFixed(2)) : 1.5;
   const margenPorcentaje = costoNum > 0 ? (((ventaNum - costoNum) / costoNum) * 100).toFixed(1) : '0';
 
+  const handleSelectProveedor = (id: number) => {
+    setProveedorId(id);
+    const prov = proveedoresCatalogo.find((p) => p.id === id);
+    if (prov && costoNum > 0) {
+      const multiplicador =
+        prov.markupPorDefecto <= 10
+          ? prov.markupPorDefecto
+          : 1 + prov.markupPorDefecto / 100;
+      const sugerido = Math.round(costoNum * multiplicador);
+      if (sugerido > 0) {
+        setPrecioVenta(sugerido.toString());
+      }
+    }
+  };
+
   // Cambiar valores por defecto según la unidad de negocio seleccionada
   const handleSelectUnidad = (id: number) => {
     setUnidadNegocioId(id);
@@ -137,12 +173,12 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
       setMarcaId(1); // Dastik
       setCategoriaId(1); // Indumentaria
       setCurvaActivaId('arriba');
-      setProveedorId(1); // Proveedor Textil Dastik
+      handleSelectProveedor(1); // Proveedor Textil Dastik
     } else {
       setMarcaId(2); // Nike
       setCategoriaId(2); // Calzado
       setCurvaActivaId('zapatillasBajos');
-      setProveedorId(2); // Proveedor Sneakerheads
+      handleSelectProveedor(2); // Proveedor Sneakerheads
     }
   };
 
@@ -433,9 +469,19 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 disabled={isLoading}
                 className="w-full bg-[#111111] text-[#FAFAFA] border border-[#333333] focus:border-[#FAFAFA] px-3 py-2.5 text-sm outline-none transition-fast font-sans cursor-pointer"
               >
-                <option value={1}>Dastik</option>
-                <option value={2}>Nike</option>
-                <option value={3}>Adidas</option>
+                {marcasCatalogo.length > 0 ? (
+                  marcasCatalogo.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nombre}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value={1}>Dastik</option>
+                    <option value={2}>Nike</option>
+                    <option value={3}>Adidas</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -450,8 +496,18 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 disabled={isLoading}
                 className="w-full bg-[#111111] text-[#FAFAFA] border border-[#333333] focus:border-[#FAFAFA] px-3 py-2.5 text-sm outline-none transition-fast font-sans cursor-pointer"
               >
-                <option value={1}>Indumentaria (XS - XXL)</option>
-                <option value={2}>Calzado (Sneakers / US)</option>
+                {categoriasCatalogo.length > 0 ? (
+                  categoriasCatalogo.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre} ({c.esquemaTalles})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value={1}>Indumentaria (XS - XXL)</option>
+                    <option value={2}>Calzado (Sneakers / US)</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -462,12 +518,28 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               <select
                 id="proveedorId"
                 value={proveedorId}
-                onChange={(e) => setProveedorId(Number(e.target.value))}
+                onChange={(e) => handleSelectProveedor(Number(e.target.value))}
                 disabled={isLoading}
                 className="w-full bg-[#111111] text-[#FAFAFA] border border-[#333333] focus:border-[#FAFAFA] px-3 py-2.5 text-sm outline-none transition-fast font-sans cursor-pointer"
               >
-                <option value={1}>Proveedor Textil Dastik (Markup 1.50x)</option>
-                <option value={2}>Proveedor Sneakerheads (Markup 1.60x)</option>
+                {proveedoresCatalogo.length > 0 ? (
+                  proveedoresCatalogo.map((p) => {
+                    const pct =
+                      p.markupPorDefecto <= 10
+                        ? Math.round((p.markupPorDefecto - 1) * 100)
+                        : Math.round(p.markupPorDefecto);
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {p.nombre} (Markup +{pct}%)
+                      </option>
+                    );
+                  })
+                ) : (
+                  <>
+                    <option value={1}>Proveedor Textil Dastik (Markup 1.50x)</option>
+                    <option value={2}>Proveedor Sneakerheads (Markup 1.60x)</option>
+                  </>
+                )}
               </select>
             </div>
           </div>

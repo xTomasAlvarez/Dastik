@@ -7,6 +7,9 @@ import {
   ChartBar,
   TrendUp,
   Users,
+  Gear,
+  Sun,
+  Moon,
   SignOut,
   ShieldCheck,
   TestTube,
@@ -14,10 +17,12 @@ import {
 } from '@phosphor-icons/react';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useTenantStore } from '../../../stores/useTenantStore';
+import { useThemeStore } from '../../../stores/useThemeStore';
 
 export const AdminLayout: React.FC = () => {
   const { usuario, logout } = useAuthStore();
   const { isSandboxMode, toggleSandboxMode } = useTenantStore();
+  const { theme, toggleTheme } = useThemeStore();
 
   const navItems = [
     {
@@ -50,6 +55,12 @@ export const AdminLayout: React.FC = () => {
       label: 'Finanzas',
       icon: <TrendUp size={18} weight="light" />,
       description: 'Rentabilidad & Rotación'
+    },
+    {
+      to: '/admin/configuracion',
+      label: 'Configuración',
+      icon: <Gear size={18} weight="light" />,
+      description: 'Catálogos & Tema'
     }
   ];
 
@@ -128,8 +139,31 @@ export const AdminLayout: React.FC = () => {
           ))}
         </nav>
 
-        {/* Controles de Entorno y Operador */}
-        <div className="p-4 border-t border-[#333333] bg-[#0A0A0A] space-y-3">
+        {/* Controles de Entorno, Tema y Operador */}
+        <div className="p-4 border-t border-[#333333] bg-[#0A0A0A] space-y-2.5">
+          {/* Toggle Dark / Light Mode */}
+          <div className="border border-[#222222] bg-[#111111] px-3 py-2 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              {theme === 'dark' ? (
+                <Moon size={15} weight="light" className="text-sky-400" />
+              ) : (
+                <Sun size={15} weight="bold" className="text-amber-500" />
+              )}
+              <span className="text-[10px] uppercase tracking-widest text-[#71717A]">TEMA:</span>
+              <span className="text-[11px] font-heading font-semibold tracking-wider text-[#FAFAFA] uppercase">
+                {theme === 'dark' ? 'DARK' : 'LIGHT'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="text-[10px] uppercase font-sans tracking-widest text-[#71717A] hover:text-[#FAFAFA] transition-fast cursor-pointer"
+              title={theme === 'dark' ? 'Cambiar a modo claro (Light Mode)' : 'Cambiar a modo oscuro (Dark Mode)'}
+            >
+              {theme === 'dark' ? 'CLARO' : 'OSCURO'}
+            </button>
+          </div>
+
           {/* Indicador de Tenant / Base */}
           <div className="border border-[#222222] bg-[#111111] px-3 py-2 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">

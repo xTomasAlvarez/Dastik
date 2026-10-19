@@ -17,25 +17,46 @@
   --color-gray-stone: #71717A;
 }
 
-/* Variables de Tema y Scrollbar Avant-Garde */
-:root {
+/* Variables de Tema y Scrollbar Avant-Garde (Dark Mode por defecto) */
+:root,
+html.dark,
+[data-theme="dark"] {
+  --bg-page: #000000;
+  --bg-card: #090909;
+  --bg-panel: #111111;
+  --bg-elevated: #141414;
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-muted: #71717A;
+  --border-primary: #333333;
+  --border-subtle: #222222;
   --scrollbar-track: #090909;
   --scrollbar-thumb: #333333;
   --scrollbar-thumb-hover: #555555;
 }
 
-/* Preparado para futuro Light Mode */
-.light, [data-theme="light"] {
-  --scrollbar-track: #F4F4F5;
-  --scrollbar-thumb: #D4D4D8;
-  --scrollbar-thumb-hover: #A1A1AA;
+/* Variables y Adaptación Global para Light Mode */
+html.light,
+html:not(.dark),
+[data-theme="light"] {
+  --bg-page: #F3F4F6;
+  --bg-card: #FFFFFF;
+  --bg-panel: #F9FAFB;
+  --bg-elevated: #F3F4F6;
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-muted: #6B7280;
+  --border-primary: #D1D5DB;
+  --border-subtle: #E5E7EB;
+  --scrollbar-track: #F3F4F6;
+  --scrollbar-thumb: #D1D5DB;
+  --scrollbar-thumb-hover: #9CA3AF;
 }
 
 /* Reglas Estrictas Avant-Garde / High-End Streetwear (Design_Base.md) */
 * {
   box-sizing: border-box;
   box-shadow: none !important;
-  /* Scrollbar estándar para Firefox y navegadores modernos */
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
@@ -67,10 +88,11 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: var(--font-sans);
-  background-color: #000000;
-  color: #FAFAFA;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 h1, h2, h3, h4, .font-heading {
@@ -81,4 +103,110 @@ h1, h2, h3, h4, .font-heading {
 .transition-fast {
   transition-duration: 100ms;
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* ========================================================================== */
+/* INVERSIÓN SEMÁNTICA AUTOMÁTICA EN LIGHT MODE (html:not(.dark))             */
+/* ========================================================================== */
+html:not(.dark) .bg-\[\#000000\] {
+  background-color: #F3F4F6 !important;
+}
+
+html:not(.dark) .bg-\[\#070707\],
+html:not(.dark) .bg-\[\#080808\],
+html:not(.dark) .bg-\[\#090909\],
+html:not(.dark) .bg-\[\#0A0A0A\] {
+  background-color: #FFFFFF !important;
+}
+
+html:not(.dark) .bg-\[\#0C0C0C\],
+html:not(.dark) .bg-\[\#111111\],
+html:not(.dark) .bg-\[\#141414\],
+html:not(.dark) .bg-\[\#161616\],
+html:not(.dark) .bg-\[\#1A1A1A\] {
+  background-color: #F9FAFB !important;
+}
+
+html:not(.dark) .hover\:bg-\[\#111111\]:hover,
+html:not(.dark) .hover\:bg-\[\#141414\]:hover,
+html:not(.dark) .hover\:bg-\[\#1A1A1A\]:hover,
+html:not(.dark) .hover\:bg-\[\#222222\]:hover {
+  background-color: #E5E7EB !important;
+}
+
+html:not(.dark) .text-\[\#FAFAFA\] {
+  color: #111827 !important;
+}
+
+html:not(.dark) .text-\[\#A1A1AA\],
+html:not(.dark) .text-\[\#D4D4D8\] {
+  color: #374151 !important;
+}
+
+html:not(.dark) .text-\[\#71717A\],
+html:not(.dark) .text-\[\#555555\] {
+  color: #6B7280 !important;
+}
+
+html:not(.dark) .border-\[\#1A1A1A\],
+html:not(.dark) .border-\[\#222222\] {
+  border-color: #E5E7EB !important;
+}
+
+html:not(.dark) .border-\[\#333333\],
+html:not(.dark) .border-\[\#444444\] {
+  border-color: #D1D5DB !important;
+}
+
+html:not(.dark) .divide-\[\#1A1A1A\] > :not([hidden]) ~ :not([hidden]),
+html:not(.dark) .divide-\[\#222222\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #E5E7EB !important;
+}
+
+/* Contraste de acentos y estados sobre fondo claro */
+html:not(.dark) .bg-\[\#0A140D\] {
+  background-color: #ECFDF5 !important;
+}
+
+html:not(.dark) .bg-\[\#180A0A\] {
+  background-color: #FEF2F2 !important;
+}
+
+html:not(.dark) .bg-emerald-950,
+html:not(.dark) .bg-emerald-950\/40 {
+  background-color: #D1FAE5 !important;
+}
+
+html:not(.dark) .bg-red-950,
+html:not(.dark) .bg-red-950\/40 {
+  background-color: #FEE2E2 !important;
+}
+
+html:not(.dark) .bg-amber-950\/20,
+html:not(.dark) .bg-amber-950\/40,
+html:not(.dark) .bg-\[\#1F1400\] {
+  background-color: #FEF3C7 !important;
+}
+
+html:not(.dark) .text-emerald-400,
+html:not(.dark) .text-green-400 {
+  color: #047857 !important;
+}
+
+html:not(.dark) .text-amber-300,
+html:not(.dark) .text-amber-400 {
+  color: #B45309 !important;
+}
+
+html:not(.dark) .text-red-400,
+html:not(.dark) .text-red-300,
+html:not(.dark) .text-red-200 {
+  color: #DC2626 !important;
+}
+
+/* Botones primarios invertidos en Light Mode para mantener alto contraste */
+html:not(.dark) .bg-\[\#FAFAFA\].text-\[\#000000\],
+html:not(.dark) .bg-\[\#FAFAFA\].text-black {
+  background-color: #111827 !important;
+  color: #FFFFFF !important;
 }
