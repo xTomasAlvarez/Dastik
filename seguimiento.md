@@ -1028,10 +1028,21 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
     2. **Marcas:** Grilla de marcas comerciales ("Dastik", "Hidden Sneakers", "Nike", "Adidas", etc.) con alta rápida en línea.
     3. **Categorías:** Tabla de categorías ("Remeras", "Pantalones", etc.) con selector de `"Temporada"` y `"Esquema de Talles"`.
   - Integración dinámica en `ModalCrearProducto.tsx`: consume los catálogos desde `configuracionApi` y recalcula automáticamente el precio de venta sugerido al seleccionar un proveedor según su `MarkupPorDefecto`.
-- **3. Frontend - Toggle "Dark/Light Mode" (`useThemeStore.ts` & `index.css`):**
-  - Store `useThemeStore.ts` que persiste la preferencia en `localStorage` (`dastik-theme`) y alterna la clase `.dark` / `.light` en `document.documentElement` (`<html>`).
-  - Variables CSS y reglas de inversión en `index.css` (`html:not(.dark)`) que transforman los fondos oscuros (`#000000`, `#090909`, `#111111`) a grises claros y blancos (`#F3F4F6`, `#FFFFFF`, `#F9FAFB`), invirtiendo textos a `#111827` y bordes a `#E5E7EB` / `#D1D5DB`, preservando intactas las etiquetas de impresión de 38x21mm (`.etiqueta-38x21`).
-  - Botón de cambio rápido con icono de Sol (`Sun`) / Luna (`Moon`) integrado en `PosHeader.tsx`, `AdminLayout.tsx` y `ConfiguracionPage.tsx`.
+- **3. Frontend - Sistema de Diseño "Carbon Slate & Alabaster" (Etapas 1 a 4 Completadas):**
+  - **Fundación Tipográfica (`index.html` & `index.css`):**
+    - Eliminada por completo la fuente `Syne`.
+    - Incorporadas **Plus Jakarta Sans** (`--font-sans` y `--font-heading`) para UI/títulos geométricos limpios y **JetBrains Mono** (`--font-mono` con `font-variant-numeric: tabular-nums`) para precios, SKUs, EAN-13 y KPIs financieros.
+  - **Tokens Semánticos Reales y Cambio de Tema 0ms Sin Lag (`index.css` & `useThemeStore.ts`):**
+    - Eliminados todos los selectores forzados `html:not(.dark) .bg-\[...\]` y el bloqueo global `* { box-shadow: none !important; }`.
+    - Tokens semánticos CSS nativos: `:root` (**Alabaster Light Mode**: `--bg-canvas: #F8FAFC`, `--bg-surface: #FFFFFF`, `--bg-elevated: #F1F5F9`, `--border-subtle: #E2E8F0`) y `html.dark` (**Carbon Slate Dark Mode**: `--bg-canvas: #09090B`, `--bg-surface: #121215`, `--bg-elevated: #18181C`, `--border-subtle: #27272A`).
+    - Utilitarios semánticos (`bg-canvas`, `bg-surface`, `bg-elevated`, `border-subtle`, `border-strong`, `text-primary`, `text-secondary`, `text-muted`, `shadow-surface`, `shadow-floating`).
+    - Supresión temporal de transiciones CSS (`transition: none !important`) durante el cambio de tema en `useThemeStore.ts` con reflow sincrónico para lograr conmutación instantánea (0ms lag).
+  - **Refactor Integral de Primitivos, Terminal POS, Admin y Modales:**
+    - `Button.tsx` e `Input.tsx` actualizados con `rounded-lg`, estados focus ring y feedback táctil `active:scale-[0.98]`.
+    - **Terminal POS (`PosHeader`, `PosBarcodeScanner`, `CatalogoGrid`, `ProductCard`, `DashboardPos`):** corregidos los bloques negros en Modo Claro en el buscador, cabecera `ORDEN EN CURSO` y bloque inferior `TOTAL A COBRAR`; eliminada la barra de scroll horizontal en el header; tarjetas de producto con `rounded-xl`, `shadow-surface` y precios en `JetBrains Mono`.
+    - **Back-Office (`AdminLayout`, `DashboardPage`, `InventarioPage`, `ArqueosPage`, `EmpleadosPage`, `MetricasPage`, `ConfiguracionPage`)** y **Autenticación (`LoginPage`, `LoginForm`, `CambiarPasswordModal`)**: migrados al sistema de superficies elevadas `rounded-xl` / `rounded-lg` con soporte nativo Claro/Oscuro.
+    - **Modales POS y Admin (`ModalAbrirTurno`, `ModalCerrarTurno`, `ModalPago`, `ModalCambio`, `ModalCrearProducto`, `ModalDetalleProducto`, `ModalImprimirEtiquetas`):** migrados a tokens semánticos manteniendo **100% intacta** la geometría e inline styles de `.etiqueta-38x21` y `#print-sheet-a4` (`144px x 80px` / `38x21mm`).
 - **4. Verificación Final:**
   - `dotnet test`: **119/119 pruebas superadas en verde**.
-  - `npm run build`: **0 errores TypeScript**, build de producción limpio.
+  - `npm run build`: **0 errores TypeScript**, build de producción limpio en 1.66s.
+

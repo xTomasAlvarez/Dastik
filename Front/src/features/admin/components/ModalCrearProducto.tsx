@@ -336,26 +336,26 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   const totalStockConfigurado = variantes.reduce((acc, v) => acc + v.stockFisico, 0);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#000000]/85 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 overflow-y-auto">
       <div
-        className="w-full max-w-4xl bg-[#090909] border border-[#333333] max-h-[92vh] flex flex-col text-left relative my-auto"
+        className="w-full max-w-4xl bg-surface border border-subtle rounded-xl shadow-floating max-h-[92vh] flex flex-col text-left relative my-auto overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby={modalHeadingId}
       >
-        {/* 1. Header Avant-Garde */}
-        <div className="flex items-center justify-between border-b border-[#222222] px-6 py-4 bg-[#0A0A0A] shrink-0">
+        {/* 1. Header */}
+        <div className="flex items-center justify-between border-b border-subtle px-6 py-4 bg-elevated/60 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="border border-[#333333] bg-[#141414] p-2 text-[#FAFAFA] shrink-0">
-              <Package size={22} weight="light" />
+            <div className="border border-subtle bg-surface rounded-lg p-2 text-primary shrink-0">
+              <Package size={22} weight="duotone" />
             </div>
             <div>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-sans block">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted font-mono block">
                 ADMIN // INVENTARIO CENTRAL
               </span>
               <h2
                 id={modalHeadingId}
-                className="text-lg md:text-xl font-heading font-extrabold text-[#FAFAFA] tracking-tight uppercase"
+                className="text-lg md:text-xl font-heading font-bold text-primary tracking-tight uppercase"
               >
                 NUEVO PRODUCTO & VARIANTES
               </h2>
@@ -365,11 +365,11 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1.5 cursor-pointer disabled:opacity-50"
+            className="text-muted hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-elevated cursor-pointer disabled:opacity-50"
             title="Cerrar modal [ESC]"
             aria-label="Cerrar modal [ESC]"
           >
-            <X size={20} weight="light" />
+            <X size={20} weight="bold" />
           </button>
         </div>
 
@@ -377,71 +377,71 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 md:p-8 space-y-7">
           {/* Alerta de Error */}
           {errorMessage && (
-            <div className="border border-red-900 bg-red-950/40 p-3 text-red-200 text-xs font-sans flex items-start justify-between gap-3">
+            <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-3 text-red-600 dark:text-red-400 text-xs font-sans flex items-start justify-between gap-3">
               <div className="flex items-start gap-2">
-                <WarningCircle size={17} weight="light" className="shrink-0 text-red-400 mt-0.5" />
+                <WarningCircle size={17} weight="bold" className="shrink-0 mt-0.5" />
                 <span className="leading-snug">{errorMessage}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setErrorMessage(null)}
-                className="text-red-400 hover:text-red-200 p-0.5 transition-fast cursor-pointer shrink-0"
+                className="hover:opacity-75 p-0.5 transition-opacity cursor-pointer shrink-0"
               >
-                <X size={15} weight="light" />
+                <X size={15} weight="bold" />
               </button>
             </div>
           )}
 
           {/* Bloque 1: Unidad de Negocio (Multi-Tenant Selector) */}
           <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest text-[#71717A] font-sans font-semibold block">
+            <label className="text-[11px] uppercase tracking-wider text-secondary font-sans font-semibold block">
               UNIDAD DE NEGOCIO (CANAL COMERCIAL)
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => handleSelectUnidad(1)}
-                className={`p-3 border text-left flex items-start justify-between transition-fast cursor-pointer ${
+                className={`p-3.5 rounded-xl border text-left flex items-start justify-between transition-all cursor-pointer ${
                   unidadNegocioId === 1
-                    ? 'border-[#FAFAFA] bg-[#141414] text-[#FAFAFA]'
-                    : 'border-[#222222] bg-[#0C0C0C] text-[#71717A] hover:border-[#444444]'
+                    ? 'border-strong bg-elevated text-primary shadow-surface'
+                    : 'border-subtle bg-surface text-secondary hover:border-strong'
                 }`}
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-heading font-bold text-sm tracking-wide">DASTIK</span>
-                    <span className="text-[10px] uppercase tracking-wider bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 px-1.5 py-0.5">
+                    <span className="font-heading font-bold text-sm tracking-wide text-primary">DASTIK</span>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded px-1.5 py-0.5">
                       TIENDANUBE + POS
                     </span>
                   </div>
-                  <p className="text-[11px] font-sans text-[#71717A] mt-1">
+                  <p className="text-[11px] font-sans text-secondary mt-1">
                     Indumentaria y prendas. Sincroniza stock físico y digital en Tiendanube.
                   </p>
                 </div>
-                {unidadNegocioId === 1 && <Check size={16} weight="bold" className="text-[#FAFAFA] shrink-0 mt-0.5" />}
+                {unidadNegocioId === 1 && <Check size={16} weight="bold" className="text-primary shrink-0 mt-0.5" />}
               </button>
 
               <button
                 type="button"
                 onClick={() => handleSelectUnidad(2)}
-                className={`p-3 border text-left flex items-start justify-between transition-fast cursor-pointer ${
+                className={`p-3.5 rounded-xl border text-left flex items-start justify-between transition-all cursor-pointer ${
                   unidadNegocioId === 2
-                    ? 'border-[#FAFAFA] bg-[#141414] text-[#FAFAFA]'
-                    : 'border-[#222222] bg-[#0C0C0C] text-[#71717A] hover:border-[#444444]'
+                    ? 'border-strong bg-elevated text-primary shadow-surface'
+                    : 'border-subtle bg-surface text-secondary hover:border-strong'
                 }`}
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-heading font-bold text-sm tracking-wide">HIDDEN SNEAKERS</span>
-                    <span className="text-[10px] uppercase tracking-wider bg-amber-950/40 border border-amber-900/50 text-amber-400 px-1.5 py-0.5">
+                    <span className="font-heading font-bold text-sm tracking-wide text-primary">HIDDEN SNEAKERS</span>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded px-1.5 py-0.5">
                       EXCLUSIVO LOCAL
                     </span>
                   </div>
-                  <p className="text-[11px] font-sans text-[#71717A] mt-1">
+                  <p className="text-[11px] font-sans text-secondary mt-1">
                     Calzado sneakerhead y pares físicos. Aislamiento físico sin sincronización outbox.
                   </p>
                 </div>
-                {unidadNegocioId === 2 && <Check size={16} weight="bold" className="text-[#FAFAFA] shrink-0 mt-0.5" />}
+                {unidadNegocioId === 2 && <Check size={16} weight="bold" className="text-primary shrink-0 mt-0.5" />}
               </button>
             </div>
           </div>
@@ -458,8 +458,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               required
             />
 
-            <div className="flex flex-col gap-1 w-full text-left">
-              <label htmlFor="marcaId" className="text-xs uppercase tracking-widest text-[#71717A] font-sans">
+            <div className="flex flex-col gap-1.5 w-full text-left">
+              <label htmlFor="marcaId" className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans">
                 MARCA *
               </label>
               <select
@@ -467,7 +467,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 value={marcaId}
                 onChange={(e) => setMarcaId(Number(e.target.value))}
                 disabled={isLoading}
-                className="w-full bg-[#111111] text-[#FAFAFA] border border-[#333333] focus:border-[#FAFAFA] px-3 py-2.5 text-sm outline-none transition-fast font-sans cursor-pointer"
+                className="w-full bg-surface text-primary border border-subtle focus:border-strong rounded-lg px-3.5 py-2.5 text-sm outline-none transition-colors font-sans cursor-pointer"
               >
                 {marcasCatalogo.length > 0 ? (
                   marcasCatalogo.map((m) => (
@@ -485,8 +485,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               </select>
             </div>
 
-            <div className="flex flex-col gap-1 w-full text-left">
-              <label htmlFor="categoriaId" className="text-xs uppercase tracking-widest text-[#71717A] font-sans">
+            <div className="flex flex-col gap-1.5 w-full text-left">
+              <label htmlFor="categoriaId" className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans">
                 CATEGORÍA *
               </label>
               <select
@@ -494,7 +494,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 value={categoriaId}
                 onChange={(e) => setCategoriaId(Number(e.target.value))}
                 disabled={isLoading}
-                className="w-full bg-[#111111] text-[#FAFAFA] border border-[#333333] focus:border-[#FAFAFA] px-3 py-2.5 text-sm outline-none transition-fast font-sans cursor-pointer"
+                className="w-full bg-surface text-primary border border-subtle focus:border-strong rounded-lg px-3.5 py-2.5 text-sm outline-none transition-colors font-sans cursor-pointer"
               >
                 {categoriasCatalogo.length > 0 ? (
                   categoriasCatalogo.map((c) => (
@@ -511,8 +511,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               </select>
             </div>
 
-            <div className="flex flex-col gap-1 w-full text-left">
-              <label htmlFor="proveedorId" className="text-xs uppercase tracking-widest text-[#71717A] font-sans">
+            <div className="flex flex-col gap-1.5 w-full text-left">
+              <label htmlFor="proveedorId" className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans">
                 PROVEEDOR *
               </label>
               <select
@@ -520,7 +520,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 value={proveedorId}
                 onChange={(e) => handleSelectProveedor(Number(e.target.value))}
                 disabled={isLoading}
-                className="w-full bg-[#111111] text-[#FAFAFA] border border-[#333333] focus:border-[#FAFAFA] px-3 py-2.5 text-sm outline-none transition-fast font-sans cursor-pointer"
+                className="w-full bg-surface text-primary border border-subtle focus:border-strong rounded-lg px-3.5 py-2.5 text-sm outline-none transition-colors font-sans cursor-pointer"
               >
                 {proveedoresCatalogo.length > 0 ? (
                   proveedoresCatalogo.map((p) => {
@@ -566,12 +566,12 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
           </div>
 
           {/* Bloque 3: Estructura Financiera (Costo, Venta y Margen) */}
-          <div className="border border-[#222222] bg-[#0E0E0E] p-4 md:p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-2">
-              <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-sans font-semibold">
+          <div className="border border-subtle bg-elevated rounded-xl p-4 md:p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-subtle pb-2">
+              <span className="text-[10px] uppercase tracking-widest text-secondary font-sans font-semibold">
                 ESTRUCTURA DE PRECIOS & MARGEN
               </span>
-              <span className="text-xs font-mono text-emerald-400">
+              <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                 MARGEN: +{margenPorcentaje}% (MARKUP {markupCalculado}x)
               </span>
             </div>
@@ -605,26 +605,26 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             </div>
 
             {/* Accesos rápidos de Markup */}
-            <div className="flex items-center gap-2 pt-1 text-xs text-[#71717A]">
+            <div className="flex items-center gap-2 pt-1 text-xs text-muted flex-wrap">
               <span className="text-[10px] uppercase tracking-wider font-sans">MARKUP RÁPIDO:</span>
               <button
                 type="button"
                 onClick={() => setPrecioVenta(Math.round(costoNum * 1.5).toString())}
-                className="px-2 py-0.5 border border-[#333333] hover:border-[#FAFAFA] bg-[#141414] text-[10px] text-[#FAFAFA] transition-fast cursor-pointer"
+                className="px-2.5 py-0.5 rounded border border-subtle hover:border-strong bg-surface text-[10px] font-mono text-primary transition-colors cursor-pointer"
               >
                 +50% (x1.50)
               </button>
               <button
                 type="button"
                 onClick={() => setPrecioVenta(Math.round(costoNum * 1.6).toString())}
-                className="px-2 py-0.5 border border-[#333333] hover:border-[#FAFAFA] bg-[#141414] text-[10px] text-[#FAFAFA] transition-fast cursor-pointer"
+                className="px-2.5 py-0.5 rounded border border-subtle hover:border-strong bg-surface text-[10px] font-mono text-primary transition-colors cursor-pointer"
               >
                 +60% (x1.60)
               </button>
               <button
                 type="button"
                 onClick={() => setPrecioVenta(Math.round(costoNum * 2.0).toString())}
-                className="px-2 py-0.5 border border-[#333333] hover:border-[#FAFAFA] bg-[#141414] text-[10px] text-[#FAFAFA] transition-fast cursor-pointer"
+                className="px-2.5 py-0.5 rounded border border-subtle hover:border-strong bg-surface text-[10px] font-mono text-primary transition-colors cursor-pointer"
               >
                 +100% (x2.00)
               </button>
@@ -632,31 +632,31 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
           </div>
 
           {/* Bloque 4: Sección Dinámica de Variantes y Stock */}
-          <div className="border border-[#333333] bg-[#0A0A0A] p-4 md:p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#222222] pb-3">
+          <div className="border border-subtle bg-elevated rounded-xl p-4 md:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-subtle pb-3">
               <div>
-                <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-sans font-semibold block">
+                <span className="text-[10px] uppercase tracking-widest text-secondary font-sans font-semibold block">
                   INVENTARIO DE VARIANTES (SKUS)
                 </span>
-                <span className="text-xs text-[#A1A1AA] font-sans">
+                <span className="text-xs text-secondary font-sans">
                   {variantes.length} {variantes.length === 1 ? 'variante' : 'variantes'} configuradas ·{' '}
-                  <span className="text-[#FAFAFA] font-bold">{totalStockConfigurado} unidades totales</span>
+                  <span className="text-primary font-bold tabular-nums">{totalStockConfigurado} unidades totales</span>
                 </span>
               </div>
 
               {/* Selector de Curvas Oficiales y Talles */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <div className="flex items-center gap-1 flex-wrap">
-                  <span className="text-[10px] uppercase tracking-wider text-[#71717A]">CURVA:</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted">CURVA:</span>
                   {CURVAS_DISPONIBLES.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setCurvaActivaId(c.id)}
-                      className={`px-2 py-0.5 text-[10px] font-mono border transition-fast cursor-pointer ${
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono border transition-colors cursor-pointer ${
                         curvaActivaId === c.id
-                          ? 'border-[#FAFAFA] bg-[#222222] text-[#FAFAFA] font-bold'
-                          : 'border-[#222222] bg-[#0E0E0E] text-[#71717A] hover:border-[#444444]'
+                          ? 'border-strong bg-surface text-primary font-bold shadow-surface'
+                          : 'border-subtle bg-surface/60 text-secondary hover:border-strong'
                       }`}
                     >
                       {c.shortLabel}
@@ -667,9 +667,9 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             </div>
 
             {/* Fila de Talles Rápidos de la Curva Activa y Botón de Lote */}
-            <div className="bg-[#0E0E0E] border border-[#222222] p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="bg-surface border border-subtle rounded-lg p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] uppercase tracking-wider text-[#71717A]">
+                <span className="text-[10px] uppercase tracking-wider text-muted">
                   TALLES {curvaActiva.shortLabel.toUpperCase()}:
                 </span>
                 {curvaActiva.talles.map((t) => (
@@ -677,7 +677,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                     key={t}
                     type="button"
                     onClick={() => setNuevoTalle(t)}
-                    className="border border-[#2A2A2A] hover:border-[#FAFAFA] bg-[#161616] hover:bg-[#202020] px-2 py-0.5 text-[10px] text-[#FAFAFA] font-mono transition-fast cursor-pointer"
+                    className="border border-subtle hover:border-strong bg-elevated rounded px-2 py-0.5 text-[10px] text-primary font-mono transition-colors cursor-pointer"
                     title={`Seleccionar talle ${t}`}
                   >
                     {t}
@@ -688,7 +688,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               <button
                 type="button"
                 onClick={() => handleAgregarCurvaCompleta(curvaActiva.talles)}
-                className="text-[10px] uppercase font-mono tracking-wider border border-[#333333] hover:border-emerald-500 bg-[#161616] hover:bg-emerald-950/30 text-emerald-300 px-2.5 py-1 transition-fast cursor-pointer shrink-0"
+                className="text-[10px] uppercase font-mono font-bold tracking-wider rounded-md border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 transition-colors cursor-pointer shrink-0"
                 title="Generar todas las variantes de esta curva con códigos EAN-13"
               >
                 + AGREGAR CURVA COMPLETA ({curvaActiva.talles.length} TALLES)
@@ -696,8 +696,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             </div>
 
             {/* Mini-Formulario para Añadir Variante */}
-            <div className="bg-[#111111] border border-[#222222] p-3.5 space-y-3">
-              <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-heading font-semibold block">
+            <div className="bg-surface border border-subtle rounded-lg p-3.5 space-y-3">
+              <span className="text-[10px] uppercase tracking-wider text-secondary font-heading font-bold block">
                 + CONFIGURAR NUEVA VARIANTE
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -730,8 +730,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                   disabled={isLoading}
                 />
 
-                <div className="flex flex-col gap-1 w-full text-left">
-                  <label htmlFor="nuevoCodigoBarras" className="text-xs uppercase tracking-widest text-[#71717A] font-sans">
+                <div className="flex flex-col gap-1.5 w-full text-left">
+                  <label htmlFor="nuevoCodigoBarras" className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans">
                     CÓDIGO EAN-13
                   </label>
                   <div className="flex items-center gap-1.5">
@@ -742,15 +742,15 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                       value={nuevoCodigoBarras}
                       onChange={(e) => setNuevoCodigoBarras(e.target.value)}
                       disabled={isLoading}
-                      className="w-full bg-[#161616] text-[#FAFAFA] border border-[#333333] focus:border-[#FAFAFA] px-2.5 py-2 text-xs font-mono outline-none placeholder-[#555555]"
+                      className="w-full bg-surface text-primary border border-subtle focus:border-strong rounded-lg px-2.5 py-2 text-xs font-mono outline-none placeholder-muted"
                     />
                     <button
                       type="button"
                       onClick={handleAutogenerarEan}
-                      className="border border-[#333333] hover:border-[#FAFAFA] bg-[#222222] hover:bg-[#2A2A2A] text-[#FAFAFA] p-2 transition-fast cursor-pointer shrink-0"
+                      className="border border-subtle hover:border-strong bg-elevated rounded-lg text-primary p-2 transition-colors cursor-pointer shrink-0"
                       title="Generar EAN-13 numérico aleatorio"
                     >
-                      <Sparkle size={15} weight="light" />
+                      <Sparkle size={15} weight="bold" />
                     </button>
                   </div>
                 </div>
@@ -773,14 +773,14 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
 
             {/* Tabla de Variantes Temporales */}
             {variantes.length === 0 ? (
-              <div className="text-center py-6 border border-dashed border-[#222222] text-[#71717A] text-xs">
+              <div className="text-center py-6 border border-dashed border-subtle rounded-lg text-muted text-xs">
                 No hay variantes añadidas. Completa los campos arriba y haz clic en &quot;AGREGAR VARIANTE&quot;.
               </div>
             ) : (
-              <div className="overflow-x-auto border border-[#222222]">
+              <div className="overflow-x-auto border border-subtle rounded-lg bg-surface">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-[#222222] bg-[#141414] text-[#71717A] text-[10px] uppercase tracking-wider font-sans">
+                    <tr className="border-b border-subtle bg-elevated text-secondary text-[10px] uppercase tracking-wider font-sans">
                       <th className="py-2.5 px-3">Talle</th>
                       <th className="py-2.5 px-3">Color</th>
                       <th className="py-2.5 px-3 text-right">Stock Físico</th>
@@ -788,23 +788,23 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                       <th className="py-2.5 px-3 text-center">Acción</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1A1A1A] font-sans">
+                  <tbody className="divide-y divide-subtle font-sans">
                     {variantes.map((v) => (
-                      <tr key={v.tempId} className="hover:bg-[#121212] transition-fast">
-                        <td className="py-2.5 px-3 font-heading font-bold text-[#FAFAFA]">
-                          <span className="border border-[#333333] bg-[#1A1A1A] px-2 py-0.5 text-xs">
+                      <tr key={v.tempId} className="hover:bg-elevated/60 transition-colors">
+                        <td className="py-2.5 px-3 font-heading font-bold text-primary">
+                          <span className="border border-subtle bg-elevated rounded px-2 py-0.5 text-xs">
                             {v.talle}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-[#A1A1AA]">{v.color}</td>
+                        <td className="py-2.5 px-3 text-secondary">{v.color}</td>
                         <td className="py-2.5 px-3 text-right">
-                          <span className="font-mono text-[#FAFAFA] font-semibold text-sm">
+                          <span className="font-mono text-primary font-semibold text-sm tabular-nums">
                             {v.stockFisico}
                           </span>
                         </td>
                         <td className="py-2.5 px-3">
-                          <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#A1A1AA]">
-                            <Barcode size={14} weight="light" className="text-[#71717A]" />
+                          <div className="flex items-center gap-1.5 font-mono text-[11px] text-secondary">
+                            <Barcode size={14} weight="bold" className="text-muted" />
                             <span>{v.codigoBarras}</span>
                           </div>
                         </td>
@@ -812,10 +812,10 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                           <button
                             type="button"
                             onClick={() => handleEliminarVariante(v.tempId)}
-                            className="text-[#71717A] hover:text-red-400 p-1 transition-fast cursor-pointer"
+                            className="text-muted hover:text-red-600 dark:hover:text-red-400 p-1 transition-colors cursor-pointer"
                             title="Eliminar variante"
                           >
-                            <Trash size={15} weight="light" />
+                            <Trash size={15} weight="bold" />
                           </button>
                         </td>
                       </tr>
@@ -827,7 +827,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
           </div>
 
           {/* 3. Acciones de Cierre y Guardado */}
-          <div className="flex items-center justify-between pt-4 border-t border-[#222222]">
+          <div className="flex items-center justify-between pt-4 border-t border-subtle">
             <Button
               type="button"
               variant="secondary"

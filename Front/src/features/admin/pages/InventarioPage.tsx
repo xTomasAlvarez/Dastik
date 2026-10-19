@@ -12,6 +12,7 @@ import {
   Image,
   CaretLeft,
   CaretRight,
+  X,
 } from '@phosphor-icons/react';
 import { inventarioApi, type ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 import { Button } from '../../../components/ui/Button';
@@ -21,17 +22,14 @@ import { ModalDetalleProducto } from '../components/ModalDetalleProducto';
 export const InventarioPage: React.FC = () => {
   const queryClient = useQueryClient();
 
-  // Estados de Filtros y Búsqueda
   const [busqueda, setBusqueda] = useState('');
   const [unidadFiltro, setUnidadFiltro] = useState<'TODAS' | 'DASTIK' | 'HIDDEN'>('TODAS');
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>('TODAS');
   const [stockFiltro, setStockFiltro] = useState<'TODOS' | 'CON_STOCK' | 'SIN_STOCK' | 'BAJO_STOCK'>('TODOS');
 
-  // Paginación Local Client-Side
   const PAGE_SIZE = 15;
   const [paginaActual, setPaginaActual] = useState(1);
 
-  // Estados de Modales y Notificación
   const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
   const [isModalDetalleOpen, setIsModalDetalleOpen] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoCatalogoDto | null>(null);
@@ -40,7 +38,6 @@ export const InventarioPage: React.FC = () => {
     texto: string;
   } | null>(null);
 
-  // Consulta de Catálogo Centralizado
   const {
     data: productos = [],
     isLoading,
@@ -51,7 +48,6 @@ export const InventarioPage: React.FC = () => {
     queryFn: inventarioApi.obtenerProductos,
   });
 
-  // Mutación para sincronizar catálogo desde Tiendanube
   const sincronizarMutation = useMutation({
     mutationFn: inventarioApi.sincronizarTiendanube,
     onSuccess: (res) => {
@@ -76,7 +72,6 @@ export const InventarioPage: React.FC = () => {
     },
   });
 
-  // Lista única de Categorías para el filtro
   const categoriasDisponibles = useMemo(() => {
     const setCat = new Set<string>();
     productos.forEach((p) => {
@@ -85,10 +80,8 @@ export const InventarioPage: React.FC = () => {
     return Array.from(setCat).sort();
   }, [productos]);
 
-  // Filtrado reactivo en memoria
   const productosFiltrados = useMemo(() => {
     return productos.filter((p) => {
-      // 1. Filtro por Unidad de Negocio
       if (unidadFiltro === 'DASTIK') {
         const esDastik = p.unidadNegocio?.toLowerCase().includes('dastik') ?? false;
         if (!esDastik) return false;
@@ -97,18 +90,15 @@ export const InventarioPage: React.FC = () => {
         if (!esHidden) return false;
       }
 
-      // 2. Filtro por Categoría
       if (categoriaFiltro !== 'TODAS' && p.categoria !== categoriaFiltro) {
         return false;
       }
 
-      // 3. Filtro por Estado de Stock
       const stockTotal = p.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
       if (stockFiltro === 'CON_STOCK' && stockTotal <= 0) return false;
       if (stockFiltro === 'SIN_STOCK' && stockTotal > 0) return false;
       if (stockFiltro === 'BAJO_STOCK' && (stockTotal <= 0 || stockTotal > 5)) return false;
 
-      // 4. Búsqueda por Texto
       if (busqueda.trim() !== '') {
         const query = busqueda.toLowerCase().trim();
         const matchNombre = p.nombre.toLowerCase().includes(query);
@@ -118,245 +108,220 @@ export const InventarioPage: React.FC = () => {
           v.codigoBarras?.toLowerCase().includes(query)
         );
 
-        if (!matchNombre && !matchMarca && !matchCategoria && !matchBarcode) {
-          return false;
-        }
+        return matchNombre || matchMarca || matchCategoria || matchBarcode;
       }
 
       return true;
     });
   }, [productos, unidadFiltro, categoriaFiltro, stockFiltro, busqueda]);
 
-  // Reset de página al cambiar cualquier filtro de búsqueda
   useEffect(() => {
     setPaginaActual(1);
   }, [busqueda, unidadFiltro, categoriaFiltro, stockFiltro]);
 
-  // Cálculo de Paginación Local
-  const totalPaginas = Math.ceil(productosFiltrados.length / PAGE_SIZE) || 1;
-
-  useEffect(() => {
-    if (paginaActual > totalPaginas) {
-      setPaginaActual(Math.max(1, totalPaginas));
-    }
-  }, [paginaActual, totalPaginas]);
-
+  const totalPaginas = Math.max(1, Math.ceil(productosFiltrados.length / PAGE_SIZE));
   const indiceInicio = (paginaActual - 1) * PAGE_SIZE;
   const productosPaginados = useMemo(() => {
     return productosFiltrados.slice(indiceInicio, indiceInicio + PAGE_SIZE);
-  }, [productosFiltrados, indiceInicio, PAGE_SIZE]);
+  }, [productosFiltrados, indiceInicio]);
 
-  // Cálculos de Resumen
   const totalItemsEnStock = useMemo(() => {
-    return productos.reduce((acc, p) => {
-      const sumVar = p.variantes?.reduce((vAcc, v) => vAcc + (v.stockFisico || 0), 0) ?? 0;
-      return acc + sumVar;
+    return productos.reduce((accProd, p) => {
+      const stockProd = p.variantes?.reduce((accVar, v) => accVar + (v.stockFisico || 0), 0) ?? 0;
+      return accProd + stockProd;
     }, 0);
   }, [productos]);
 
   const totalSinStock = useMemo(() => {
     return productos.filter((p) => {
-      const sumVar = p.variantes?.reduce((vAcc, v) => vAcc + (v.stockFisico || 0), 0) ?? 0;
-      return sumVar === 0;
+      const stock = p.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
+      return stock === 0;
     }).length;
   }, [productos]);
-
-  const handleCreacionExitosa = () => {
-    queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
-    queryClient.invalidateQueries({ queryKey: ['productos'] });
-  };
 
   const handleVerDetalle = (producto: ProductoCatalogoDto) => {
     setProductoSeleccionado(producto);
     setIsModalDetalleOpen(true);
   };
 
+  const handleCreacionExitosa = () => {
+    queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
+    queryClient.invalidateQueries({ queryKey: ['productos'] });
+    setMensajeNotificacion({
+      tipo: 'exito',
+      texto: 'Producto creado exitosamente y sincronizado con el catálogo.',
+    });
+    setTimeout(() => setMensajeNotificacion(null), 5000);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Notificación de Sincronización o Acción */}
+    <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
+      {/* Banner de Notificaciones */}
       {mensajeNotificacion && (
         <div
-          className={`p-4 border text-xs font-mono uppercase tracking-wider flex items-center justify-between transition-all ${
+          className={`rounded-xl border px-4 py-3 text-xs font-sans flex items-center justify-between ${
             mensajeNotificacion.tipo === 'exito'
-              ? 'border-green-800 bg-green-950/40 text-green-300'
-              : 'border-red-800 bg-red-950/40 text-red-300'
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+              : 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
           }`}
         >
-          <span>{mensajeNotificacion.texto}</span>
+          <span className="font-medium">{mensajeNotificacion.texto}</span>
           <button
             onClick={() => setMensajeNotificacion(null)}
-            className="text-[#A1A1AA] hover:text-white ml-4 font-bold"
+            className="text-muted hover:text-primary ml-4 p-1 cursor-pointer"
           >
-            ✕
+            <X size={15} />
           </button>
         </div>
       )}
 
       {/* Header del Inventario & Acciones Principales */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-[#222222]">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-5 border-b border-subtle">
         <div>
-          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717A]">
-            GESTIÓN DE STOCK CENTRAL
+          <span className="text-xs font-medium text-amber-500 block">
+            Gestión de Stock Central
           </span>
-          <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-[#FAFAFA] tracking-tight uppercase">
-            INVENTARIO DE PRODUCTOS
+          <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-primary tracking-tight">
+            Inventario de Productos
           </h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Botón Sincronizar Tiendanube */}
           <Button
             variant="secondary"
             size="md"
             onClick={() => sincronizarMutation.mutate()}
             disabled={sincronizarMutation.isPending}
-            className="border-[#333333] hover:border-[#555555] text-xs font-heading font-semibold tracking-wider flex items-center gap-2"
           >
             {sincronizarMutation.isPending ? (
               <>
-                <SpinnerGap size={16} weight="light" className="animate-spin text-amber-400" />
-                <span className="text-amber-400">SINCRONIZANDO CATÁLOGO COMPLETO...</span>
+                <SpinnerGap size={16} weight="bold" className="animate-spin text-amber-500" />
+                <span className="text-amber-500">Sincronizando Catálogo...</span>
               </>
             ) : (
               <>
-                <CloudArrowDown size={16} weight="light" className="text-amber-400" />
-                <span>SINCRONIZAR NUBE</span>
+                <CloudArrowDown size={16} weight="duotone" className="text-amber-500" />
+                <span>Sincronizar Tiendanube</span>
               </>
             )}
           </Button>
 
-          {/* Botón Nuevo Producto */}
           <Button
             variant="primary"
             size="md"
             onClick={() => setIsModalCrearOpen(true)}
-            className="text-xs font-heading font-bold tracking-wider flex items-center gap-2"
           >
             <Plus size={16} weight="bold" />
-            <span>NUEVO PRODUCTO</span>
+            <span>Nuevo Producto</span>
           </Button>
         </div>
       </div>
 
-      {/* Tarjetas de Métricas Rápidas Avant-Garde */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="border border-[#222222] bg-[#0C0C0C] p-4 flex flex-col justify-between">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1.5">
-            <Package size={14} weight="light" />
-            TOTAL ARTÍCULOS
+      {/* Tarjetas de Métricas Rápidas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
+          <span className="text-xs font-medium text-secondary flex items-center gap-1.5">
+            <Package size={16} weight="duotone" className="text-amber-500" />
+            Total Artículos
           </span>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="font-heading font-bold text-2xl text-[#FAFAFA]">
+            <span className="font-mono tabular-nums font-bold text-2xl text-primary">
               {productos.length}
             </span>
-            <span className="text-[10px] font-mono text-[#71717A]">SKUs PADRE</span>
+            <span className="text-[11px] font-medium text-muted">SKUs Padre</span>
           </div>
         </div>
 
-        <div className="border border-[#222222] bg-[#0C0C0C] p-4 flex flex-col justify-between">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1.5">
-            <Barcode size={14} weight="light" />
-            UNIDADES EN STOCK
+        <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
+          <span className="text-xs font-medium text-secondary flex items-center gap-1.5">
+            <Barcode size={16} weight="duotone" className="text-emerald-500" />
+            Unidades en Stock
           </span>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="font-heading font-bold text-2xl text-[#FAFAFA]">
+            <span className="font-mono tabular-nums font-bold text-2xl text-primary">
               {totalItemsEnStock}
             </span>
-            <span className="text-[10px] font-mono text-green-400">FÍSICO REAL</span>
+            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              Físico Real
+            </span>
           </div>
         </div>
 
-        <div className="border border-[#222222] bg-[#0C0C0C] p-4 flex flex-col justify-between">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1.5">
-            <TrendUp size={14} weight="light" />
-            SIN STOCK FÍSICO
+        <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
+          <span className="text-xs font-medium text-secondary flex items-center gap-1.5">
+            <TrendUp size={16} weight="duotone" className="text-red-500" />
+            Sin Stock Físico
           </span>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="font-heading font-bold text-2xl text-red-400">
+            <span className="font-mono tabular-nums font-bold text-2xl text-red-500">
               {totalSinStock}
             </span>
-            <span className="text-[10px] font-mono text-red-500/80">QUIEBRE STOCK</span>
+            <span className="text-[11px] font-medium text-red-500/80">Quiebre Stock</span>
           </div>
         </div>
 
-        <div className="border border-[#222222] bg-[#0C0C0C] p-4 flex flex-col justify-between">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] flex items-center gap-1.5">
-            <Funnel size={14} weight="light" />
-            RESULTADOS FILTRO
+        <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
+          <span className="text-xs font-medium text-secondary flex items-center gap-1.5">
+            <Funnel size={16} weight="duotone" className="text-amber-500" />
+            Resultados Filtro
           </span>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="font-heading font-bold text-2xl text-amber-400">
+            <span className="font-mono tabular-nums font-bold text-2xl text-amber-500">
               {productosFiltrados.length}
             </span>
-            <span className="text-[10px] font-mono text-[#71717A]">VISIBLES</span>
+            <span className="text-[11px] font-medium text-muted">Visibles</span>
           </div>
         </div>
       </div>
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="border border-[#222222] bg-[#0A0A0A] p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 shadow-surface">
         {/* Buscador */}
         <div className="relative flex-1">
           <MagnifyingGlass
-            size={18}
-            weight="light"
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#71717A]"
+            size={17}
+            weight="regular"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
           />
           <input
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="BUSCAR POR NOMBRE, MARCA, CATEGORÍA O CÓDIGO DE BARRAS..."
-            className="w-full bg-[#111111] border border-[#2B2B2B] pl-10 pr-4 py-2 text-xs font-mono text-[#FAFAFA] placeholder:text-[#555555] focus:outline-none focus:border-[#FAFAFA] transition-fast uppercase"
+            placeholder="Buscar por nombre, marca, categoría o código de barras EAN..."
+            className="w-full bg-elevated focus:bg-surface border border-subtle focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-lg pl-10 pr-4 py-2 text-xs md:text-sm font-sans text-primary placeholder:text-muted outline-none transition-fast"
           />
         </div>
 
         {/* Filtros Selectores */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Selector de Unidad */}
-          <div className="flex items-center border border-[#2B2B2B] bg-[#111111] p-0.5">
-            <button
-              onClick={() => setUnidadFiltro('TODAS')}
-              className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider transition-fast ${
-                unidadFiltro === 'TODAS'
-                  ? 'bg-[#222222] text-[#FAFAFA] font-bold'
-                  : 'text-[#71717A] hover:text-[#D4D4D8]'
-              }`}
-            >
-              TODAS
-            </button>
-            <button
-              onClick={() => setUnidadFiltro('DASTIK')}
-              className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider transition-fast ${
-                unidadFiltro === 'DASTIK'
-                  ? 'bg-[#222222] text-[#FAFAFA] font-bold'
-                  : 'text-[#71717A] hover:text-[#D4D4D8]'
-              }`}
-            >
-              DASTIK
-            </button>
-            <button
-              onClick={() => setUnidadFiltro('HIDDEN')}
-              className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider transition-fast ${
-                unidadFiltro === 'HIDDEN'
-                  ? 'bg-amber-950/60 text-amber-300 font-bold border border-amber-900/40'
-                  : 'text-[#71717A] hover:text-[#D4D4D8]'
-              }`}
-            >
-              HIDDEN
-            </button>
+          {/* Segmented Control de Unidad */}
+          <div className="flex items-center rounded-lg border border-subtle bg-elevated p-1">
+            {(['TODAS', 'DASTIK', 'HIDDEN'] as const).map((u) => (
+              <button
+                key={u}
+                type="button"
+                onClick={() => setUnidadFiltro(u)}
+                className={`px-3 py-1 text-xs font-sans font-semibold rounded-md transition-fast cursor-pointer ${
+                  unidadFiltro === u
+                    ? 'bg-surface text-primary shadow-sm'
+                    : 'text-secondary hover:text-primary'
+                }`}
+              >
+                {u === 'TODAS' ? 'Todas' : u === 'DASTIK' ? 'Dastik' : 'Hidden'}
+              </button>
+            ))}
           </div>
 
           {/* Selector de Categoría */}
           <select
             value={categoriaFiltro}
             onChange={(e) => setCategoriaFiltro(e.target.value)}
-            className="bg-[#111111] border border-[#2B2B2B] px-3 py-1.5 text-[11px] font-mono text-[#FAFAFA] focus:outline-none focus:border-[#FAFAFA] transition-fast uppercase cursor-pointer"
+            className="bg-elevated border border-subtle rounded-lg px-3 py-2 text-xs font-sans font-medium text-primary focus:outline-none focus:border-amber-500/80 transition-fast cursor-pointer"
           >
-            <option value="TODAS">TODAS LAS CATEGORÍAS</option>
+            <option value="TODAS">Todas las categorías</option>
             {categoriasDisponibles.map((cat) => (
               <option key={cat} value={cat}>
-                {cat.toUpperCase()}
+                {cat}
               </option>
             ))}
           </select>
@@ -365,54 +330,54 @@ export const InventarioPage: React.FC = () => {
           <select
             value={stockFiltro}
             onChange={(e) => setStockFiltro(e.target.value as any)}
-            className="bg-[#111111] border border-[#2B2B2B] px-3 py-1.5 text-[11px] font-mono text-[#FAFAFA] focus:outline-none focus:border-[#FAFAFA] transition-fast uppercase cursor-pointer"
+            className="bg-elevated border border-subtle rounded-lg px-3 py-2 text-xs font-sans font-medium text-primary focus:outline-none focus:border-amber-500/80 transition-fast cursor-pointer"
           >
-            <option value="TODOS">TODOS LOS NIVELES</option>
-            <option value="CON_STOCK">DISPONIBLES (STOCK &gt; 0)</option>
-            <option value="BAJO_STOCK">STOCK BAJO (1 A 5)</option>
-            <option value="SIN_STOCK">QUIEBRE (STOCK = 0)</option>
+            <option value="TODOS">Todos los niveles</option>
+            <option value="CON_STOCK">Disponibles (&gt; 0)</option>
+            <option value="BAJO_STOCK">Stock bajo (1 a 5)</option>
+            <option value="SIN_STOCK">Quiebre (= 0)</option>
           </select>
         </div>
       </div>
 
       {/* Tabla Data Grid de Inventario */}
-      <div className="border border-[#222222] bg-[#0A0A0A] overflow-hidden">
+      <div className="rounded-xl border border-subtle bg-surface overflow-hidden shadow-surface">
         {isLoading ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
-            <SpinnerGap size={32} weight="light" className="animate-spin text-amber-400" />
-            <span className="font-mono text-xs uppercase tracking-widest text-[#71717A]">
-              CARGANDO CATÁLOGO CENTRAL...
+            <SpinnerGap size={32} weight="bold" className="animate-spin text-amber-500" />
+            <span className="font-sans text-xs font-medium text-muted">
+              Cargando catálogo central...
             </span>
           </div>
         ) : isError ? (
-          <div className="p-12 text-center flex flex-col items-center justify-center gap-3 text-red-400">
-            <span className="font-mono text-xs uppercase tracking-widest">
-              FALLÓ LA CONEXIÓN CON EL SERVIDOR DE INVENTARIO
+          <div className="p-12 text-center flex flex-col items-center justify-center gap-3 text-red-500">
+            <span className="font-sans text-xs font-semibold">
+              Falló la conexión con el servidor de inventario
             </span>
             <Button variant="secondary" size="sm" onClick={() => refetch()}>
-              REINTENTAR
+              Reintentar
             </Button>
           </div>
         ) : productosFiltrados.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-2">
-            <Package size={36} weight="light" className="text-[#333333]" />
-            <span className="font-mono text-xs uppercase tracking-widest text-[#71717A]">
-              NO SE ENCONTRARON PRODUCTOS CON LOS FILTROS ACTUALES
+            <Package size={36} weight="duotone" className="text-muted" />
+            <span className="font-sans text-xs font-medium text-secondary">
+              No se encontraron productos con los filtros actuales
             </span>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#222222] bg-[#0D0D0D] text-[10px] font-mono uppercase tracking-[0.15em] text-[#71717A]">
-                  <th className="py-3 px-4 w-36">MARCA / UNIDAD</th>
-                  <th className="py-3 px-4 min-w-[260px]">PRODUCTO</th>
-                  <th className="py-3 px-4 text-right w-28">PRECIO VTA</th>
-                  <th className="py-3 px-4 w-72">VARIANTES (TALLE / STOCK)</th>
-                  <th className="py-3 px-4 text-right w-32">STOCK TOTAL</th>
+                <tr className="border-b border-subtle bg-elevated/60 text-[11px] font-semibold uppercase tracking-wider text-secondary">
+                  <th className="py-3.5 px-4 w-36">Marca / Unidad</th>
+                  <th className="py-3.5 px-4 min-w-[260px]">Producto</th>
+                  <th className="py-3.5 px-4 text-right w-32">Precio Venta</th>
+                  <th className="py-3.5 px-4 w-72">Variantes (Talle / Stock)</th>
+                  <th className="py-3.5 px-4 text-right w-32">Stock Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1A1A1A]">
+              <tbody className="divide-y divide-subtle">
                 {productosPaginados.map((producto) => {
                   const stockTotal =
                     producto.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
@@ -422,18 +387,18 @@ export const InventarioPage: React.FC = () => {
                     <tr
                       key={producto.id}
                       onClick={() => handleVerDetalle(producto)}
-                      className="hover:bg-[#151515] transition-fast group cursor-pointer"
+                      className="hover:bg-elevated/50 transition-fast group cursor-pointer"
                       title="Ver detalle del producto y desglose de variantes"
                     >
                       {/* Columna 1: Marca */}
-                      <td className="py-3.5 px-4 font-heading font-bold text-[#FAFAFA] uppercase tracking-wider text-xs align-top">
-                        <div className="flex flex-col gap-1">
+                      <td className="py-3.5 px-4 font-heading font-bold text-primary text-xs align-top">
+                        <div className="flex flex-col gap-1.5">
                           <span>{producto.marca}</span>
                           <span
-                            className={`inline-block w-fit text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 border ${
+                            className={`inline-block w-fit text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
                               producto.unidadNegocio?.toLowerCase().includes('hidden')
-                                ? 'border-amber-900/60 bg-amber-950/30 text-amber-300'
-                                : 'border-[#333333] bg-[#141414] text-[#A1A1AA]'
+                                ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                : 'border-subtle bg-elevated text-secondary'
                             }`}
                           >
                             {producto.unidadNegocio}
@@ -441,11 +406,10 @@ export const InventarioPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Columna 2: Producto (con miniatura cuadrada w-10 h-10 border border-[#333333]) */}
+                      {/* Columna 2: Producto */}
                       <td className="py-3.5 px-4 align-top">
                         <div className="flex items-start gap-3">
-                          {/* Miniatura Cuadrada Avant-Garde w-10 h-10 */}
-                          <div className="w-10 h-10 shrink-0 border border-[#333333] bg-[#111111] overflow-hidden flex items-center justify-center relative">
+                          <div className="w-10 h-10 shrink-0 rounded-lg border border-subtle bg-elevated overflow-hidden flex items-center justify-center relative">
                             {producto.imagenUrl ? (
                               <img
                                 src={producto.imagenUrl}
@@ -454,57 +418,58 @@ export const InventarioPage: React.FC = () => {
                                 loading="lazy"
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';
-                                  const fallback = e.currentTarget.parentElement?.querySelector('.img-fallback');
+                                  const fallback =
+                                    e.currentTarget.parentElement?.querySelector('.img-fallback');
                                   if (fallback) fallback.classList.remove('hidden');
                                 }}
                               />
                             ) : null}
                             <div
-                              className={`w-full h-full flex items-center justify-center text-[#71717A] bg-[#111111] ${
+                              className={`w-full h-full flex items-center justify-center text-muted bg-elevated ${
                                 producto.imagenUrl ? 'hidden img-fallback' : ''
                               }`}
                               title="Sin imagen"
                             >
-                              <Image size={18} weight="light" />
+                              <Image size={18} weight="regular" />
                             </div>
                           </div>
 
-                          {/* Info del Producto */}
-                          <div className="flex flex-col gap-1 min-w-0">
-                            <span className="font-heading font-semibold text-[#FAFAFA] text-sm group-hover:text-white transition-fast truncate">
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="font-heading font-bold text-primary text-sm group-hover:text-amber-500 transition-fast truncate">
                               {producto.nombre}
                             </span>
                             {producto.descripcion && (
-                              <span className="text-[11px] text-[#71717A] line-clamp-1 font-sans">
+                              <span className="text-xs text-secondary line-clamp-1 font-sans">
                                 {producto.descripcion}
                               </span>
                             )}
-                            <span className="text-[10px] uppercase tracking-widest text-[#555555] font-mono mt-0.5">
-                              CATEGORÍA: {producto.categoria}
+                            <span className="text-[11px] text-muted font-sans mt-0.5">
+                              Categoría: {producto.categoria}
                             </span>
                           </div>
                         </div>
                       </td>
 
                       {/* Columna 3: Precio */}
-                      <td className="py-3.5 px-4 text-right font-heading font-bold text-[#FAFAFA] text-sm align-top whitespace-nowrap">
-                        ${producto.precioVenta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      <td className="py-3.5 px-4 text-right font-mono tabular-nums font-bold text-primary text-sm align-top whitespace-nowrap">
+                        $ {producto.precioVenta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                       </td>
 
-                      {/* Columna 4: Variantes (Cantidad y badges) */}
+                      {/* Columna 4: Variantes */}
                       <td className="py-3.5 px-4 align-top">
                         <div className="flex flex-col gap-1.5">
-                          <span className="text-[11px] font-mono font-medium text-[#A1A1AA]">
-                            {producto.variantes?.length || 0} {producto.variantes?.length === 1 ? 'Variante' : 'Variantes'}
+                          <span className="text-[11px] font-medium text-secondary">
+                            {producto.variantes?.length || 0}{' '}
+                            {producto.variantes?.length === 1 ? 'variante' : 'variantes'}
                           </span>
                           <div className="flex flex-wrap gap-1 max-w-xs">
                             {producto.variantes?.map((v) => (
                               <span
                                 key={v.id}
-                                className={`text-[10px] font-mono px-1.5 py-0.5 border ${
+                                className={`text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-md border ${
                                   v.stockFisico === 0
-                                    ? 'border-red-950 bg-red-950/20 text-red-400 line-through'
-                                    : 'border-[#222222] bg-[#141414] text-[#D4D4D8]'
+                                    ? 'border-red-500/30 bg-red-500/10 text-red-500 line-through'
+                                    : 'border-subtle bg-elevated text-primary font-medium'
                                 }`}
                                 title={`Talle: ${v.talle} | Color: ${v.color} | Stock: ${v.stockFisico} | EAN: ${v.codigoBarras}`}
                               >
@@ -519,22 +484,26 @@ export const InventarioPage: React.FC = () => {
                       <td className="py-3.5 px-4 text-right align-top whitespace-nowrap">
                         <div className="flex flex-col items-end gap-1">
                           <span
-                            className={`text-sm font-heading font-bold ${
-                              sinStock ? 'text-red-400' : stockTotal <= 5 ? 'text-amber-400' : 'text-[#FAFAFA]'
+                            className={`text-sm font-mono tabular-nums font-bold ${
+                              sinStock
+                                ? 'text-red-500'
+                                : stockTotal <= 5
+                                ? 'text-amber-500'
+                                : 'text-primary'
                             }`}
                           >
                             {stockTotal} u.
                           </span>
                           <span
-                            className={`text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 border ${
+                            className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
                               sinStock
-                                ? 'border-red-900/60 bg-red-950/40 text-red-300'
+                                ? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400'
                                 : stockTotal <= 5
-                                ? 'border-amber-900/60 bg-amber-950/40 text-amber-300'
-                                : 'border-green-900/60 bg-green-950/30 text-green-300'
+                                ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                             }`}
                           >
-                            {sinStock ? 'SIN STOCK' : stockTotal <= 5 ? 'STOCK BAJO' : 'DISPONIBLE'}
+                            {sinStock ? 'Sin Stock' : stockTotal <= 5 ? 'Stock Bajo' : 'Disponible'}
                           </span>
                         </div>
                       </td>
@@ -546,48 +515,53 @@ export const InventarioPage: React.FC = () => {
           </div>
         )}
 
-        {/* Footer de la Tabla con Paginación Client-Side y Conteo */}
+        {/* Footer de la Tabla con Paginación */}
         {!isLoading && !isError && productosFiltrados.length > 0 && (
-          <div className="p-3 bg-[#0D0D0D] border-t border-[#222222] flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-[#71717A] uppercase tracking-wider font-mono">
-            {/* Información de Registros */}
+          <div className="p-3.5 bg-elevated/40 border-t border-subtle flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-secondary font-sans">
             <div className="flex items-center gap-2">
               <span>
-                MOSTRANDO {indiceInicio + 1} -{' '}
-                {Math.min(indiceInicio + PAGE_SIZE, productosFiltrados.length)} DE{' '}
-                {productosFiltrados.length} PRODUCTOS
+                Mostrando{' '}
+                <strong className="font-mono tabular-nums text-primary">{indiceInicio + 1}</strong> –{' '}
+                <strong className="font-mono tabular-nums text-primary">
+                  {Math.min(indiceInicio + PAGE_SIZE, productosFiltrados.length)}
+                </strong>{' '}
+                de{' '}
+                <strong className="font-mono tabular-nums text-primary">
+                  {productosFiltrados.length}
+                </strong>{' '}
+                productos
               </span>
               {productosFiltrados.length !== productos.length && (
-                <span className="text-[#555555]">
-                  (TOTAL CATÁLOGO: {productos.length})
-                </span>
+                <span className="text-muted">(Total catálogo: {productos.length})</span>
               )}
             </div>
 
-            {/* Controles de Navegación de Páginas */}
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
                 disabled={paginaActual <= 1}
-                className="px-2.5 py-1.5 border border-[#333333] bg-[#141414] hover:bg-[#222222] text-[#FAFAFA] disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 transition-fast"
                 title="Página Anterior"
               >
-                <CaretLeft size={12} weight="bold" />
-                <span>ANT</span>
-              </button>
+                <CaretLeft size={13} weight="bold" />
+                <span>Anterior</span>
+              </Button>
 
-              <span className="px-3 py-1.5 border border-[#222222] bg-[#0A0A0A] text-[#FAFAFA] font-bold">
-                PÁGINA {paginaActual} DE {totalPaginas}
+              <span className="px-3 py-1.5 rounded-lg border border-subtle bg-surface text-primary text-xs font-mono tabular-nums font-semibold">
+                Pág. {paginaActual} / {totalPaginas}
               </span>
 
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPaginaActual((p) => Math.min(p + 1, totalPaginas))}
                 disabled={paginaActual >= totalPaginas}
-                className="px-2.5 py-1.5 border border-[#333333] bg-[#141414] hover:bg-[#222222] text-[#FAFAFA] disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 transition-fast"
                 title="Página Siguiente"
               >
-                <span>SIG</span>
-                <CaretRight size={12} weight="bold" />
-              </button>
+                <span>Siguiente</span>
+                <CaretRight size={13} weight="bold" />
+              </Button>
             </div>
           </div>
         )}

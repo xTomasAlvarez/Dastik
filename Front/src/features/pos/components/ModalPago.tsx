@@ -190,38 +190,38 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#000000]/95 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-[#090909] border border-[#333333] p-6 md:p-8 flex flex-col gap-6 text-left relative my-auto">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-lg bg-surface border border-subtle rounded-xl shadow-floating p-6 md:p-8 flex flex-col gap-6 text-left relative my-auto">
         {/* Header del Modal */}
-        <div className="flex items-start justify-between border-b border-[#222222] pb-4">
+        <div className="flex items-start justify-between border-b border-subtle pb-4">
           <div>
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-mono block">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-muted font-mono block">
               TERMINAL POS // COBRO DE TICKET
             </span>
-            <h2 className="text-xl font-heading font-extrabold text-[#FAFAFA] tracking-tight">
+            <h2 className="text-xl font-heading font-bold text-primary tracking-tight">
               FINALIZAR VENTA
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1 cursor-pointer"
+            className="text-muted hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-elevated cursor-pointer"
             title="Cancelar y volver al POS [ESC]"
           >
-            <X size={18} weight="light" />
+            <X size={18} weight="bold" />
           </button>
         </div>
 
         {/* Display Gigante del Total a Cobrar */}
-        <div className="border border-[#222222] bg-[#0E0E0E] p-5 flex flex-col items-center justify-center text-center relative overflow-hidden">
-          <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-mono mb-1">
+        <div className="border border-subtle bg-elevated rounded-xl p-5 flex flex-col items-center justify-center text-center relative overflow-hidden">
+          <span className="text-[10px] uppercase tracking-widest text-muted font-mono mb-1">
             TOTAL FINAL A COBRAR ({items.length} {items.length === 1 ? 'ARTÍCULO' : 'ARTÍCULOS'})
           </span>
-          <span className="font-heading text-3xl md:text-4xl font-extrabold text-[#FAFAFA] tracking-tight">
+          <span className="font-mono text-3xl md:text-4xl font-bold text-primary tracking-tight tabular-nums">
             {formatearDinero(totalFinal)}
           </span>
           {subtotalOriginal !== totalFinal && (
-            <span className="text-xs font-mono text-[#71717A] mt-1 line-through">
+            <span className="text-xs font-mono text-muted mt-1 line-through tabular-nums">
               Subtotal base: {formatearDinero(subtotalOriginal)}
             </span>
           )}
@@ -229,16 +229,16 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
 
         {/* ALERTA DESTACADA: Comisión de Sábado */}
         {calificaComisionSabado && (
-          <div className="border border-amber-500/80 bg-[#141008] p-3.5 flex items-center justify-between gap-3 text-amber-200">
+          <div className="border border-amber-500/30 bg-amber-500/10 rounded-xl p-3.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Flame size={22} weight="fill" className="text-amber-400 shrink-0" />
+              <Flame size={22} weight="fill" className="text-amber-500 dark:text-amber-400 shrink-0" />
               <div>
-                <span className="text-xs font-heading font-extrabold tracking-wider block text-amber-300">
+                <span className="text-xs font-heading font-bold tracking-wider block text-amber-600 dark:text-amber-400">
                   VENTA CALIFICADA: 5% COMISIÓN PARA EMPLEADO
                 </span>
-                <span className="text-[11px] font-sans text-amber-200/90">
+                <span className="text-[11px] font-sans text-secondary">
                   Venta en sábado mayor a $120.000 · Comisión ganada:{' '}
-                  <strong className="text-[#FAFAFA] font-mono">{formatearDinero(montoComisionEmpleado)}</strong>
+                  <strong className="text-primary font-mono tabular-nums">{formatearDinero(montoComisionEmpleado)}</strong>
                 </span>
               </div>
             </div>
@@ -247,17 +247,17 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
 
         {/* Mensaje de Error */}
         {error && (
-          <div className="border border-red-900/80 bg-red-950/30 p-3 flex items-start justify-between gap-3 text-xs text-red-300 font-sans">
+          <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-3 flex items-start justify-between gap-3 text-xs text-red-600 dark:text-red-400 font-sans">
             <div className="flex items-center gap-2">
-              <WarningCircle size={16} weight="light" className="text-red-400 shrink-0" />
+              <WarningCircle size={16} weight="bold" className="shrink-0" />
               <span>{error}</span>
             </div>
             <button
               type="button"
               onClick={() => setError(null)}
-              className="text-red-400 hover:text-red-200 cursor-pointer p-0.5"
+              className="hover:opacity-75 cursor-pointer p-0.5"
             >
-              <X size={14} weight="light" />
+              <X size={14} weight="bold" />
             </button>
           </div>
         )}
@@ -265,7 +265,7 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
         <form onSubmit={handlePagar} className="flex flex-col gap-5">
           {/* Selector de Métodos de Pago Reales (4 Métodos Exactos) */}
           <div>
-            <span className="text-[10px] uppercase font-sans tracking-widest text-[#71717A] block mb-2">
+            <span className="text-[11px] uppercase font-sans font-semibold tracking-wider text-secondary block mb-2">
               MÉTODO DE PAGO
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -274,15 +274,15 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                 type="button"
                 onClick={() => setMetodoPago(MetodosPago.Efectivo)}
                 className={`
-                  border p-2.5 flex flex-col items-center justify-center gap-1.5 transition-fast cursor-pointer
+                  border rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer
                   ${
                     metodoPago === MetodosPago.Efectivo
-                      ? 'border-[#FAFAFA] bg-[#FAFAFA] text-[#000000] font-bold'
-                      : 'border-[#222222] bg-[#111111] text-[#A1A1AA] hover:border-[#444444]'
+                      ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-surface'
+                      : 'border-subtle bg-elevated text-secondary hover:border-strong hover:text-primary'
                   }
                 `}
               >
-                <Money size={20} weight={metodoPago === MetodosPago.Efectivo ? 'bold' : 'light'} />
+                <Money size={20} weight={metodoPago === MetodosPago.Efectivo ? 'bold' : 'regular'} />
                 <span className="font-heading text-[11px] uppercase tracking-wider">EFECTIVO</span>
               </button>
 
@@ -291,15 +291,15 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                 type="button"
                 onClick={() => setMetodoPago(MetodosPago.Transferencia)}
                 className={`
-                  border p-2.5 flex flex-col items-center justify-center gap-1.5 transition-fast cursor-pointer
+                  border rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer
                   ${
                     metodoPago === MetodosPago.Transferencia
-                      ? 'border-[#FAFAFA] bg-[#FAFAFA] text-[#000000] font-bold'
-                      : 'border-[#222222] bg-[#111111] text-[#A1A1AA] hover:border-[#444444]'
+                      ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-surface'
+                      : 'border-subtle bg-elevated text-secondary hover:border-strong hover:text-primary'
                   }
                 `}
               >
-                <ArrowsLeftRight size={20} weight={metodoPago === MetodosPago.Transferencia ? 'bold' : 'light'} />
+                <ArrowsLeftRight size={20} weight={metodoPago === MetodosPago.Transferencia ? 'bold' : 'regular'} />
                 <span className="font-heading text-[11px] uppercase tracking-wider">TRANSF.</span>
               </button>
 
@@ -308,15 +308,15 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                 type="button"
                 onClick={() => setMetodoPago(MetodosPago.Debito)}
                 className={`
-                  border p-2.5 flex flex-col items-center justify-center gap-1.5 transition-fast cursor-pointer
+                  border rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer
                   ${
                     metodoPago === MetodosPago.Debito
-                      ? 'border-[#FAFAFA] bg-[#FAFAFA] text-[#000000] font-bold'
-                      : 'border-[#222222] bg-[#111111] text-[#A1A1AA] hover:border-[#444444]'
+                      ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-surface'
+                      : 'border-subtle bg-elevated text-secondary hover:border-strong hover:text-primary'
                   }
                 `}
               >
-                <CreditCard size={20} weight={metodoPago === MetodosPago.Debito ? 'bold' : 'light'} />
+                <CreditCard size={20} weight={metodoPago === MetodosPago.Debito ? 'bold' : 'regular'} />
                 <span className="font-heading text-[11px] uppercase tracking-wider">DÉBITO</span>
               </button>
 
@@ -325,15 +325,15 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                 type="button"
                 onClick={() => setMetodoPago(MetodosPago.Credito)}
                 className={`
-                  border p-2.5 flex flex-col items-center justify-center gap-1.5 transition-fast cursor-pointer
+                  border rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer
                   ${
                     metodoPago === MetodosPago.Credito
-                      ? 'border-[#FAFAFA] bg-[#FAFAFA] text-[#000000] font-bold'
-                      : 'border-[#222222] bg-[#111111] text-[#A1A1AA] hover:border-[#444444]'
+                      ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-surface'
+                      : 'border-subtle bg-elevated text-secondary hover:border-strong hover:text-primary'
                   }
                 `}
               >
-                <Percent size={20} weight={metodoPago === MetodosPago.Credito ? 'bold' : 'light'} />
+                <Percent size={20} weight={metodoPago === MetodosPago.Credito ? 'bold' : 'regular'} />
                 <span className="font-heading text-[11px] uppercase tracking-wider">CRÉDITO</span>
               </button>
             </div>
@@ -341,20 +341,20 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
 
           {/* Sección Dinámica para Transferencia */}
           {metodoPago === MetodosPago.Transferencia && (
-            <div className="border border-[#2E2E2E] bg-[#111111] p-4 space-y-2">
-              <span className="text-[10px] uppercase font-sans tracking-widest text-[#71717A] block">
+            <div className="border border-subtle bg-elevated rounded-xl p-4 space-y-2">
+              <span className="text-[10px] uppercase font-sans font-semibold tracking-widest text-muted block">
                 ALIAS BANCARIOS DE RECEPCIÓN
               </span>
-              <div className="border border-[#1F1F1F] bg-[#0A0A0A] p-3 text-xs font-mono space-y-1.5">
-                <div className="flex items-center justify-between text-[#FAFAFA]">
+              <div className="border border-subtle bg-surface rounded-lg p-3 text-xs font-mono space-y-1.5">
+                <div className="flex items-center justify-between text-primary">
                   <span>Alias oficial:</span>
-                  <code className="text-amber-300 font-bold bg-[#141414] px-2 py-0.5 border border-[#222222]">
+                  <code className="text-amber-600 dark:text-amber-400 font-bold bg-elevated rounded px-2 py-0.5 border border-subtle">
                     el de Ale / el del Gordo
                   </code>
                 </div>
-                <p className="text-[11px] font-sans text-[#71717A] pt-1">
+                <p className="text-[11px] font-sans text-secondary pt-1">
                   Verifica que el cliente muestre el comprobante y coincida con el monto total de{' '}
-                  <strong className="text-[#FAFAFA]">{formatearDinero(totalFinal)}</strong> antes de confirmar.
+                  <strong className="text-primary font-mono tabular-nums">{formatearDinero(totalFinal)}</strong> antes de confirmar.
                 </p>
               </div>
             </div>
@@ -362,13 +362,13 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
 
           {/* Sección Dinámica para Débito (Switch / Descuento) */}
           {metodoPago === MetodosPago.Debito && (
-            <div className="border border-[#2E2E2E] bg-[#111111] p-4 space-y-3">
+            <div className="border border-subtle bg-elevated rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-heading font-bold text-[#FAFAFA] block">
+                  <span className="text-xs font-heading font-bold text-primary block">
                     DESCUENTO POR DÉBITO
                   </span>
-                  <span className="text-[11px] font-sans text-[#71717A]">
+                  <span className="text-[11px] font-sans text-secondary">
                     Aplica bonificación por pago directo con tarjeta de débito
                   </span>
                 </div>
@@ -379,25 +379,25 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                     onChange={(e) => setAplicarDescuentoDebito(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-[#222222] peer-focus:outline-none border border-[#444444] peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#FAFAFA] after:border-gray-300 after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-800" />
+                  <div className="w-11 h-6 bg-surface rounded-full peer-focus:outline-none border border-subtle peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-primary after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600 peer-checked:after:bg-white" />
                 </label>
               </div>
 
               {aplicarDescuentoDebito && (
-                <div className="pt-2 border-t border-[#1F1F1F] flex items-center justify-between text-xs font-mono">
+                <div className="pt-2 border-t border-subtle flex items-center justify-between text-xs font-mono">
                   <div className="flex items-center gap-2">
-                    <span className="text-[#71717A]">Descuento:</span>
+                    <span className="text-secondary">Descuento:</span>
                     <select
                       value={porcentajeDescuentoDebito}
                       onChange={(e) => setPorcentajeDescuentoDebito(Number(e.target.value))}
-                      className="bg-[#0A0A0A] border border-[#333333] text-emerald-400 px-2 py-1 text-xs outline-none"
+                      className="bg-surface border border-subtle rounded-md text-emerald-600 dark:text-emerald-400 font-bold px-2 py-1 text-xs outline-none"
                     >
                       <option value={5}>-5%</option>
                       <option value={10}>-10%</option>
                       <option value={15}>-15%</option>
                     </select>
                   </div>
-                  <span className="text-emerald-400 font-bold">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
                     Ahorro: -{formatearDinero(subtotalOriginal * (porcentajeDescuentoDebito / 100))}
                   </span>
                 </div>
@@ -407,13 +407,13 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
 
           {/* Sección Dinámica para Crédito (Switch / Interés del 25%) */}
           {metodoPago === MetodosPago.Credito && (
-            <div className="border border-[#2E2E2E] bg-[#111111] p-4 space-y-3">
+            <div className="border border-subtle bg-elevated rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-heading font-bold text-[#FAFAFA] block">
+                  <span className="text-xs font-heading font-bold text-primary block">
                     RECARGO DE CRÉDITO (INTERÉS 25%)
                   </span>
-                  <span className="text-[11px] font-sans text-[#71717A]">
+                  <span className="text-[11px] font-sans text-secondary">
                     Regla de negocio: +25% de interés financiero para pagos con tarjeta de crédito
                   </span>
                 </div>
@@ -424,14 +424,14 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                     onChange={(e) => setAplicarInteresCredito(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-[#222222] peer-focus:outline-none border border-[#444444] peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#FAFAFA] after:border-gray-300 after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-700" />
+                  <div className="w-11 h-6 bg-surface rounded-full peer-focus:outline-none border border-subtle peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-primary after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500 peer-checked:after:bg-white" />
                 </label>
               </div>
 
               {aplicarInteresCredito && (
-                <div className="pt-2 border-t border-[#1F1F1F] flex items-center justify-between text-xs font-mono">
-                  <span className="text-[#71717A]">Recargo financiero (+25%):</span>
-                  <span className="text-amber-400 font-bold">
+                <div className="pt-2 border-t border-subtle flex items-center justify-between text-xs font-mono">
+                  <span className="text-secondary">Recargo financiero (+25%):</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold tabular-nums">
                     +{formatearDinero(subtotalOriginal * 0.25)}
                   </span>
                 </div>
@@ -441,22 +441,22 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
 
           {/* Sección Dinámica para Efectivo (Paga Con + Vuelto) */}
           {metodoPago === MetodosPago.Efectivo && (
-            <div className="border border-[#222222] bg-[#111111] p-4 space-y-4">
+            <div className="border border-subtle bg-elevated rounded-xl p-4 space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[10px] uppercase font-sans tracking-widest text-[#71717A]">
+                  <label className="text-[10px] uppercase font-sans font-semibold tracking-wider text-secondary">
                     MONTO RECIBIDO DEL CLIENTE
                   </label>
                   <button
                     type="button"
                     onClick={() => setPagaCon(totalFinal.toString())}
-                    className="text-[10px] font-mono text-[#FAFAFA] underline cursor-pointer hover:text-[#A1A1AA]"
+                    className="text-[10px] font-mono font-bold text-primary underline cursor-pointer hover:text-secondary"
                   >
                     EXACTO
                   </button>
                 </div>
-                <div className="flex items-center border border-[#333333] focus-within:border-[#FAFAFA] bg-[#000000] px-3 py-2">
-                  <span className="text-sm font-mono text-[#71717A] mr-2">$</span>
+                <div className="flex items-center border border-subtle focus-within:border-strong bg-surface rounded-lg px-3 py-2 transition-colors">
+                  <span className="text-sm font-mono text-muted mr-2">$</span>
                   <input
                     type="number"
                     min="0"
@@ -464,19 +464,19 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                     value={pagaCon}
                     onChange={(e) => setPagaCon(e.target.value)}
                     placeholder={totalFinal.toString()}
-                    className="bg-transparent text-base font-mono font-bold text-[#FAFAFA] outline-none w-full"
+                    className="bg-transparent text-base font-mono font-bold text-primary outline-none w-full tabular-nums"
                     autoFocus
                   />
                 </div>
 
                 {/* Accesos Rápidos */}
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {[1000, 2000, 5000, 10000, 20000].map((monto) => (
                     <button
                       key={monto}
                       type="button"
                       onClick={() => agregarEfectivo(monto)}
-                      className="px-2 py-0.5 border border-[#222222] bg-[#090909] text-[10px] font-mono text-[#71717A] hover:text-[#FAFAFA] hover:border-[#444444] transition-fast cursor-pointer"
+                      className="px-2 py-0.5 rounded border border-subtle bg-surface text-[10px] font-mono text-secondary hover:text-primary hover:border-strong transition-colors cursor-pointer tabular-nums"
                     >
                       +${monto.toLocaleString('es-AR')}
                     </button>
@@ -485,14 +485,14 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
               </div>
 
               {/* Display de Vuelto en Vivo */}
-              <div className="border-t border-[#1F1F1F] pt-3 flex items-center justify-between">
+              <div className="border-t border-subtle pt-3 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] uppercase font-sans tracking-widest text-[#71717A] block">
+                  <span className="text-[10px] uppercase font-sans tracking-widest text-muted block">
                     VUELTO / CAMBIO A ENTREGAR
                   </span>
                   <span
-                    className={`font-heading text-lg font-extrabold ${
-                      dineroInsuficiente ? 'text-red-400' : 'text-emerald-400'
+                    className={`font-mono text-lg font-bold tabular-nums ${
+                      dineroInsuficiente ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
                     }`}
                   >
                     {dineroInsuficiente
@@ -501,7 +501,7 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                   </span>
                 </div>
                 {!dineroInsuficiente && vuelto > 0 && (
-                  <span className="text-[10px] font-mono bg-emerald-950/40 border border-emerald-900 text-emerald-300 px-2 py-1">
+                  <span className="text-[10px] font-mono font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-md px-2 py-1">
                     CAMBIO LISTO
                   </span>
                 )}
@@ -510,12 +510,12 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
           )}
 
           {/* Test helper discreto para simular sábado */}
-          <div className="flex items-center justify-between text-[10px] text-[#555555] font-mono pt-1">
+          <div className="flex items-center justify-between text-[10px] text-muted font-mono pt-1">
             <span>Día detectado: {hoyEsSabadoReal ? 'SÁBADO (Activo)' : 'Día de semana'}</span>
             <button
               type="button"
               onClick={() => setSimularSabado(!simularSabado)}
-              className="hover:text-[#A1A1AA] underline cursor-pointer"
+              className="hover:text-primary underline cursor-pointer"
             >
               {simularSabado ? 'Modo normal' : 'Simular sábado'}
             </button>
@@ -523,20 +523,22 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
 
           {/* Acciones */}
           <div className="flex items-center gap-3 mt-1">
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="lg"
               onClick={onClose}
               disabled={isLoading}
-              className="w-1/3 py-3 border border-[#333333] hover:border-[#555555] bg-transparent text-xs font-mono uppercase tracking-wider text-[#A1A1AA] hover:text-[#FAFAFA] transition-fast cursor-pointer disabled:opacity-40"
+              className="w-1/3 text-xs font-mono"
             >
               CANCELAR [ESC]
-            </button>
+            </Button>
             <Button
               type="submit"
               variant="primary"
               size="lg"
               disabled={isLoading || dineroInsuficiente}
-              className="w-2/3 font-heading font-bold tracking-wider flex items-center justify-center gap-2"
+              className="w-2/3 font-heading font-bold tracking-wide flex items-center justify-center gap-2"
             >
               <span>{isLoading ? 'PROCESANDO COBRO...' : 'CONFIRMAR COBRO'}</span>
               <ArrowRight size={16} weight="bold" />

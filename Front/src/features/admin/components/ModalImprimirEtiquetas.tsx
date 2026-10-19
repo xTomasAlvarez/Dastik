@@ -202,6 +202,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
   const variantesDisponibles = producto.variantes ?? [];
 
   // Renderizador de cada etiqueta exacta de 38mm x 21mm (proporción 144px x 80px)
+  // INTOCABLE: Geometría estricta 144x80px para html2canvas + jsPDF
   const renderEtiqueta = (item: EtiquetaItem, index: number) => {
     const nombreSeguro =
       (item.nombre || '').length > 18
@@ -354,7 +355,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity duration-150 print:hidden"
+        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-150 print:hidden"
         onClick={onClose}
       />
 
@@ -385,19 +386,19 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
         }
       `}</style>
 
-      {/* Modal Dialog */}
-      <div className="relative w-full max-w-4xl bg-[#090909] border border-[#333333] text-[#FAFAFA] flex flex-col max-h-[92vh] z-10 animate-in fade-in zoom-in-95 duration-150 print:hidden">
+      {/* Modal Dialog (Controles del Modal con tokens semánticos) */}
+      <div className="relative w-full max-w-4xl bg-surface border border-subtle rounded-xl shadow-floating text-primary flex flex-col max-h-[92vh] z-10 overflow-hidden print:hidden">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#222222] bg-[#0C0C0C] flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-subtle bg-elevated/60 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 border border-[#333333] bg-[#141414] flex items-center justify-center text-amber-400">
+            <div className="w-9 h-9 rounded-lg border border-subtle bg-surface flex items-center justify-center text-amber-500 dark:text-amber-400">
               <Printer size={18} weight="bold" />
             </div>
             <div>
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold block">
+              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-600 dark:text-amber-400 font-bold block">
                 CONTROL DE STOCK // ETIQUETAS TÉRMICAS & A4 (38x21 MM)
               </span>
-              <h2 className="font-heading font-extrabold text-base sm:text-lg text-[#FAFAFA] tracking-tight uppercase">
+              <h2 className="font-heading font-bold text-base sm:text-lg text-primary tracking-tight uppercase">
                 ETIQUETAS: {producto.nombre}
               </h2>
             </div>
@@ -405,44 +406,44 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 border border-[#333333] bg-[#141414] hover:bg-[#222222] text-[#A1A1AA] hover:text-white transition-fast cursor-pointer"
+            className="p-1.5 rounded-lg border border-subtle bg-surface hover:bg-elevated text-secondary hover:text-primary transition-colors cursor-pointer"
             title="Cerrar (Esc)"
           >
-            <X size={16} weight="light" />
+            <X size={16} weight="bold" />
           </button>
         </div>
 
         {/* Controles de Configuración */}
-        <div className="p-4 sm:p-5 border-b border-[#222222] bg-[#0A0A0A] space-y-4">
+        <div className="p-4 sm:p-5 border-b border-subtle bg-surface space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Formato Visual (EAN-13 vs QR) */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] mr-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted mr-1">
                 FORMATO:
               </span>
               <button
                 type="button"
                 onClick={() => setFormato('ean13')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-heading font-semibold transition-fast cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-heading font-semibold transition-colors cursor-pointer ${
                   formato === 'ean13'
-                    ? 'border-amber-400 bg-amber-950/40 text-amber-300'
-                    : 'border-[#333333] bg-[#141414] text-[#A1A1AA] hover:text-white'
+                    ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                    : 'border-subtle bg-elevated text-secondary hover:text-primary'
                 }`}
               >
-                <BarcodeIcon size={16} weight="light" />
+                <BarcodeIcon size={16} weight="bold" />
                 <span>CÓDIGO DE BARRAS (EAN-13)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setFormato('qr')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-heading font-semibold transition-fast cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-heading font-semibold transition-colors cursor-pointer ${
                   formato === 'qr'
-                    ? 'border-amber-400 bg-amber-950/40 text-amber-300'
-                    : 'border-[#333333] bg-[#141414] text-[#A1A1AA] hover:text-white'
+                    ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                    : 'border-subtle bg-elevated text-secondary hover:text-primary'
                 }`}
               >
-                <QrCodeIcon size={16} weight="light" />
+                <QrCodeIcon size={16} weight="bold" />
                 <span>CÓDIGO QR</span>
               </button>
             </div>
@@ -452,7 +453,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               <button
                 type="button"
                 onClick={handleCargarCurva}
-                className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1.5 border border-[#333333] bg-[#111111] hover:border-[#555555] text-[#A1A1AA] hover:text-white transition-fast cursor-pointer flex items-center gap-1"
+                className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1.5 rounded-lg border border-subtle bg-elevated hover:border-strong text-secondary hover:text-primary transition-colors cursor-pointer flex items-center gap-1"
                 title="Carga 1 etiqueta por cada talle del producto"
               >
                 <ListNumbers size={13} />
@@ -462,7 +463,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               <button
                 type="button"
                 onClick={handleCargarStockActual}
-                className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1.5 border border-[#333333] bg-[#111111] hover:border-amber-400 text-amber-300 hover:text-amber-200 transition-fast cursor-pointer flex items-center gap-1"
+                className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold transition-colors cursor-pointer flex items-center gap-1"
                 title="Carga la cantidad según stock físico en tienda"
               >
                 <ArrowsClockwise size={13} />
@@ -472,7 +473,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               <button
                 type="button"
                 onClick={handleLimpiarTodo}
-                className="text-[10px] font-mono uppercase tracking-wider px-2 py-1.5 border border-transparent hover:border-red-900 text-red-400 hover:text-red-300 transition-fast cursor-pointer"
+                className="text-[10px] font-mono uppercase tracking-wider px-2 py-1.5 rounded-lg border border-transparent hover:border-red-500/30 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
               >
                 LIMPIAR
               </button>
@@ -480,8 +481,8 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           </div>
 
           {/* Selector de cantidad por variante */}
-          <div className="border border-[#222222] bg-[#111111] p-3">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] block mb-2">
+          <div className="border border-subtle bg-elevated rounded-xl p-3">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-secondary block mb-2">
               CANTIDAD DE ETIQUETAS POR TALLE:
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
@@ -490,22 +491,22 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
                 return (
                   <div
                     key={v.id}
-                    className="border border-[#2A2A2A] bg-[#0E0E0E] p-2 flex flex-col items-center gap-1.5"
+                    className="border border-subtle bg-surface rounded-lg p-2 flex flex-col items-center gap-1.5"
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="font-heading font-black text-sm text-[#FAFAFA]">
+                      <span className="font-heading font-bold text-sm text-primary">
                         {v.talle || 'U'}
                       </span>
-                      <span className="text-[10px] font-mono text-[#71717A]">
+                      <span className="text-[10px] font-mono text-muted">
                         ({v.stockFisico || 0}u)
                       </span>
                     </div>
 
-                    <div className="flex items-center border border-[#333333] bg-black">
+                    <div className="flex items-center border border-subtle bg-elevated rounded-md overflow-hidden">
                       <button
                         type="button"
                         onClick={() => setCantidadVariante(v.id, qty - 1)}
-                        className="px-2 py-0.5 text-xs text-[#FAFAFA] hover:bg-[#222222] cursor-pointer"
+                        className="px-2 py-0.5 text-xs text-primary hover:bg-surface cursor-pointer"
                       >
                         -
                       </button>
@@ -514,12 +515,12 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
                         min="0"
                         value={qty}
                         onChange={(e) => setCantidadVariante(v.id, parseInt(e.target.value) || 0)}
-                        className="w-10 text-center bg-transparent text-xs font-mono font-bold text-amber-400 outline-none"
+                        className="w-10 text-center bg-transparent text-xs font-mono font-bold text-amber-600 dark:text-amber-400 outline-none tabular-nums"
                       />
                       <button
                         type="button"
                         onClick={() => setCantidadVariante(v.id, qty + 1)}
-                        className="px-2 py-0.5 text-xs text-[#FAFAFA] hover:bg-[#222222] cursor-pointer"
+                        className="px-2 py-0.5 text-xs text-primary hover:bg-surface cursor-pointer"
                       >
                         +
                       </button>
@@ -532,31 +533,31 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
         </div>
 
         {/* Vista previa de las etiquetas de 38x21mm (144x80 px) */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#070707] space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-canvas space-y-3">
           <div className="flex items-center justify-between text-xs font-mono">
-            <span className="text-[#71717A] uppercase tracking-wider">
+            <span className="text-secondary uppercase tracking-wider">
               VISTA PREVIA ESTÁNDAR 38x21 MM ({totalEtiquetas} ETIQUETAS)
             </span>
-            <span className="text-amber-400 font-bold">
+            <span className="text-amber-600 dark:text-amber-400 font-bold">
               ESPECIFICACIÓN: 38x21 MM (144x80 PX) // LISTA Y CONTADO
             </span>
           </div>
 
           {totalEtiquetas === 0 ? (
-            <div className="p-12 text-center border border-dashed border-[#222222] text-[#71717A] text-xs font-mono">
+            <div className="p-12 text-center border border-dashed border-subtle rounded-xl text-muted text-xs font-mono">
               No hay etiquetas seleccionadas para imprimir. Ajusta las cantidades arriba.
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2.5 p-3 bg-[#111111] border border-[#222222] max-h-[360px] overflow-y-auto">
+            <div className="flex flex-wrap gap-2.5 p-3 bg-elevated border border-subtle rounded-xl max-h-[360px] overflow-y-auto">
               {listaEtiquetas.map((item, idx) => renderEtiqueta(item, idx))}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:p-5 border-t border-[#222222] bg-[#0C0C0C] flex items-center justify-between">
-          <span className="text-[10px] font-mono text-[#555555] uppercase tracking-wider">
-            Total a emitir: <strong className="text-white">{totalEtiquetas}</strong> etiquetas (38x21mm)
+        <div className="p-4 sm:p-5 border-t border-subtle bg-elevated/60 flex items-center justify-between">
+          <span className="text-[10px] font-mono text-secondary uppercase tracking-wider">
+            Total a emitir: <strong className="text-primary">{totalEtiquetas}</strong> etiquetas (38x21mm)
           </span>
 
           <div className="flex items-center gap-2.5">
@@ -564,7 +565,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               variant="secondary"
               size="md"
               onClick={onClose}
-              className="text-xs font-mono tracking-wider border-[#333333]"
+              className="text-xs font-mono tracking-wider"
             >
               CERRAR
             </Button>
@@ -574,10 +575,10 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               size="md"
               disabled={totalEtiquetas === 0 || isExportingPdf}
               onClick={handleImprimirDirecto}
-              className="gap-1.5 text-xs font-heading font-semibold tracking-wider border-[#444444] text-[#FAFAFA] hover:border-[#666666] cursor-pointer"
+              className="gap-1.5 text-xs font-heading font-semibold tracking-wider cursor-pointer"
               title="Abre la ventana de impresión nativa del navegador"
             >
-              <Printer size={16} weight="light" />
+              <Printer size={16} weight="bold" />
               <span>IMPRIMIR (CTRL+P)</span>
             </Button>
 
@@ -586,7 +587,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
               size="md"
               disabled={totalEtiquetas === 0 || isExportingPdf}
               onClick={handleExportarPdf}
-              className="gap-2 text-xs font-heading font-bold tracking-wider px-5 bg-amber-400 text-black hover:bg-amber-300 border-amber-400 cursor-pointer"
+              className="gap-2 text-xs font-heading font-bold tracking-wider px-5 bg-amber-400 text-zinc-950 hover:bg-amber-300 border-amber-400 cursor-pointer"
               title="Genera y descarga un PDF en alta resolución con html2canvas y jsPDF"
             >
               <DownloadSimple size={16} weight="bold" />
