@@ -44,6 +44,7 @@ public static class SandboxDataSeeder
         if (sandboxContext.Database.IsSqlite())
         {
             await sandboxContext.Database.EnsureCreatedAsync();
+            await SqliteSchemaPatcher.EnsureSchemaUpdatedAsync(sandboxContext);
         }
 
         await SeedAsync(sandboxContext, eanGenerator, hasher, logger);
@@ -60,6 +61,11 @@ public static class SandboxDataSeeder
         {
             logger?.LogWarning("SandboxDataSeeder abortado: la base de datos de destino no es reconocida como Sandbox.");
             return;
+        }
+
+        if (context.Database.IsSqlite())
+        {
+            await SqliteSchemaPatcher.EnsureSchemaUpdatedAsync(context);
         }
 
         eanGenerator ??= new GeneradorEan13();

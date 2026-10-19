@@ -1046,3 +1046,42 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - `dotnet test`: **119/119 pruebas superadas en verde**.
   - `npm run build`: **0 errores TypeScript**, build de producción limpio en 1.66s.
 
+---
+
+### [fix/audit-schema-and-pos-polish] Auditoría Integral, Sincronización No Destructiva de Esquemas SQLite y Pulido Visual del POS - COMPLETADO
+
+**Objetivo:** Ejecutar las 3 fases de consolidación del sistema: (1) Auditoría funcional de punta a punta (`Configuración <-> Inventario`) y modularización Clean Code de componentes extensos, (2) Parcheador automático no destructivo de esquemas SQLite (`SqliteSchemaPatcher`) para Producción (`dastik_dev.db`) y Sandbox (`dastik_sandbox_dev.db`) resolviendo el error `table Ordenes has no column named MotivoCambio`, y (3) Pruebas integrales de cobro en caja, imágenes reales en tarjetas del POS, Menú Hamburguesa en cabecera y Logo/Favicon oficial de Dastik.
+
+- **Rama:** `fix/audit-schema-and-pos-polish` (creada a partir de `develop`).
+- **FASE 1: Auditoría Funcional y Refactorización de Código (Clean Code):**
+  - **Integración Fin a Fin (`Configuración` <-> `Inventario`):**
+    - `ModalCrearProducto.tsx` sincroniza automáticamente `Proveedores`, `Marcas` y `Categorías` desde `/api/inventario/*` al abrir el modal y recalcula en vivo el `PrecioVenta` sugerido tanto al cambiar de `Proveedor` como al modificar el `CostoBase`, aplicando el `MarkupPorDefecto` real del proveedor seleccionado.
+    - En `ConfiguracionEndpoints.cs`, las rutas `GET` (`/proveedores`, `/marcas`, `/categorias`) permiten lectura a cualquier operador autenticado mientras que las rutas `POST` permanecen restringidas exclusivamente a `AdminOnly`.
+    - `DashboardPage.tsx` auditado y verificado al 100% contra datos reales de `metricasApi` sin datos hardcodeados.
+  - **Modularización Clean Code:**
+    - Extraído `CrearProductoVariantesSection.tsx` desde `ModalCrearProducto.tsx`.
+    - Extraídos `ModalCrearEmpleado` y `ModalLiquidarJornada` en `EmpleadosModals.tsx` desde `EmpleadosPage.tsx`.
+    - Extraído `ArqueoAccordionItem.tsx` desde `ArqueosPage.tsx`.
+- **FASE 2: Sincronización No Destructiva de Esquemas SQLite (Producción y Sandbox):**
+  - Creado `SqliteSchemaPatcher.cs` (`Back/Dastik.Api/Infrastructure/Persistence/SqliteSchemaPatcher.cs`):
+    - Inspecciona `PRAGMA table_info(...)` sobre cada tabla de SQLite y ejecuta `CREATE TABLE IF NOT EXISTS` y `ALTER TABLE ... ADD COLUMN ...` únicamente para las columnas faltantes (`EsCambio`, `MotivoCambio`, `GastosTurno`, `TurnoAsignado`, `TarifaPorHora`, `MarkupPorDefecto`, `ImagenUrl`, `CostoBase`, `MarkupAplicado`, `Temporada`, `EsquemaTalles`, etc.).
+    - Integrado en el arranque de `Program.cs`, `DataSeeder.SeedInitialDataAsync` (Producción `dastik_dev.db`) y `SandboxDataSeeder.SeedSandboxDataAsync` / `SeedAsync` (Sandbox `dastik_sandbox_dev.db`), garantizando paridad de esquemas sin borrar datos ni tocar la tienda oficial de Tiendanube.
+- **FASE 3: Verificación de Cobro en Caja y Pulido Visual del POS:**
+  - **Tests de Integración de Cobro y Esquema (`CajaHandlersTests.cs`):**
+    - `CobrarOrden_ConCadaMetodoDePago_DeberiaPersistirOrdenDetallesPagosYDescontarStock`: verifica el cobro con `Efectivo`, `Transferencia`, `Debito` y `Credito`.
+    - `SqliteSchemaPatcher_SobreEsquemaAntiguoSinMotivoCambio_DeberiaAgregarColumnasYPermitirCobrarOrden`: verifica que una base SQLite con esquema legado sea actualizada automáticamente y permita cobrar órdenes sin error.
+    - `SqliteSchemaPatcher_SobreArchivosLocalesDeDesarrollo_DeberiaSincronizarEsquemaSinDestruirDatos`: actualiza no destructivamente `dastik_sandbox_dev.db` y `dastik_dev.db`.
+  - **Imágenes Reales en el POS (`ProductCard.tsx`):**
+    - Renderiza `producto.imagenUrl` con `object-cover`, `rounded-lg`, `loading="lazy"` y micro-zoom en hover, manteniendo el ícono de categoría (`TShirt` / `Sneaker`) como fallback automático si el producto no tiene imagen o falla la carga (`onError`).
+  - **Menú Hamburguesa en Cabecera del POS (`PosHeader.tsx`):**
+    - La barra superior conserva visibles únicamente los controles operativos inmediatos del cajero (indicador de Turno activo, botón rápido `Cambio` y botón `Cerrar Turno`).
+    - Agrupados en un **Menú Hamburguesa** (`List` / `X`) alineado a la derecha con `backdrop-blur-md`, cierre al hacer clic afuera y tecla `Escape`: datos de la cuenta activa (`tomiDev` / `Dueño`), selector **Producción / Sandbox**, selector **Modo Claro / Oscuro**, acceso a **Ir al Panel Admin** y **Cerrar Sesión**.
+  - **Logo Oficial Dastik y Favicon (`Front/public/dastik-logo.png` & `Front/index.html`):**
+    - Copiado `Dastik_Image.png` a `Front/public/dastik-logo.png`.
+    - Configurado `<link rel="icon" type="image/png" href="/dastik-logo.png" />` y `<title>Dastik // Hidden Sneakers — POS & ERP</title>` en `Front/index.html`.
+    - Integrado el logo oficial en `PosHeader.tsx`, `AdminLayout.tsx` y `LoginPage.tsx`.
+- **Verificación de Compilación y Tests:**
+  - `dotnet test`: **125/125 pruebas superadas en verde** (0 errores).
+  - `npm run build`: **0 errores TypeScript**, build de producción limpio.
+
+

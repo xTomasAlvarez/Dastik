@@ -16,6 +16,12 @@ public static class DataSeeder
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
 
+        if (context.Database.IsSqlite())
+        {
+            await context.Database.EnsureCreatedAsync();
+            await SqliteSchemaPatcher.EnsureSchemaUpdatedAsync(context);
+        }
+
         // Si la tabla Usuarios está vacía, sembramos el usuario fundador (Admin)
         if (!await context.Usuarios.AnyAsync())
         {

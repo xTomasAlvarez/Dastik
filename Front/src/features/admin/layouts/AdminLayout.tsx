@@ -71,8 +71,12 @@ export const AdminLayout: React.FC = () => {
         {/* Branding */}
         <div className="p-5 border-b border-subtle">
           <div className="flex items-center gap-3">
-            <div className="border border-subtle bg-elevated rounded-lg p-2 text-primary shrink-0 shadow-surface">
-              <Storefront size={20} weight="duotone" className="text-amber-500" />
+            <div className="border border-subtle bg-black rounded-lg px-2.5 py-1.5 flex items-center justify-center shrink-0 shadow-surface">
+              <img
+                src="/dastik-logo.png"
+                alt="Dastik"
+                className="h-5 w-auto object-contain select-none"
+              />
             </div>
             <div>
               <h1 className="text-base font-heading font-extrabold tracking-tight text-primary">

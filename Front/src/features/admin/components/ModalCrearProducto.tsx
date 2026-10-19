@@ -1,33 +1,23 @@
 import React, { useState, useEffect, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  X,
-  Plus,
-  Trash,
-  Barcode,
-  Sparkle,
-  WarningCircle,
-  Package,
-  Check
-} from '@phosphor-icons/react';
+import { X, WarningCircle, Package, Check } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import {
   inventarioApi,
-  type CrearVarianteItemRequest,
-  type CrearProductoRequest
+  type CrearProductoRequest,
 } from '../../pos/api/inventarioApi';
 import { configuracionApi } from '../api/configuracionApi';
+import {
+  CrearProductoVariantesSection,
+  type VarianteTemporal,
+} from './CrearProductoVariantesSection';
 import type { AxiosError } from 'axios';
 
 interface ModalCrearProductoProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-}
-
-interface VarianteTemporal extends CrearVarianteItemRequest {
-  tempId: string;
 }
 
 // Algoritmo GS1 EAN-13 estándar (Prefijo '20' para códigos de barras internos de retail)
@@ -46,44 +36,16 @@ export const generarEan13 = (): string => {
   return `${codigo12}${digitoVerificador}`;
 };
 
-// Curvas de talles oficiales del negocio
-const CURVAS_DISPONIBLES = [
-  {
-    id: 'arriba',
-    label: 'Partes de arriba (Remeras, Buzos, Camperas)',
-    shortLabel: 'Arriba (XS-XL)',
-    talles: ['XS', 'S', 'M', 'L', 'XL'],
-  },
-  {
-    id: 'abajo',
-    label: 'Partes de abajo (Pantalones, Bermudas)',
-    shortLabel: 'Abajo (36-50)',
-    talles: ['36', '38', '40', '42', '44', '46', '48', '50'],
-  },
-  {
-    id: 'zapatillasBajos',
-    label: 'Zapatillas Brasil (Bajos 35-39)',
-    shortLabel: 'Zapatillas (35-39)',
-    talles: ['35', '36', '37', '38', '39'],
-  },
-  {
-    id: 'zapatillasAltos',
-    label: 'Zapatillas Brasil (Altos 39-43)',
-    shortLabel: 'Zapatillas (39-43)',
-    talles: ['39', '40', '41', '42', '43'],
-  },
-  {
-    id: 'accesorios',
-    label: 'Accesorios (Gorras, Medias, Cintos)',
-    shortLabel: 'Accesorios (TU)',
-    talles: ['TU'],
-  },
-];
+// Convierte el markup del proveedor (ej: 1.55 o 55) en multiplicador comercial (1.55)
+const obtenerMultiplicadorProveedor = (markupPorDefecto: number): number => {
+  if (!markupPorDefecto || markupPorDefecto <= 0) return 1.5;
+  return markupPorDefecto <= 10 ? markupPorDefecto : 1 + markupPorDefecto / 100;
+};
 
 export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
 }) => {
   const modalHeadingId = useId();
 
@@ -91,10 +53,10 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [imagenUrl, setImagenUrl] = useState('');
-  const [unidadNegocioId, setUnidadNegocioId] = useState<number>(1); // 1 = Dastik, 2 = Hidden Sneakers
-  const [categoriaId, setCategoriaId] = useState<number>(1); // 1 = Indumentaria, 2 = Calzado
-  const [marcaId, setMarcaId] = useState<number>(1); // 1 = Dastik, 2 = Nike, 3 = Adidas
-  const [proveedorId, setProveedorId] = useState<number>(1); // 1 = Textil Dastik, 2 = Sneakerheads
+  const [unidadNegocioId, setUnidadNegocioId] = useState<number>(1);
+  const [categoriaId, setCategoriaId] = useState<number>(1);
+  const [marcaId, setMarcaId] = useState<number>(1);
+  const [proveedorId, setProveedorId] = useState<number>(1);
 
   // Estados de Precios
   const [costoBase, setCostoBase] = useState<string>('15000');
@@ -107,8 +69,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
       talle: 'M',
       color: 'Negro',
       codigoBarras: generarEan13(),
-      stockFisico: 10
-    }
+      stockFisico: 10,
+    },
   ]);
 
   // Mini-formulario para agregar variante
@@ -116,15 +78,13 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   const [nuevoColor, setNuevoColor] = useState('Negro');
   const [nuevoStock, setNuevoStock] = useState('5');
   const [nuevoCodigoBarras, setNuevoCodigoBarras] = useState('');
-
-  // Curva activa de talles
   const [curvaActivaId, setCurvaActivaId] = useState<string>('arriba');
 
   // Estados de Carga y Errores
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Catálogos dinámicos desde /api/inventario/*
+  // Catálogos dinámicos desde /api/inventario/* (alimentados por /admin/configuracion)
   const { data: proveedoresCatalogo = [] } = useQuery({
     queryKey: ['configuracion', 'proveedores'],
     queryFn: configuracionApi.obtenerProveedores,
@@ -143,23 +103,69 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     enabled: isOpen,
   });
 
-  const curvaActiva = CURVAS_DISPONIBLES.find((c) => c.id === curvaActivaId) || CURVAS_DISPONIBLES[0];
-
-  // Cálculos automáticos de Markup y Margen
   const costoNum = parseFloat(costoBase) || 0;
   const ventaNum = parseFloat(precioVenta) || 0;
   const markupCalculado = costoNum > 0 ? Number((ventaNum / costoNum).toFixed(2)) : 1.5;
-  const margenPorcentaje = costoNum > 0 ? (((ventaNum - costoNum) / costoNum) * 100).toFixed(1) : '0';
+  const margenPorcentaje =
+    costoNum > 0 ? (((ventaNum - costoNum) / costoNum) * 100).toFixed(1) : '0';
 
+  const proveedorSeleccionado = proveedoresCatalogo.find((p) => p.id === proveedorId);
+  const multiplicadorActivo = proveedorSeleccionado
+    ? obtenerMultiplicadorProveedor(proveedorSeleccionado.markupPorDefecto)
+    : 1.5;
+
+  // Sincronizar IDs seleccionados con la base de datos real al cargar los catálogos
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (
+      marcasCatalogo.length > 0 &&
+      !marcasCatalogo.some((m) => m.id === marcaId)
+    ) {
+      setMarcaId(marcasCatalogo[0].id);
+    }
+
+    if (
+      categoriasCatalogo.length > 0 &&
+      !categoriasCatalogo.some((c) => c.id === categoriaId)
+    ) {
+      setCategoriaId(categoriasCatalogo[0].id);
+    }
+
+    if (proveedoresCatalogo.length > 0) {
+      const existeProv = proveedoresCatalogo.find((p) => p.id === proveedorId);
+      const provInicial = existeProv || proveedoresCatalogo[0];
+      if (!existeProv) {
+        setProveedorId(provInicial.id);
+      }
+      const mult = obtenerMultiplicadorProveedor(provInicial.markupPorDefecto);
+      const costoActual = parseFloat(costoBase) || 0;
+      if (costoActual > 0) {
+        setPrecioVenta(Math.round(costoActual * mult).toString());
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, marcasCatalogo, categoriasCatalogo, proveedoresCatalogo]);
+
+  // Recalcular Precio de Venta sugerido al seleccionar un Proveedor
   const handleSelectProveedor = (id: number) => {
     setProveedorId(id);
     const prov = proveedoresCatalogo.find((p) => p.id === id);
     if (prov && costoNum > 0) {
-      const multiplicador =
-        prov.markupPorDefecto <= 10
-          ? prov.markupPorDefecto
-          : 1 + prov.markupPorDefecto / 100;
-      const sugerido = Math.round(costoNum * multiplicador);
+      const mult = obtenerMultiplicadorProveedor(prov.markupPorDefecto);
+      const sugerido = Math.round(costoNum * mult);
+      if (sugerido > 0) {
+        setPrecioVenta(sugerido.toString());
+      }
+    }
+  };
+
+  // Recalcular Precio de Venta sugerido en vivo cuando cambia el Costo Base
+  const handleChangeCostoBase = (nuevoCostoStr: string) => {
+    setCostoBase(nuevoCostoStr);
+    const nuevoCosto = parseFloat(nuevoCostoStr) || 0;
+    if (nuevoCosto > 0) {
+      const sugerido = Math.round(nuevoCosto * multiplicadorActivo);
       if (sugerido > 0) {
         setPrecioVenta(sugerido.toString());
       }
@@ -170,24 +176,42 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
   const handleSelectUnidad = (id: number) => {
     setUnidadNegocioId(id);
     if (id === 1) {
-      setMarcaId(1); // Dastik
-      setCategoriaId(1); // Indumentaria
+      const marcaDastik =
+        marcasCatalogo.find((m) => m.nombre.toLowerCase().includes('dastik')) ||
+        marcasCatalogo[0];
+      const catInd =
+        categoriasCatalogo.find((c) => c.nombre.toLowerCase().includes('indumentaria')) ||
+        categoriasCatalogo[0];
+      const provDastik =
+        proveedoresCatalogo.find((p) => p.nombre.toLowerCase().includes('dastik')) ||
+        proveedoresCatalogo[0];
+
+      if (marcaDastik) setMarcaId(marcaDastik.id);
+      if (catInd) setCategoriaId(catInd.id);
       setCurvaActivaId('arriba');
-      handleSelectProveedor(1); // Proveedor Textil Dastik
+      if (provDastik) handleSelectProveedor(provDastik.id);
     } else {
-      setMarcaId(2); // Nike
-      setCategoriaId(2); // Calzado
+      const marcaSneaker =
+        marcasCatalogo.find((m) => !m.nombre.toLowerCase().includes('dastik')) ||
+        marcasCatalogo[0];
+      const catCalzado =
+        categoriasCatalogo.find((c) => c.nombre.toLowerCase().includes('calzado')) ||
+        categoriasCatalogo[0];
+      const provSneaker =
+        proveedoresCatalogo.find((p) => p.nombre.toLowerCase().includes('sneaker')) ||
+        proveedoresCatalogo[proveedoresCatalogo.length - 1];
+
+      if (marcaSneaker) setMarcaId(marcaSneaker.id);
+      if (catCalzado) setCategoriaId(catCalzado.id);
       setCurvaActivaId('zapatillasBajos');
-      handleSelectProveedor(2); // Proveedor Sneakerheads
+      if (provSneaker) handleSelectProveedor(provSneaker.id);
     }
   };
 
-  // Autogenerar código de barras en el mini-formulario
   const handleAutogenerarEan = () => {
     setNuevoCodigoBarras(generarEan13());
   };
 
-  // Agregar variante a la lista temporal
   const handleAgregarVariante = () => {
     if (!nuevoTalle.trim()) {
       setErrorMessage('Por favor especifica el talle para la variante.');
@@ -200,14 +224,16 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
       return;
     }
 
-    const eanFinal = nuevoCodigoBarras.trim() ? nuevoCodigoBarras.trim() : generarEan13();
+    const eanFinal = nuevoCodigoBarras.trim()
+      ? nuevoCodigoBarras.trim()
+      : generarEan13();
 
     const nueva: VarianteTemporal = {
       tempId: `var-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       talle: nuevoTalle.trim().toUpperCase(),
       color: nuevoColor.trim() || 'Único',
       stockFisico: stock,
-      codigoBarras: eanFinal
+      codigoBarras: eanFinal,
     };
 
     setVariantes((prev) => [...prev, nueva]);
@@ -216,12 +242,10 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     setErrorMessage(null);
   };
 
-  // Eliminar variante de la lista
   const handleEliminarVariante = (tempId: string) => {
     setVariantes((prev) => prev.filter((v) => v.tempId !== tempId));
   };
 
-  // Agregar la curva completa de una sola vez
   const handleAgregarCurvaCompleta = (talles: string[]) => {
     const stock = parseInt(nuevoStock, 10) || 5;
     const color = nuevoColor.trim() || 'Único';
@@ -236,7 +260,6 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     setErrorMessage(null);
   };
 
-  // Manejo de tecla Escape para cerrar y bloqueo de scroll de fondo
   useEffect(() => {
     if (!isOpen) return;
 
@@ -257,7 +280,6 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
 
   if (!isOpen) return null;
 
-  // Guardar producto
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -278,7 +300,9 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     }
 
     if (variantes.length === 0) {
-      setErrorMessage('Debes configurar al menos una variante (talle y stock) para el producto.');
+      setErrorMessage(
+        'Debes configurar al menos una variante (talle y stock) para el producto.'
+      );
       return;
     }
 
@@ -299,8 +323,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
         talle: v.talle,
         color: v.color,
         codigoBarras: v.codigoBarras,
-        stockFisico: v.stockFisico
-      }))
+        stockFisico: v.stockFisico,
+      })),
     };
 
     try {
@@ -333,8 +357,6 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     }
   };
 
-  const totalStockConfigurado = variantes.reduce((acc, v) => acc + v.stockFisico, 0);
-
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 overflow-y-auto">
       <div
@@ -357,7 +379,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 id={modalHeadingId}
                 className="text-lg md:text-xl font-heading font-bold text-primary tracking-tight uppercase"
               >
-                NUEVO PRODUCTO & VARIANTES
+                NUEVO PRODUCTO &amp; VARIANTES
               </h2>
             </div>
           </div>
@@ -375,7 +397,6 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
 
         {/* 2. Cuerpo del Formulario con Scroll Interno */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 md:p-8 space-y-7">
-          {/* Alerta de Error */}
           {errorMessage && (
             <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-3 text-red-600 dark:text-red-400 text-xs font-sans flex items-start justify-between gap-3">
               <div className="flex items-start gap-2">
@@ -409,7 +430,9 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-heading font-bold text-sm tracking-wide text-primary">DASTIK</span>
+                    <span className="font-heading font-bold text-sm tracking-wide text-primary">
+                      DASTIK
+                    </span>
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded px-1.5 py-0.5">
                       TIENDANUBE + POS
                     </span>
@@ -418,7 +441,9 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                     Indumentaria y prendas. Sincroniza stock físico y digital en Tiendanube.
                   </p>
                 </div>
-                {unidadNegocioId === 1 && <Check size={16} weight="bold" className="text-primary shrink-0 mt-0.5" />}
+                {unidadNegocioId === 1 && (
+                  <Check size={16} weight="bold" className="text-primary shrink-0 mt-0.5" />
+                )}
               </button>
 
               <button
@@ -432,7 +457,9 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-heading font-bold text-sm tracking-wide text-primary">HIDDEN SNEAKERS</span>
+                    <span className="font-heading font-bold text-sm tracking-wide text-primary">
+                      HIDDEN SNEAKERS
+                    </span>
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded px-1.5 py-0.5">
                       EXCLUSIVO LOCAL
                     </span>
@@ -441,12 +468,14 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                     Calzado sneakerhead y pares físicos. Aislamiento físico sin sincronización outbox.
                   </p>
                 </div>
-                {unidadNegocioId === 2 && <Check size={16} weight="bold" className="text-primary shrink-0 mt-0.5" />}
+                {unidadNegocioId === 2 && (
+                  <Check size={16} weight="bold" className="text-primary shrink-0 mt-0.5" />
+                )}
               </button>
             </div>
           </div>
 
-          {/* Bloque 2: Información General del Producto */}
+          {/* Bloque 2: Información General del Producto (Conectado a /admin/configuracion) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               id="nombre"
@@ -459,7 +488,10 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             />
 
             <div className="flex flex-col gap-1.5 w-full text-left">
-              <label htmlFor="marcaId" className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans">
+              <label
+                htmlFor="marcaId"
+                className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans"
+              >
                 MARCA *
               </label>
               <select
@@ -486,7 +518,10 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5 w-full text-left">
-              <label htmlFor="categoriaId" className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans">
+              <label
+                htmlFor="categoriaId"
+                className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans"
+              >
                 CATEGORÍA *
               </label>
               <select
@@ -512,8 +547,11 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5 w-full text-left">
-              <label htmlFor="proveedorId" className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans">
-                PROVEEDOR *
+              <label
+                htmlFor="proveedorId"
+                className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans"
+              >
+                PROVEEDOR (AUTO-MARKUP) *
               </label>
               <select
                 id="proveedorId"
@@ -536,8 +574,8 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                   })
                 ) : (
                   <>
-                    <option value={1}>Proveedor Textil Dastik (Markup 1.50x)</option>
-                    <option value={2}>Proveedor Sneakerheads (Markup 1.60x)</option>
+                    <option value={1}>Proveedor Textil Dastik (Markup +50%)</option>
+                    <option value={2}>Proveedor Sneakerheads (Markup +60%)</option>
                   </>
                 )}
               </select>
@@ -565,11 +603,12 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             />
           </div>
 
-          {/* Bloque 3: Estructura Financiera (Costo, Venta y Margen) */}
+          {/* Bloque 3: Estructura Financiera (Costo, Venta y Margen Automático) */}
           <div className="border border-subtle bg-elevated rounded-xl p-4 md:p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-subtle pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-subtle pb-2">
               <span className="text-[10px] uppercase tracking-widest text-secondary font-sans font-semibold">
-                ESTRUCTURA DE PRECIOS & MARGEN
+                ESTRUCTURA DE PRECIOS &amp; MARGEN (SUGERIDO POR PROVEEDOR:{' '}
+                {multiplicadorActivo.toFixed(2)}x)
               </span>
               <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                 MARGEN: +{margenPorcentaje}% (MARKUP {markupCalculado}x)
@@ -585,7 +624,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                 step="50"
                 placeholder="15000"
                 value={costoBase}
-                onChange={(e) => setCostoBase(e.target.value)}
+                onChange={(e) => handleChangeCostoBase(e.target.value)}
                 disabled={isLoading}
                 required
               />
@@ -606,7 +645,20 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
 
             {/* Accesos rápidos de Markup */}
             <div className="flex items-center gap-2 pt-1 text-xs text-muted flex-wrap">
-              <span className="text-[10px] uppercase tracking-wider font-sans">MARKUP RÁPIDO:</span>
+              <span className="text-[10px] uppercase tracking-wider font-sans">
+                MARKUP RÁPIDO:
+              </span>
+              {proveedorSeleccionado && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPrecioVenta(Math.round(costoNum * multiplicadorActivo).toString())
+                  }
+                  className="px-2.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                >
+                  Proveedor ({multiplicadorActivo.toFixed(2)}x)
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setPrecioVenta(Math.round(costoNum * 1.5).toString())}
@@ -631,200 +683,25 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             </div>
           </div>
 
-          {/* Bloque 4: Sección Dinámica de Variantes y Stock */}
-          <div className="border border-subtle bg-elevated rounded-xl p-4 md:p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-subtle pb-3">
-              <div>
-                <span className="text-[10px] uppercase tracking-widest text-secondary font-sans font-semibold block">
-                  INVENTARIO DE VARIANTES (SKUS)
-                </span>
-                <span className="text-xs text-secondary font-sans">
-                  {variantes.length} {variantes.length === 1 ? 'variante' : 'variantes'} configuradas ·{' '}
-                  <span className="text-primary font-bold tabular-nums">{totalStockConfigurado} unidades totales</span>
-                </span>
-              </div>
-
-              {/* Selector de Curvas Oficiales y Talles */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <div className="flex items-center gap-1 flex-wrap">
-                  <span className="text-[10px] uppercase tracking-wider text-muted">CURVA:</span>
-                  {CURVAS_DISPONIBLES.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCurvaActivaId(c.id)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono border transition-colors cursor-pointer ${
-                        curvaActivaId === c.id
-                          ? 'border-strong bg-surface text-primary font-bold shadow-surface'
-                          : 'border-subtle bg-surface/60 text-secondary hover:border-strong'
-                      }`}
-                    >
-                      {c.shortLabel}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Fila de Talles Rápidos de la Curva Activa y Botón de Lote */}
-            <div className="bg-surface border border-subtle rounded-lg p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] uppercase tracking-wider text-muted">
-                  TALLES {curvaActiva.shortLabel.toUpperCase()}:
-                </span>
-                {curvaActiva.talles.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setNuevoTalle(t)}
-                    className="border border-subtle hover:border-strong bg-elevated rounded px-2 py-0.5 text-[10px] text-primary font-mono transition-colors cursor-pointer"
-                    title={`Seleccionar talle ${t}`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleAgregarCurvaCompleta(curvaActiva.talles)}
-                className="text-[10px] uppercase font-mono font-bold tracking-wider rounded-md border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 transition-colors cursor-pointer shrink-0"
-                title="Generar todas las variantes de esta curva con códigos EAN-13"
-              >
-                + AGREGAR CURVA COMPLETA ({curvaActiva.talles.length} TALLES)
-              </button>
-            </div>
-
-            {/* Mini-Formulario para Añadir Variante */}
-            <div className="bg-surface border border-subtle rounded-lg p-3.5 space-y-3">
-              <span className="text-[10px] uppercase tracking-wider text-secondary font-heading font-bold block">
-                + CONFIGURAR NUEVA VARIANTE
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <Input
-                  id="nuevoTalle"
-                  label="TALLE / MEDIDA *"
-                  placeholder="ej: M, L o US 10"
-                  value={nuevoTalle}
-                  onChange={(e) => setNuevoTalle(e.target.value)}
-                  disabled={isLoading}
-                />
-
-                <Input
-                  id="nuevoColor"
-                  label="COLOR"
-                  placeholder="ej: Negro, Blanco"
-                  value={nuevoColor}
-                  onChange={(e) => setNuevoColor(e.target.value)}
-                  disabled={isLoading}
-                />
-
-                <Input
-                  id="nuevoStock"
-                  label="STOCK INICIAL *"
-                  type="number"
-                  min="0"
-                  placeholder="5"
-                  value={nuevoStock}
-                  onChange={(e) => setNuevoStock(e.target.value)}
-                  disabled={isLoading}
-                />
-
-                <div className="flex flex-col gap-1.5 w-full text-left">
-                  <label htmlFor="nuevoCodigoBarras" className="text-[11px] font-semibold uppercase tracking-wider text-secondary font-sans">
-                    CÓDIGO EAN-13
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      id="nuevoCodigoBarras"
-                      type="text"
-                      placeholder="Autogenerar si vacío"
-                      value={nuevoCodigoBarras}
-                      onChange={(e) => setNuevoCodigoBarras(e.target.value)}
-                      disabled={isLoading}
-                      className="w-full bg-surface text-primary border border-subtle focus:border-strong rounded-lg px-2.5 py-2 text-xs font-mono outline-none placeholder-muted"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAutogenerarEan}
-                      className="border border-subtle hover:border-strong bg-elevated rounded-lg text-primary p-2 transition-colors cursor-pointer shrink-0"
-                      title="Generar EAN-13 numérico aleatorio"
-                    >
-                      <Sparkle size={15} weight="bold" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-1">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleAgregarVariante}
-                  disabled={isLoading || !nuevoTalle.trim()}
-                  className="gap-1.5 text-xs py-2 px-4"
-                >
-                  <Plus size={14} weight="bold" />
-                  <span>AGREGAR VARIANTE A LA LISTA</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Tabla de Variantes Temporales */}
-            {variantes.length === 0 ? (
-              <div className="text-center py-6 border border-dashed border-subtle rounded-lg text-muted text-xs">
-                No hay variantes añadidas. Completa los campos arriba y haz clic en &quot;AGREGAR VARIANTE&quot;.
-              </div>
-            ) : (
-              <div className="overflow-x-auto border border-subtle rounded-lg bg-surface">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-subtle bg-elevated text-secondary text-[10px] uppercase tracking-wider font-sans">
-                      <th className="py-2.5 px-3">Talle</th>
-                      <th className="py-2.5 px-3">Color</th>
-                      <th className="py-2.5 px-3 text-right">Stock Físico</th>
-                      <th className="py-2.5 px-3">Código EAN-13</th>
-                      <th className="py-2.5 px-3 text-center">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-subtle font-sans">
-                    {variantes.map((v) => (
-                      <tr key={v.tempId} className="hover:bg-elevated/60 transition-colors">
-                        <td className="py-2.5 px-3 font-heading font-bold text-primary">
-                          <span className="border border-subtle bg-elevated rounded px-2 py-0.5 text-xs">
-                            {v.talle}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-secondary">{v.color}</td>
-                        <td className="py-2.5 px-3 text-right">
-                          <span className="font-mono text-primary font-semibold text-sm tabular-nums">
-                            {v.stockFisico}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <div className="flex items-center gap-1.5 font-mono text-[11px] text-secondary">
-                            <Barcode size={14} weight="bold" className="text-muted" />
-                            <span>{v.codigoBarras}</span>
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleEliminarVariante(v.tempId)}
-                            className="text-muted hover:text-red-600 dark:hover:text-red-400 p-1 transition-colors cursor-pointer"
-                            title="Eliminar variante"
-                          >
-                            <Trash size={15} weight="bold" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          {/* Bloque 4: Sección Modularizada de Variantes y Stock */}
+          <CrearProductoVariantesSection
+            variantes={variantes}
+            curvaActivaId={curvaActivaId}
+            onChangeCurvaActivaId={setCurvaActivaId}
+            nuevoTalle={nuevoTalle}
+            onChangeNuevoTalle={setNuevoTalle}
+            nuevoColor={nuevoColor}
+            onChangeNuevoColor={setNuevoColor}
+            nuevoStock={nuevoStock}
+            onChangeNuevoStock={setNuevoStock}
+            nuevoCodigoBarras={nuevoCodigoBarras}
+            onChangeNuevoCodigoBarras={setNuevoCodigoBarras}
+            onAutogenerarEan={handleAutogenerarEan}
+            onAgregarVariante={handleAgregarVariante}
+            onAgregarCurvaCompleta={handleAgregarCurvaCompleta}
+            onEliminarVariante={handleEliminarVariante}
+            isLoading={isLoading}
+          />
 
           {/* 3. Acciones de Cierre y Guardado */}
           <div className="flex items-center justify-between pt-4 border-t border-subtle">
@@ -847,7 +724,9 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               className="gap-2 text-xs py-3 px-6 font-bold"
             >
               <Package size={17} weight="bold" />
-              <span>{isLoading ? 'GUARDANDO ARTÍCULO...' : 'GUARDAR PRODUCTO EN CATÁLOGO'}</span>
+              <span>
+                {isLoading ? 'GUARDANDO ARTÍCULO...' : 'GUARDAR PRODUCTO EN CATÁLOGO'}
+              </span>
             </Button>
           </div>
         </form>

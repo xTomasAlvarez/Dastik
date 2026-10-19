@@ -10,6 +10,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ producto }) => {
   const addItem = useCartStore((state) => state.addItem);
   const [lastAddedVariantId, setLastAddedVariantId] = useState<number | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   const formatearDinero = (monto: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -52,6 +53,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ producto }) => {
   };
 
   const stockTotal = producto.variantes.reduce((sum, v) => sum + v.stockFisico, 0);
+  const mostrarImagenReal = Boolean(producto.imagenUrl?.trim()) && !imageError;
 
   return (
     <article className="rounded-xl border border-subtle hover:border-strong bg-surface p-4 flex flex-col justify-between shadow-surface hover:shadow-floating transition-fast group relative">
@@ -71,10 +73,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ producto }) => {
         </span>
       </div>
 
-      {/* 2. Visual / Icono y Metadatos Principales */}
+      {/* 2. Visual / Imagen Real (con fallback elegante a icono) y Metadatos Principales */}
       <div className="flex items-start gap-3.5 mb-4">
-        <div className="w-12 h-12 shrink-0 rounded-lg border border-subtle bg-elevated flex items-center justify-center group-hover:border-strong transition-fast">
-          {renderProductIcon()}
+        <div className="w-14 h-14 shrink-0 rounded-lg border border-subtle bg-elevated overflow-hidden flex items-center justify-center group-hover:border-strong transition-fast">
+          {mostrarImagenReal ? (
+            <img
+              src={producto.imagenUrl}
+              alt={producto.nombre}
+              loading="lazy"
+              onError={() => setImageError(true)}
+              className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-200"
+            />
+          ) : (
+            renderProductIcon()
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <span className="text-[11px] font-medium text-muted block truncate">
