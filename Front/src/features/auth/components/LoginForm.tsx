@@ -63,19 +63,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, fillCredentials
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 w-full text-left">
       {errorMessage && (
-        <div className="border border-red-900 bg-red-950/40 p-2.5 text-red-200 text-xs font-sans flex items-start justify-between gap-2.5">
+        <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-2.5 text-red-600 dark:text-red-400 text-xs font-sans flex items-start justify-between gap-2.5">
           <div className="flex items-start gap-2">
-            <WarningCircle size={16} weight="light" className="shrink-0 text-red-400 mt-0.5" />
+            <WarningCircle size={16} weight="bold" className="shrink-0 mt-0.5" />
             <span className="leading-snug">{errorMessage}</span>
           </div>
           <button
             type="button"
             onClick={() => setErrorMessage(null)}
-            className="text-red-400 hover:text-red-200 p-0.5 transition-fast cursor-pointer shrink-0 focus:outline-none"
+            className="hover:opacity-75 p-0.5 transition-opacity cursor-pointer shrink-0 focus:outline-none"
             aria-label="Cerrar advertencia"
             title="Cerrar mensaje"
           >
-            <X size={15} weight="light" />
+            <X size={15} weight="bold" />
           </button>
         </div>
       )}
@@ -116,10 +116,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, fillCredentials
           disabled={isLoading}
         >
           <span className="flex items-center gap-2">
-            <LockKey size={17} weight="light" />
+            <LockKey size={17} weight="bold" />
             {isLoading ? 'VERIFICANDO CREDENCIALES...' : 'INGRESAR AL SISTEMA'}
           </span>
-          <ArrowRight size={17} weight="light" />
+          <ArrowRight size={17} weight="bold" />
         </Button>
       </div>
     </form>

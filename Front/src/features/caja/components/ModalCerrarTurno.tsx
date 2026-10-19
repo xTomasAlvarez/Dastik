@@ -151,28 +151,28 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#000000]/95 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-[#090909] border border-[#333333] p-6 md:p-8 flex flex-col gap-5 text-left relative my-auto">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-lg bg-surface border border-subtle rounded-xl shadow-floating p-6 md:p-8 flex flex-col gap-5 text-left relative my-auto">
         {/* Header con Lenguaje de Dominio */}
-        <div className="flex items-start justify-between border-b border-[#222222] pb-4">
+        <div className="flex items-start justify-between border-b border-subtle pb-4">
           <div className="flex items-center gap-3">
-            <div className="border border-[#222222] bg-[#111111] p-2 text-[#FAFAFA] shrink-0">
-              <Archive size={22} weight="light" />
+            <div className="border border-subtle bg-elevated rounded-lg p-2 text-primary shrink-0">
+              <Archive size={22} weight="duotone" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-mono block">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-muted font-mono block">
                   TERMINAL // ARQUEO DE CAJA
                 </span>
-                <span className="text-[10px] uppercase tracking-wider font-mono border border-[#333333] bg-[#141414] px-1.5 py-0.2 text-amber-300">
+                <span className="text-[10px] uppercase tracking-wider font-mono font-bold border border-amber-500/30 bg-amber-500/10 rounded px-1.5 py-0.5 text-amber-600 dark:text-amber-400">
                   {nombreTurno}
                 </span>
               </div>
-              <h2 className="text-xl font-heading font-extrabold text-[#FAFAFA] tracking-tight">
+              <h2 className="text-xl font-heading font-bold text-primary tracking-tight">
                 CIERRE DE {nombreTurno} (#{turnoId})
               </h2>
-              <span className="text-xs text-[#71717A] font-sans">
-                Responsable: <strong className="text-[#A1A1AA]">{usuario?.nombre}</strong> ({rolPersonal})
+              <span className="text-xs text-muted font-sans">
+                Responsable: <strong className="text-secondary">{usuario?.nombre}</strong> ({rolPersonal})
               </span>
             </div>
           </div>
@@ -180,44 +180,44 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="text-[#71717A] hover:text-[#FAFAFA] transition-fast p-1 cursor-pointer"
+              className="text-muted hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-elevated cursor-pointer"
               title="Cancelar y volver al POS [ESC]"
             >
-              <X size={18} weight="light" />
+              <X size={18} weight="bold" />
             </button>
           )}
         </div>
 
         {/* Vista de Éxito al Cerrar */}
         {cierreCompletado ? (
-          <div className="border border-emerald-900/80 bg-emerald-950/20 p-6 flex flex-col items-center justify-center text-center gap-4">
-            <CheckCircle size={44} weight="light" className="text-emerald-400" />
+          <div className="border border-emerald-500/30 bg-emerald-500/10 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-4">
+            <CheckCircle size={44} weight="duotone" className="text-emerald-600 dark:text-emerald-400" />
             <div>
-              <h3 className="font-heading text-base font-bold text-[#FAFAFA] uppercase tracking-wider">
+              <h3 className="font-heading text-base font-bold text-primary uppercase tracking-wider">
                 {nombreTurno} CERRADO EXITOSAMENTE
               </h3>
-              <p className="text-xs font-sans text-[#A1A1AA] mt-1">
+              <p className="text-xs font-sans text-secondary mt-1">
                 El arqueo de gaveta ha sido guardado. Redirigiendo a la pantalla de login...
               </p>
             </div>
-            <div className="border border-[#222222] bg-[#111111] p-3.5 w-full text-xs font-mono space-y-1.5 text-left">
-              <div className="flex justify-between text-[#A1A1AA]">
+            <div className="border border-subtle bg-surface rounded-lg p-3.5 w-full text-xs font-mono space-y-1.5 text-left tabular-nums">
+              <div className="flex justify-between text-secondary">
                 <span>Efectivo Real Contado:</span>
-                <span className="text-[#FAFAFA] font-bold">{formatearDinero(cierreCompletado.saldoFinal)}</span>
+                <span className="text-primary font-bold">{formatearDinero(cierreCompletado.saldoFinal)}</span>
               </div>
               {gastosNum > 0 && (
-                <div className="flex justify-between text-red-400">
+                <div className="flex justify-between text-red-600 dark:text-red-400">
                   <span>Salidas / Gastos del Turno:</span>
                   <span>-{formatearDinero(gastosNum)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-[#A1A1AA]">
+              <div className="flex justify-between text-secondary">
                 <span>Efectivo Esperado en Gaveta:</span>
-                <span className="text-[#FAFAFA]">{formatearDinero(efectivoEsperadoEnGaveta)}</span>
+                <span className="text-primary">{formatearDinero(efectivoEsperadoEnGaveta)}</span>
               </div>
-              <div className="flex justify-between pt-1.5 border-t border-[#222222]">
+              <div className="flex justify-between pt-1.5 border-t border-subtle">
                 <span>Diferencia de Balance:</span>
-                <span className={diferencia === 0 ? 'text-emerald-400 font-bold' : diferencia > 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
+                <span className={diferencia === 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : diferencia > 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-red-600 dark:text-red-400 font-bold'}>
                   {diferencia === 0
                     ? 'CUADRE EXACTO ($0,00)'
                     : `${diferencia > 0 ? '+' : ''}${formatearDinero(diferencia)}`}
@@ -238,59 +238,59 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
           <>
             {/* Mensaje de Error */}
             {error && (
-              <div className="border border-red-900/80 bg-red-950/30 p-3 flex items-start justify-between gap-3 text-xs text-red-300 font-sans">
+              <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-3 flex items-start justify-between gap-3 text-xs text-red-600 dark:text-red-400 font-sans">
                 <div className="flex items-center gap-2">
-                  <WarningCircle size={16} weight="light" className="text-red-400 shrink-0" />
+                  <WarningCircle size={16} weight="bold" className="shrink-0" />
                   <span>{error}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setError(null)}
-                  className="text-red-400 hover:text-red-200 cursor-pointer p-0.5"
+                  className="hover:opacity-75 cursor-pointer p-0.5"
                 >
-                  <X size={14} weight="light" />
+                  <X size={14} weight="bold" />
                 </button>
               </div>
             )}
 
             {/* 1. Resumen de Ventas del Turno */}
-            <div className="border border-[#222222] bg-[#111111] p-4 flex flex-col gap-2.5">
-              <span className="text-[10px] uppercase tracking-widest text-[#71717A] font-mono flex items-center gap-1.5">
-                <Clock size={13} weight="light" />
+            <div className="border border-subtle bg-elevated rounded-xl p-4 flex flex-col gap-2.5">
+              <span className="text-[10px] uppercase tracking-widest text-muted font-mono flex items-center gap-1.5">
+                <Clock size={13} weight="bold" />
                 MÉTRICAS DEL {nombreTurno} ({resumen?.cantidadOrdenes ?? 0} {resumen?.cantidadOrdenes === 1 ? 'VENTA' : 'VENTAS'})
               </span>
 
               {isLoadingResumen ? (
                 <div className="space-y-2 animate-pulse">
-                  <div className="h-4 bg-[#1E1E1E] w-full" />
-                  <div className="h-4 bg-[#1E1E1E] w-3/4" />
+                  <div className="h-4 bg-surface rounded w-full" />
+                  <div className="h-4 bg-surface rounded w-3/4" />
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2.5 text-xs font-sans">
-                  <div className="border border-[#1E1E1E] bg-[#0E0E0E] p-2.5">
-                    <span className="text-[10px] text-[#71717A] block uppercase">Fondo Inicial:</span>
-                    <span className="font-heading font-bold text-[#FAFAFA]">
+                  <div className="border border-subtle bg-surface rounded-lg p-2.5">
+                    <span className="text-[10px] text-muted block uppercase">Fondo Inicial:</span>
+                    <span className="font-mono font-bold text-primary tabular-nums">
                       {formatearDinero(saldoInicial)}
                     </span>
                   </div>
 
-                  <div className="border border-[#1E1E1E] bg-[#0E0E0E] p-2.5">
-                    <span className="text-[10px] text-[#71717A] block uppercase">(+) Ventas Efectivo:</span>
-                    <span className="font-heading font-bold text-emerald-400">
+                  <div className="border border-subtle bg-surface rounded-lg p-2.5">
+                    <span className="text-[10px] text-muted block uppercase">(+) Ventas Efectivo:</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                       +{formatearDinero(ventasEfectivo)}
                     </span>
                   </div>
 
-                  <div className="border border-[#1E1E1E] bg-[#0E0E0E] p-2.5">
-                    <span className="text-[10px] text-[#71717A] block uppercase">Ventas Tarjeta:</span>
-                    <span className="font-heading font-bold text-[#FAFAFA]">
+                  <div className="border border-subtle bg-surface rounded-lg p-2.5">
+                    <span className="text-[10px] text-muted block uppercase">Ventas Tarjeta:</span>
+                    <span className="font-mono font-bold text-primary tabular-nums">
                       {formatearDinero(resumen?.totalVentasTarjeta ?? 0)}
                     </span>
                   </div>
 
-                  <div className="border border-[#1E1E1E] bg-[#0E0E0E] p-2.5">
-                    <span className="text-[10px] text-[#71717A] block uppercase">Transferencias:</span>
-                    <span className="font-heading font-bold text-[#FAFAFA]">
+                  <div className="border border-subtle bg-surface rounded-lg p-2.5">
+                    <span className="text-[10px] text-muted block uppercase">Transferencias:</span>
+                    <span className="font-mono font-bold text-primary tabular-nums">
                       {formatearDinero(resumen?.totalVentasTransferencia ?? 0)}
                     </span>
                   </div>
@@ -298,27 +298,27 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
               )}
             </div>
 
-            {/* 2. SECCIÓN NUEVA: SALIDAS / GASTOS DEL TURNO */}
-            <div className="border border-[#333333] bg-[#0D0D0D] p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-[#222222] pb-2">
+            {/* 2. SECCIÓN: SALIDAS / GASTOS DEL TURNO */}
+            <div className="border border-subtle bg-elevated rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-subtle pb-2">
                 <div className="flex items-center gap-2">
-                  <MinusCircle size={17} weight="light" className="text-red-400" />
-                  <span className="text-[10px] uppercase tracking-widest text-[#FAFAFA] font-heading font-bold">
+                  <MinusCircle size={17} weight="bold" className="text-red-600 dark:text-red-400" />
+                  <span className="text-[11px] uppercase tracking-wider text-primary font-heading font-bold">
                     SALIDAS / GASTOS DEL TURNO
                   </span>
                 </div>
-                <span className="text-[10px] text-[#71717A] font-sans">
+                <span className="text-[10px] text-muted font-sans">
                   Resta de gaveta física
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase font-sans tracking-wider text-[#71717A] block mb-1">
+                  <label className="text-[10px] uppercase font-sans tracking-wider text-secondary block mb-1">
                     MONTO TOTAL GASTOS (ARS)
                   </label>
-                  <div className="flex items-center border border-[#333333] focus-within:border-[#FAFAFA] bg-[#141414] px-3 py-2">
-                    <span className="text-sm font-mono text-[#71717A] mr-2">$</span>
+                  <div className="flex items-center border border-subtle focus-within:border-strong bg-surface rounded-lg px-3 py-2">
+                    <span className="text-sm font-mono text-muted mr-2">$</span>
                     <input
                       type="number"
                       min="0"
@@ -326,13 +326,13 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                       value={gastosTurno}
                       onChange={(e) => setGastosTurno(e.target.value)}
                       placeholder="0"
-                      className="bg-transparent text-sm font-mono font-bold text-[#FAFAFA] outline-none w-full"
+                      className="bg-transparent text-sm font-mono font-bold text-primary outline-none w-full tabular-nums"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-sans tracking-wider text-[#71717A] block mb-1">
+                  <label className="text-[10px] uppercase font-sans tracking-wider text-secondary block mb-1">
                     MOTIVO / CONCEPTO
                   </label>
                   <input
@@ -340,14 +340,14 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                     value={motivoGastos}
                     onChange={(e) => setMotivoGastos(e.target.value)}
                     placeholder="ej: Desayuno, Uber, Almuerzo"
-                    className="w-full bg-[#141414] border border-[#333333] focus:border-[#FAFAFA] px-3 py-2 text-xs text-[#FAFAFA] outline-none placeholder-[#555555]"
+                    className="w-full bg-surface border border-subtle focus:border-strong rounded-lg px-3 py-2 text-xs text-primary outline-none placeholder-muted"
                   />
                 </div>
               </div>
 
               {/* Botones de Presets Rápidos de Gastos */}
               <div className="flex items-center gap-2 pt-1 flex-wrap">
-                <span className="text-[10px] uppercase tracking-wider text-[#71717A]">PRESETS:</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted">PRESETS:</span>
                 {[
                   { label: 'Desayuno ($1.500)', monto: 1500, motivo: 'Desayuno' },
                   { label: 'Uber ($3.500)', monto: 3500, motivo: 'Uber mercadería' },
@@ -360,7 +360,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                       setGastosTurno(preset.monto.toString());
                       setMotivoGastos(preset.motivo);
                     }}
-                    className="px-2 py-0.5 border border-[#222222] bg-[#141414] hover:border-[#444444] text-[10px] font-mono text-[#A1A1AA] hover:text-[#FAFAFA] transition-fast cursor-pointer"
+                    className="px-2 py-0.5 rounded border border-subtle bg-surface hover:border-strong text-[10px] font-mono text-secondary hover:text-primary transition-colors cursor-pointer"
                   >
                     +{preset.label}
                   </button>
@@ -369,16 +369,16 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
             </div>
 
             {/* Display de Efectivo Esperado en Gaveta con Fórmula del Negocio */}
-            <div className="border border-[#2A2A2A] bg-[#111111] p-3.5 flex items-center justify-between">
+            <div className="border border-subtle bg-elevated rounded-lg p-3.5 flex items-center justify-between">
               <div>
-                <span className="text-[10px] uppercase font-mono tracking-widest text-[#71717A] block">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-secondary block">
                   EFECTIVO ESPERADO EN GAVETA FÍSICA:
                 </span>
-                <span className="text-[11px] text-[#555555] font-sans">
+                <span className="text-[11px] text-muted font-sans">
                   (Saldo Inicial + Ventas Efectivo) - Gastos
                 </span>
               </div>
-              <span className="font-heading text-lg font-extrabold text-[#FAFAFA]">
+              <span className="font-mono text-lg font-bold text-primary tabular-nums">
                 {formatearDinero(efectivoEsperadoEnGaveta)}
               </span>
             </div>
@@ -387,20 +387,20 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
             <form onSubmit={handleCerrarTurno} className="flex flex-col gap-4">
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[10px] uppercase font-sans tracking-widest text-[#71717A]">
+                  <label className="text-[10px] uppercase font-sans font-semibold tracking-wider text-secondary">
                     EFECTIVO REAL CONTADO EN GAVETA (ARS)
                   </label>
                   <button
                     type="button"
                     onClick={() => setEfectivoReal(efectivoEsperadoEnGaveta.toString())}
-                    className="text-[10px] font-mono text-[#FAFAFA] underline cursor-pointer hover:text-[#A1A1AA]"
+                    className="text-[10px] font-mono font-bold text-primary underline cursor-pointer hover:text-secondary"
                   >
                     COPIAR ESPERADO
                   </button>
                 </div>
 
-                <div className="flex items-center border border-[#333333] focus-within:border-[#FAFAFA] bg-[#111111] px-4 py-3 transition-fast">
-                  <span className="font-heading text-lg font-bold text-[#71717A] mr-2">$</span>
+                <div className="flex items-center border border-subtle focus-within:border-strong bg-elevated rounded-lg px-4 py-3 transition-colors">
+                  <span className="font-mono text-lg font-bold text-muted mr-2">$</span>
                   <input
                     type="number"
                     min="0"
@@ -410,7 +410,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                     placeholder="0"
                     autoFocus
                     required
-                    className="bg-transparent text-2xl font-heading font-extrabold text-[#FAFAFA] placeholder:text-[#444444] outline-none w-full"
+                    className="bg-transparent text-2xl font-mono font-bold text-primary placeholder:text-muted outline-none w-full tabular-nums"
                   />
                 </div>
               </div>
@@ -418,13 +418,13 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
               {/* Indicador de Diferencia en Tiempo Real */}
               <div
                 className={`
-                  border p-3 flex items-center justify-between text-xs font-mono transition-fast
+                  border rounded-lg p-3 flex items-center justify-between text-xs font-mono transition-colors tabular-nums
                   ${
                     diferencia === 0
-                      ? 'border-emerald-900/80 bg-emerald-950/20 text-emerald-300'
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                       : diferencia > 0
-                      ? 'border-green-900/80 bg-green-950/20 text-green-300'
-                      : 'border-red-900/80 bg-red-950/20 text-red-300'
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      : 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400'
                   }
                 `}
               >
@@ -444,7 +444,7 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
                   <span className="text-[10px] uppercase tracking-widest block opacity-75">
                     DIFERENCIA
                   </span>
-                  <span className="font-heading font-bold text-sm">
+                  <span className="font-mono font-bold text-sm">
                     {diferencia === 0
                       ? '$ 0,00'
                       : `${diferencia > 0 ? '+' : ''}${formatearDinero(diferencia)}`}
@@ -454,23 +454,25 @@ export const ModalCerrarTurno: React.FC<ModalCerrarTurnoProps> = ({
 
               {/* Acciones */}
               <div className="flex items-center gap-3 mt-1">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="lg"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="w-1/3 py-3 border border-[#333333] hover:border-[#555555] bg-transparent text-xs font-mono uppercase tracking-wider text-[#A1A1AA] hover:text-[#FAFAFA] transition-fast cursor-pointer disabled:opacity-40"
+                  className="w-1/3 text-xs font-mono"
                 >
                   CANCELAR [ESC]
-                </button>
+                </Button>
                 <Button
                   type="submit"
                   variant="primary"
                   size="lg"
                   disabled={isSubmitting}
-                  className="w-2/3 font-heading font-bold tracking-wider flex items-center justify-center gap-2"
+                  className="w-2/3 font-heading font-bold tracking-wide flex items-center justify-center gap-2"
                 >
                   <span>{isSubmitting ? 'CERRANDO TURNO...' : 'CONFIRMAR ARQUEO Y SALIR'}</span>
-                  <SignOut size={16} weight="light" />
+                  <SignOut size={16} weight="bold" />
                 </Button>
               </div>
             </form>

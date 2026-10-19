@@ -271,23 +271,23 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity duration-150"
+        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-150"
         onClick={() => !isSubmitting && onClose()}
       />
 
-      {/* Modal Dialog Box Avant-Garde */}
-      <div className="relative w-full max-w-3xl bg-[#090909] border border-[#333333] text-[#FAFAFA] flex flex-col max-h-[92vh] z-10 animate-in fade-in zoom-in-95 duration-150">
+      {/* Modal Dialog Box con tokens semánticos */}
+      <div className="relative w-full max-w-3xl bg-surface border border-subtle rounded-xl shadow-floating text-primary flex flex-col max-h-[92vh] z-10 overflow-hidden">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#222222] bg-[#0C0C0C] flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-subtle bg-elevated/60 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 border border-[#333333] bg-[#141414] flex items-center justify-center text-amber-400">
+            <div className="w-9 h-9 rounded-lg border border-subtle bg-surface flex items-center justify-center text-amber-500 dark:text-amber-400">
               <ArrowsLeftRight size={18} weight="bold" />
             </div>
             <div>
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold block">
+              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-600 dark:text-amber-400 font-bold block">
                 TERMINAL DE COBRO // MÓDULO DE CAMBIOS
               </span>
-              <h2 className="font-heading font-extrabold text-base sm:text-lg text-[#FAFAFA] tracking-tight uppercase">
+              <h2 className="font-heading font-bold text-base sm:text-lg text-primary tracking-tight uppercase">
                 GESTIÓN DE CAMBIO DE PRENDA
               </h2>
             </div>
@@ -296,76 +296,76 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-1.5 border border-[#333333] bg-[#141414] hover:bg-[#222222] text-[#A1A1AA] hover:text-white transition-fast cursor-pointer"
+            className="p-1.5 rounded-lg border border-subtle bg-surface hover:bg-elevated text-secondary hover:text-primary transition-colors cursor-pointer"
             title="Cerrar (Esc)"
           >
-            <X size={16} weight="light" />
+            <X size={16} weight="bold" />
           </button>
         </div>
 
         {/* Stepper Tabs */}
-        <div className="grid grid-cols-4 border-b border-[#222222] bg-[#090909] text-[10px] font-mono uppercase tracking-wider">
+        <div className="grid grid-cols-4 border-b border-subtle bg-surface text-[11px] font-mono uppercase tracking-wider">
           <button
             type="button"
             onClick={() => setPasoActual(1)}
-            className={`py-2.5 px-2 border-r border-[#222222] flex items-center justify-center gap-1.5 cursor-pointer transition-fast ${
+            className={`py-2.5 px-2 border-r border-subtle flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
               pasoActual === 1
-                ? 'bg-[#181818] text-[#FAFAFA] font-bold border-b-2 border-b-amber-400'
+                ? 'bg-elevated text-primary font-bold border-b-2 border-b-amber-500'
                 : varianteDevuelta
-                ? 'text-emerald-400'
-                : 'text-[#71717A] hover:text-[#FAFAFA]'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-muted hover:text-primary'
             }`}
           >
             <span>1. DEVUELVE</span>
-            {varianteDevuelta && <CheckCircle size={12} weight="bold" className="text-emerald-400" />}
+            {varianteDevuelta && <CheckCircle size={12} weight="bold" className="text-emerald-600 dark:text-emerald-400" />}
           </button>
 
           <button
             type="button"
             onClick={() => varianteDevuelta && setPasoActual(2)}
             disabled={!varianteDevuelta}
-            className={`py-2.5 px-2 border-r border-[#222222] flex items-center justify-center gap-1.5 transition-fast ${
+            className={`py-2.5 px-2 border-r border-subtle flex items-center justify-center gap-1.5 transition-colors ${
               !varianteDevuelta
-                ? 'opacity-40 cursor-not-allowed text-[#555555]'
+                ? 'opacity-40 cursor-not-allowed text-muted'
                 : pasoActual === 2
-                ? 'bg-[#181818] text-[#FAFAFA] font-bold border-b-2 border-b-amber-400 cursor-pointer'
+                ? 'bg-elevated text-primary font-bold border-b-2 border-b-amber-500 cursor-pointer'
                 : varianteNueva
-                ? 'text-emerald-400 cursor-pointer'
-                : 'text-[#71717A] hover:text-[#FAFAFA] cursor-pointer'
+                ? 'text-emerald-600 dark:text-emerald-400 cursor-pointer'
+                : 'text-muted hover:text-primary cursor-pointer'
             }`}
           >
             <span>2. LLEVA</span>
-            {varianteNueva && <CheckCircle size={12} weight="bold" className="text-emerald-400" />}
+            {varianteNueva && <CheckCircle size={12} weight="bold" className="text-emerald-600 dark:text-emerald-400" />}
           </button>
 
           <button
             type="button"
             onClick={() => varianteDevuelta && varianteNueva && setPasoActual(3)}
             disabled={!varianteDevuelta || !varianteNueva}
-            className={`py-2.5 px-2 border-r border-[#222222] flex items-center justify-center gap-1.5 transition-fast ${
+            className={`py-2.5 px-2 border-r border-subtle flex items-center justify-center gap-1.5 transition-colors ${
               !varianteDevuelta || !varianteNueva
-                ? 'opacity-40 cursor-not-allowed text-[#555555]'
+                ? 'opacity-40 cursor-not-allowed text-muted'
                 : pasoActual === 3
-                ? 'bg-[#181818] text-[#FAFAFA] font-bold border-b-2 border-b-amber-400 cursor-pointer'
+                ? 'bg-elevated text-primary font-bold border-b-2 border-b-amber-500 cursor-pointer'
                 : motivoCambio.trim()
-                ? 'text-emerald-400 cursor-pointer'
-                : 'text-[#71717A] hover:text-[#FAFAFA] cursor-pointer'
+                ? 'text-emerald-600 dark:text-emerald-400 cursor-pointer'
+                : 'text-muted hover:text-primary cursor-pointer'
             }`}
           >
             <span>3. MOTIVO</span>
-            {motivoCambio.trim() && <CheckCircle size={12} weight="bold" className="text-emerald-400" />}
+            {motivoCambio.trim() && <CheckCircle size={12} weight="bold" className="text-emerald-600 dark:text-emerald-400" />}
           </button>
 
           <button
             type="button"
             onClick={() => varianteDevuelta && varianteNueva && motivoCambio.trim() && setPasoActual(4)}
             disabled={!varianteDevuelta || !varianteNueva || !motivoCambio.trim()}
-            className={`py-2.5 px-2 flex items-center justify-center gap-1.5 transition-fast ${
+            className={`py-2.5 px-2 flex items-center justify-center gap-1.5 transition-colors ${
               !varianteDevuelta || !varianteNueva || !motivoCambio.trim()
-                ? 'opacity-40 cursor-not-allowed text-[#555555]'
+                ? 'opacity-40 cursor-not-allowed text-muted'
                 : pasoActual === 4
-                ? 'bg-[#181818] text-[#FAFAFA] font-bold border-b-2 border-b-amber-400 cursor-pointer'
-                : 'text-[#71717A] hover:text-[#FAFAFA] cursor-pointer'
+                ? 'bg-elevated text-primary font-bold border-b-2 border-b-amber-500 cursor-pointer'
+                : 'text-muted hover:text-primary cursor-pointer'
             }`}
           >
             <span>4. LIQUIDACIÓN</span>
@@ -374,15 +374,15 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
 
         {/* Mensaje de Error si ocurre */}
         {errorMessage && (
-          <div className="bg-red-950/70 border-b border-red-800 px-4 py-2 text-xs font-mono text-red-200 flex items-center justify-between">
+          <div className="bg-red-500/10 border-b border-red-500/30 px-4 py-2.5 text-xs font-mono text-red-600 dark:text-red-400 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <WarningCircle size={16} weight="bold" className="text-red-400 shrink-0" />
+              <WarningCircle size={16} weight="bold" className="shrink-0" />
               <span>{errorMessage}</span>
             </div>
             <button
               type="button"
               onClick={() => setErrorMessage(null)}
-              className="text-red-400 hover:text-white p-1"
+              className="hover:opacity-75 p-1"
             >
               <X size={14} />
             </button>
@@ -398,14 +398,14 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-heading font-extrabold text-[#FAFAFA] uppercase tracking-wider">
+                  <h3 className="text-xs font-heading font-bold text-primary uppercase tracking-wider">
                     PASO 1 — PRENDA QUE DEVUELVE (ENTRA AL STOCK)
                   </h3>
-                  <p className="text-[11px] font-sans text-[#71717A] mt-0.5">
+                  <p className="text-[11px] font-sans text-secondary mt-0.5">
                     Escanea el código de barras o busca la prenda entregada por el cliente.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 border border-emerald-900/60 bg-emerald-950/30 text-emerald-300">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                   +1 STOCK FÍSICO
                 </span>
               </div>
@@ -415,8 +415,8 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                   <div className="relative">
                     <Barcode
                       size={18}
-                      weight="light"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717A]"
+                      weight="bold"
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
                     />
                     <input
                       ref={inputDevueltaRef}
@@ -424,14 +424,14 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                       value={busquedaDevuelta}
                       onChange={(e) => handleBusquedaDevueltaChange(e.target.value)}
                       placeholder="ESCANEAR CÓDIGO EAN-13 O BUSCAR POR NOMBRE / TALLE..."
-                      className="w-full bg-[#111111] border border-[#333333] focus:border-[#FAFAFA] text-[#FAFAFA] pl-10 pr-4 py-2.5 text-xs font-mono uppercase tracking-wide placeholder:text-[#555555] outline-none transition-fast"
+                      className="w-full bg-elevated border border-subtle focus:border-strong rounded-lg text-primary pl-10 pr-4 py-2.5 text-xs font-mono uppercase tracking-wide placeholder:text-muted outline-none transition-colors"
                       autoFocus
                     />
                   </div>
 
                   {/* Resultados rápidos de búsqueda */}
                   {busquedaDevuelta.trim() && (
-                    <div className="border border-[#222222] bg-[#0C0C0C] divide-y divide-[#1A1A1A] max-h-56 overflow-y-auto">
+                    <div className="border border-subtle bg-surface rounded-lg divide-y divide-subtle max-h-56 overflow-y-auto">
                       {variantesDevueltasFiltradas.length > 0 ? (
                         variantesDevueltasFiltradas.map((v) => (
                           <button
@@ -441,36 +441,36 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                               setVarianteDevuelta(v);
                               setBusquedaDevuelta('');
                             }}
-                            className="w-full p-2.5 flex items-center justify-between hover:bg-[#151515] text-left transition-fast cursor-pointer"
+                            className="w-full p-2.5 flex items-center justify-between hover:bg-elevated text-left transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 border border-[#333333] bg-[#141414] flex items-center justify-center font-heading font-bold text-xs text-[#FAFAFA]">
+                              <div className="w-8 h-8 rounded border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-xs text-primary">
                                 {v.talle}
                               </div>
                               <div>
-                                <span className="text-[10px] font-mono uppercase text-amber-400 block">
+                                <span className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold block">
                                   {v.producto.marca} // {v.producto.unidadNegocio}
                                 </span>
-                                <h4 className="text-xs font-heading font-semibold text-[#FAFAFA]">
+                                <h4 className="text-xs font-heading font-semibold text-primary">
                                   {v.producto.nombre}
                                 </h4>
-                                <span className="text-[10px] font-mono text-[#71717A]">
+                                <span className="text-[10px] font-mono text-muted">
                                   Color: {v.color} | EAN: {v.codigoBarras || 'S/C'}
                                 </span>
                               </div>
                             </div>
                             <div className="text-right">
-                              <span className="text-xs font-heading font-bold text-[#FAFAFA] block">
+                              <span className="text-xs font-mono font-bold text-primary block tabular-nums">
                                 {formatearDinero(v.producto.precioVenta)}
                               </span>
-                              <span className="text-[10px] font-mono text-[#71717A]">
+                              <span className="text-[10px] font-mono text-muted">
                                 Stock actual: {v.stockFisico} u.
                               </span>
                             </div>
                           </button>
                         ))
                       ) : (
-                        <div className="p-4 text-center text-xs text-[#71717A]">
+                        <div className="p-4 text-center text-xs text-muted">
                           No se encontraron coincidencias para "{busquedaDevuelta}".
                         </div>
                       )}
@@ -479,20 +479,20 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                 </div>
               ) : (
                 /* Prenda Devuelta Seleccionada */
-                <div className="border border-[#333333] bg-[#111111] p-4 flex flex-col gap-3">
+                <div className="border border-subtle bg-elevated rounded-xl p-4 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 border border-[#333333] bg-[#181818] flex items-center justify-center font-heading font-black text-sm text-[#FAFAFA]">
+                      <div className="w-12 h-12 rounded-lg border border-subtle bg-surface flex items-center justify-center font-heading font-bold text-sm text-primary">
                         {varianteDevuelta.talle}
                       </div>
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold block">
                           {varianteDevuelta.producto.marca} // {varianteDevuelta.producto.unidadNegocio}
                         </span>
-                        <h4 className="text-sm font-heading font-bold text-[#FAFAFA]">
+                        <h4 className="text-sm font-heading font-bold text-primary">
                           {varianteDevuelta.producto.nombre}
                         </h4>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-[#A1A1AA]">
+                        <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-secondary">
                           <span>COLOR: {varianteDevuelta.color}</span>
                           <span>•</span>
                           <span>EAN: {varianteDevuelta.codigoBarras || 'SIN EAN'}</span>
@@ -508,30 +508,30 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                         setVarianteDevuelta(null);
                         setTimeout(() => inputDevueltaRef.current?.focus(), 100);
                       }}
-                      className="text-[10px] font-mono uppercase tracking-wider text-red-400 hover:text-red-300 border border-red-900/60 hover:border-red-500 px-2 py-1 cursor-pointer transition-fast"
+                      className="text-[10px] font-mono uppercase tracking-wider text-red-600 dark:text-red-400 border border-red-500/30 rounded px-2 py-1 cursor-pointer transition-colors hover:bg-red-500/10"
                     >
                       CAMBIAR
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-[#222222]">
+                  <div className="flex items-center justify-between pt-3 border-t border-subtle">
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-[10px] uppercase font-mono text-[#71717A]">CANTIDAD A DEVOLVER:</span>
-                      <div className="flex items-center border border-[#333333]">
+                      <span className="text-[10px] uppercase font-mono text-muted">CANTIDAD A DEVOLVER:</span>
+                      <div className="flex items-center border border-subtle bg-surface rounded-md overflow-hidden">
                         <button
                           type="button"
                           onClick={() => setCantidadDevuelta(Math.max(1, cantidadDevuelta - 1))}
-                          className="px-2 py-0.5 text-xs text-[#FAFAFA] hover:bg-[#222222]"
+                          className="px-2.5 py-0.5 text-xs text-primary hover:bg-elevated"
                         >
                           -
                         </button>
-                        <span className="px-3 py-0.5 font-mono text-xs font-bold text-[#FAFAFA]">
+                        <span className="px-3 py-0.5 font-mono text-xs font-bold text-primary tabular-nums">
                           {cantidadDevuelta}
                         </span>
                         <button
                           type="button"
                           onClick={() => setCantidadDevuelta(cantidadDevuelta + 1)}
-                          className="px-2 py-0.5 text-xs text-[#FAFAFA] hover:bg-[#222222]"
+                          className="px-2.5 py-0.5 text-xs text-primary hover:bg-elevated"
                         >
                           +
                         </button>
@@ -539,8 +539,8 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[10px] font-mono uppercase text-[#71717A] block">VALOR RECONOCIDO:</span>
-                      <span className="text-sm font-heading font-black text-emerald-400">
+                      <span className="text-[10px] font-mono uppercase text-muted block">VALOR RECONOCIDO:</span>
+                      <span className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                         {formatearDinero(subtotalDevuelto)}
                       </span>
                     </div>
@@ -557,14 +557,14 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-heading font-extrabold text-[#FAFAFA] uppercase tracking-wider">
+                  <h3 className="text-xs font-heading font-bold text-primary uppercase tracking-wider">
                     PASO 2 — PRENDA QUE LLEVA (SALE DEL STOCK)
                   </h3>
-                  <p className="text-[11px] font-sans text-[#71717A] mt-0.5">
+                  <p className="text-[11px] font-sans text-secondary mt-0.5">
                     Escanea o busca la nueva prenda que el cliente desea llevar.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 border border-amber-900/60 bg-amber-950/30 text-amber-300">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">
                   -1 STOCK FÍSICO
                 </span>
               </div>
@@ -574,8 +574,8 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                   <div className="relative">
                     <Barcode
                       size={18}
-                      weight="light"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717A]"
+                      weight="bold"
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
                     />
                     <input
                       ref={inputNuevaRef}
@@ -583,13 +583,13 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                       value={busquedaNueva}
                       onChange={(e) => handleBusquedaNuevaChange(e.target.value)}
                       placeholder="ESCANEAR NUEVA PRENDA O BUSCAR POR NOMBRE / TALLE..."
-                      className="w-full bg-[#111111] border border-[#333333] focus:border-[#FAFAFA] text-[#FAFAFA] pl-10 pr-4 py-2.5 text-xs font-mono uppercase tracking-wide placeholder:text-[#555555] outline-none transition-fast"
+                      className="w-full bg-elevated border border-subtle focus:border-strong rounded-lg text-primary pl-10 pr-4 py-2.5 text-xs font-mono uppercase tracking-wide placeholder:text-muted outline-none transition-colors"
                       autoFocus
                     />
                   </div>
 
                   {busquedaNueva.trim() && (
-                    <div className="border border-[#222222] bg-[#0C0C0C] divide-y divide-[#1A1A1A] max-h-56 overflow-y-auto">
+                    <div className="border border-subtle bg-surface rounded-lg divide-y divide-subtle max-h-56 overflow-y-auto">
                       {variantesNuevasFiltradas.length > 0 ? (
                         variantesNuevasFiltradas.map((v) => {
                           const stockAgotado = v.stockFisico <= 0 && v.id !== varianteDevuelta?.id;
@@ -602,35 +602,35 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                                 setVarianteNueva(v);
                                 setBusquedaNueva('');
                               }}
-                              className={`w-full p-2.5 flex items-center justify-between text-left transition-fast ${
+                              className={`w-full p-2.5 flex items-center justify-between text-left transition-colors ${
                                 stockAgotado
-                                  ? 'opacity-40 cursor-not-allowed bg-[#090909]'
-                                  : 'hover:bg-[#151515] cursor-pointer'
+                                  ? 'opacity-40 cursor-not-allowed bg-elevated/40'
+                                  : 'hover:bg-elevated cursor-pointer'
                               }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 border border-[#333333] bg-[#141414] flex items-center justify-center font-heading font-bold text-xs text-[#FAFAFA]">
+                                <div className="w-8 h-8 rounded border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-xs text-primary">
                                   {v.talle}
                                 </div>
                                 <div>
-                                  <span className="text-[10px] font-mono uppercase text-amber-400 block">
+                                  <span className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold block">
                                     {v.producto.marca} // {v.producto.unidadNegocio}
                                   </span>
-                                  <h4 className="text-xs font-heading font-semibold text-[#FAFAFA]">
+                                  <h4 className="text-xs font-heading font-semibold text-primary">
                                     {v.producto.nombre}
                                   </h4>
-                                  <span className="text-[10px] font-mono text-[#71717A]">
+                                  <span className="text-[10px] font-mono text-muted">
                                     Color: {v.color} | EAN: {v.codigoBarras || 'S/C'}
                                   </span>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <span className="text-xs font-heading font-bold text-[#FAFAFA] block">
+                                <span className="text-xs font-mono font-bold text-primary block tabular-nums">
                                   {formatearDinero(v.producto.precioVenta)}
                                 </span>
                                 <span
                                   className={`text-[10px] font-mono ${
-                                    stockAgotado ? 'text-red-400' : 'text-emerald-400'
+                                    stockAgotado ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
                                   }`}
                                 >
                                   {stockAgotado ? 'SIN STOCK' : `Stock: ${v.stockFisico} u.`}
@@ -640,7 +640,7 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                           );
                         })
                       ) : (
-                        <div className="p-4 text-center text-xs text-[#71717A]">
+                        <div className="p-4 text-center text-xs text-muted">
                           No se encontraron prendas para "{busquedaNueva}".
                         </div>
                       )}
@@ -649,25 +649,25 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                 </div>
               ) : (
                 /* Prenda Nueva Seleccionada */
-                <div className="border border-[#333333] bg-[#111111] p-4 flex flex-col gap-3">
+                <div className="border border-subtle bg-elevated rounded-xl p-4 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 border border-[#333333] bg-[#181818] flex items-center justify-center font-heading font-black text-sm text-[#FAFAFA]">
+                      <div className="w-12 h-12 rounded-lg border border-subtle bg-surface flex items-center justify-center font-heading font-bold text-sm text-primary">
                         {varianteNueva.talle}
                       </div>
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold block">
                           {varianteNueva.producto.marca} // {varianteNueva.producto.unidadNegocio}
                         </span>
-                        <h4 className="text-sm font-heading font-bold text-[#FAFAFA]">
+                        <h4 className="text-sm font-heading font-bold text-primary">
                           {varianteNueva.producto.nombre}
                         </h4>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-[#A1A1AA]">
+                        <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-secondary">
                           <span>COLOR: {varianteNueva.color}</span>
                           <span>•</span>
                           <span>EAN: {varianteNueva.codigoBarras || 'SIN EAN'}</span>
                           <span>•</span>
-                          <span className="text-emerald-400 font-bold">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                             STOCK DISPONIBLE: {varianteNueva.stockFisico} U.
                           </span>
                         </div>
@@ -680,31 +680,31 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                         setVarianteNueva(null);
                         setTimeout(() => inputNuevaRef.current?.focus(), 100);
                       }}
-                      className="text-[10px] font-mono uppercase tracking-wider text-red-400 hover:text-red-300 border border-red-900/60 hover:border-red-500 px-2 py-1 cursor-pointer transition-fast"
+                      className="text-[10px] font-mono uppercase tracking-wider text-red-600 dark:text-red-400 border border-red-500/30 rounded px-2 py-1 cursor-pointer transition-colors hover:bg-red-500/10"
                     >
                       CAMBIAR
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-[#222222]">
+                  <div className="flex items-center justify-between pt-3 border-t border-subtle">
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-[10px] uppercase font-mono text-[#71717A]">CANTIDAD A LLEVAR:</span>
-                      <div className="flex items-center border border-[#333333]">
+                      <span className="text-[10px] uppercase font-mono text-muted">CANTIDAD A LLEVAR:</span>
+                      <div className="flex items-center border border-subtle bg-surface rounded-md overflow-hidden">
                         <button
                           type="button"
                           onClick={() => setCantidadNueva(Math.max(1, cantidadNueva - 1))}
-                          className="px-2 py-0.5 text-xs text-[#FAFAFA] hover:bg-[#222222]"
+                          className="px-2.5 py-0.5 text-xs text-primary hover:bg-elevated"
                         >
                           -
                         </button>
-                        <span className="px-3 py-0.5 font-mono text-xs font-bold text-[#FAFAFA]">
+                        <span className="px-3 py-0.5 font-mono text-xs font-bold text-primary tabular-nums">
                           {cantidadNueva}
                         </span>
                         <button
                           type="button"
                           onClick={() => setCantidadNueva(cantidadNueva + 1)}
                           disabled={cantidadNueva >= varianteNueva.stockFisico && varianteNueva.id !== varianteDevuelta?.id}
-                          className="px-2 py-0.5 text-xs text-[#FAFAFA] hover:bg-[#222222] disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="px-2.5 py-0.5 text-xs text-primary hover:bg-elevated disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           +
                         </button>
@@ -712,8 +712,8 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[10px] font-mono uppercase text-[#71717A] block">VALOR PRENDA NUEVA:</span>
-                      <span className="text-sm font-heading font-black text-[#FAFAFA]">
+                      <span className="text-[10px] font-mono uppercase text-muted block">VALOR PRENDA NUEVA:</span>
+                      <span className="text-sm font-mono font-bold text-primary tabular-nums">
                         {formatearDinero(subtotalNuevo)}
                       </span>
                     </div>
@@ -729,10 +729,10 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
           {pasoActual === 3 && (
             <div className="space-y-4">
               <div>
-                <h3 className="text-xs font-heading font-extrabold text-[#FAFAFA] uppercase tracking-wider">
+                <h3 className="text-xs font-heading font-bold text-primary uppercase tracking-wider">
                   PASO 3 — MOTIVO DEL CAMBIO (OBLIGATORIO)
                 </h3>
-                <p className="text-[11px] font-sans text-[#71717A] mt-0.5">
+                <p className="text-[11px] font-sans text-secondary mt-0.5">
                   Selecciona una opción rápida o escribe el motivo específico de la operación.
                 </p>
               </div>
@@ -750,10 +750,10 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                     key={pill}
                     type="button"
                     onClick={() => setMotivoCambio(pill)}
-                    className={`text-[11px] font-mono uppercase tracking-wider px-3 py-1.5 border transition-fast cursor-pointer ${
+                    className={`text-[11px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
                       motivoCambio === pill
-                        ? 'border-amber-400 bg-amber-950/40 text-amber-300 font-bold'
-                        : 'border-[#333333] bg-[#111111] text-[#A1A1AA] hover:border-[#555555] hover:text-[#FAFAFA]'
+                        ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold'
+                        : 'border-subtle bg-elevated text-secondary hover:border-strong hover:text-primary'
                     }`}
                   >
                     {pill}
@@ -768,10 +768,10 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                   onChange={(e) => setMotivoCambio(e.target.value)}
                   placeholder="ESCRIBE EL MOTIVO DETALLADO DEL CAMBIO..."
                   rows={3}
-                  className="w-full bg-[#111111] border border-[#333333] focus:border-[#FAFAFA] text-[#FAFAFA] p-3 text-xs font-mono uppercase tracking-wide placeholder:text-[#555555] outline-none transition-fast"
+                  className="w-full bg-elevated border border-subtle focus:border-strong rounded-lg text-primary p-3 text-xs font-mono uppercase tracking-wide placeholder:text-muted outline-none transition-colors"
                   autoFocus
                 />
-                <span className="text-[10px] font-mono text-[#71717A] mt-1 block">
+                <span className="text-[10px] font-mono text-muted mt-1 block">
                   * Este motivo quedará registrado en la auditoría de caja y ventas.
                 </span>
               </div>
@@ -784,27 +784,27 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
           {pasoActual === 4 && (
             <div className="space-y-5">
               <div>
-                <h3 className="text-xs font-heading font-extrabold text-[#FAFAFA] uppercase tracking-wider">
+                <h3 className="text-xs font-heading font-bold text-primary uppercase tracking-wider">
                   PASO 4 — LIQUIDACIÓN CONTABLE DE DIFERENCIA
                 </h3>
-                <p className="text-[11px] font-sans text-[#71717A] mt-0.5">
+                <p className="text-[11px] font-sans text-secondary mt-0.5">
                   Balance financiero entre la prenda devuelta y la nueva prenda.
                 </p>
               </div>
 
               {/* Resumen de Valores de Ambas Prendas */}
-              <div className="grid grid-cols-2 gap-3 border border-[#222222] bg-[#0C0C0C] p-3.5 text-xs font-mono">
+              <div className="grid grid-cols-2 gap-3 border border-subtle bg-elevated rounded-xl p-3.5 text-xs font-mono">
                 <div>
-                  <span className="text-[10px] text-[#71717A] block uppercase">PRENDA DEVUELTA ({cantidadDevuelta}U):</span>
-                  <span className="font-bold text-[#FAFAFA] block truncate">{varianteDevuelta?.producto.nombre}</span>
-                  <span className="text-emerald-400 font-heading font-bold text-sm">
+                  <span className="text-[10px] text-muted block uppercase">PRENDA DEVUELTA ({cantidadDevuelta}U):</span>
+                  <span className="font-bold text-primary block truncate">{varianteDevuelta?.producto.nombre}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold text-sm tabular-nums">
                     {formatearDinero(subtotalDevuelto)}
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-[#71717A] block uppercase">PRENDA NUEVA ({cantidadNueva}U):</span>
-                  <span className="font-bold text-[#FAFAFA] block truncate">{varianteNueva?.producto.nombre}</span>
-                  <span className="text-amber-400 font-heading font-bold text-sm">
+                  <span className="text-[10px] text-muted block uppercase">PRENDA NUEVA ({cantidadNueva}U):</span>
+                  <span className="font-bold text-primary block truncate">{varianteNueva?.producto.nombre}</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-mono font-bold text-sm tabular-nums">
                     {formatearDinero(subtotalNuevo)}
                   </span>
                 </div>
@@ -812,14 +812,14 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
 
               {/* CASO A: Diferencia $0 (Mano a Mano) */}
               {diferenciaBase === 0 && (
-                <div className="border border-emerald-600/60 bg-emerald-950/20 p-4 flex items-center justify-between">
+                <div className="border border-emerald-500/30 bg-emerald-500/10 rounded-xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <CheckCircle size={24} weight="bold" className="text-emerald-400" />
+                    <CheckCircle size={24} weight="bold" className="text-emerald-600 dark:text-emerald-400" />
                     <div>
-                      <span className="text-xs font-heading font-black text-emerald-300 uppercase tracking-wider block">
+                      <span className="text-xs font-heading font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
                         CAMBIO MANO A MANO ($0 DIFERENCIA)
                       </span>
-                      <span className="text-[11px] font-mono text-[#A1A1AA]">
+                      <span className="text-[11px] font-mono text-secondary">
                         Prendas con el mismo valor de venta. No se altera la caja física.
                       </span>
                     </div>
@@ -829,22 +829,22 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
 
               {/* CASO B: Diferencia > $0 (A Pagar por el Cliente) */}
               {diferenciaBase > 0 && (
-                <div className="space-y-4 border border-[#333333] bg-[#111111] p-4">
-                  <div className="flex items-baseline justify-between border-b border-[#222222] pb-3">
+                <div className="space-y-4 border border-subtle bg-elevated rounded-xl p-4">
+                  <div className="flex items-baseline justify-between border-b border-subtle pb-3">
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold block">
                         DIFERENCIA A COBRAR AL CLIENTE
                       </span>
-                      <span className="text-[11px] font-mono text-[#71717A]">
+                      <span className="text-[11px] font-mono text-muted">
                         Únicamente este saldo impactará en el arqueo del turno.
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-xl md:text-2xl font-heading font-black text-[#FAFAFA]">
+                      <span className="text-xl md:text-2xl font-mono font-bold text-primary tabular-nums">
                         {formatearDinero(montoFinalCobrar)}
                       </span>
                       {aplicaRecargoCredito && metodoPago === MetodosPago.Credito && (
-                        <span className="text-[10px] font-mono text-amber-400 block">
+                        <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 block">
                           (+25% recargo cuotas aplicado)
                         </span>
                       )}
@@ -853,59 +853,59 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
 
                   {/* Selector de Método de Pago */}
                   <div className="space-y-2">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717A] block">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-secondary block">
                       SELECCIONAR MÉTODO DE PAGO PARA LA DIFERENCIA:
                     </span>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <button
                         type="button"
                         onClick={() => setMetodoPago(MetodosPago.Efectivo)}
-                        className={`p-2.5 border text-xs font-heading font-bold flex flex-col items-center gap-1.5 transition-fast cursor-pointer ${
+                        className={`p-2.5 rounded-lg border text-xs font-heading font-bold flex flex-col items-center gap-1.5 transition-colors cursor-pointer ${
                           metodoPago === MetodosPago.Efectivo
-                            ? 'border-amber-400 bg-amber-950/40 text-amber-300'
-                            : 'border-[#333333] bg-[#141414] text-[#A1A1AA] hover:text-[#FAFAFA]'
+                            ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                            : 'border-subtle bg-surface text-secondary hover:text-primary'
                         }`}
                       >
-                        <Money size={18} weight="light" />
+                        <Money size={18} weight="bold" />
                         <span>EFECTIVO</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setMetodoPago(MetodosPago.Transferencia)}
-                        className={`p-2.5 border text-xs font-heading font-bold flex flex-col items-center gap-1.5 transition-fast cursor-pointer ${
+                        className={`p-2.5 rounded-lg border text-xs font-heading font-bold flex flex-col items-center gap-1.5 transition-colors cursor-pointer ${
                           metodoPago === MetodosPago.Transferencia
-                            ? 'border-amber-400 bg-amber-950/40 text-amber-300'
-                            : 'border-[#333333] bg-[#141414] text-[#A1A1AA] hover:text-[#FAFAFA]'
+                            ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                            : 'border-subtle bg-surface text-secondary hover:text-primary'
                         }`}
                       >
-                        <Bank size={18} weight="light" />
+                        <Bank size={18} weight="bold" />
                         <span>TRANSFERENCIA</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setMetodoPago(MetodosPago.Debito)}
-                        className={`p-2.5 border text-xs font-heading font-bold flex flex-col items-center gap-1.5 transition-fast cursor-pointer ${
+                        className={`p-2.5 rounded-lg border text-xs font-heading font-bold flex flex-col items-center gap-1.5 transition-colors cursor-pointer ${
                           metodoPago === MetodosPago.Debito
-                            ? 'border-amber-400 bg-amber-950/40 text-amber-300'
-                            : 'border-[#333333] bg-[#141414] text-[#A1A1AA] hover:text-[#FAFAFA]'
+                            ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                            : 'border-subtle bg-surface text-secondary hover:text-primary'
                         }`}
                       >
-                        <CreditCard size={18} weight="light" />
+                        <CreditCard size={18} weight="bold" />
                         <span>DÉBITO</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setMetodoPago(MetodosPago.Credito)}
-                        className={`p-2.5 border text-xs font-heading font-bold flex flex-col items-center gap-1.5 transition-fast cursor-pointer ${
+                        className={`p-2.5 rounded-lg border text-xs font-heading font-bold flex flex-col items-center gap-1.5 transition-colors cursor-pointer ${
                           metodoPago === MetodosPago.Credito
-                            ? 'border-amber-400 bg-amber-950/40 text-amber-300'
-                            : 'border-[#333333] bg-[#141414] text-[#A1A1AA] hover:text-[#FAFAFA]'
+                            ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                            : 'border-subtle bg-surface text-secondary hover:text-primary'
                         }`}
                       >
-                        <CurrencyDollar size={18} weight="light" />
+                        <CurrencyDollar size={18} weight="bold" />
                         <span>CRÉDITO</span>
                       </button>
                     </div>
@@ -913,20 +913,20 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
 
                   {/* Detalles específicos del método de pago */}
                   {metodoPago === MetodosPago.Efectivo && (
-                    <div className="bg-[#141414] border border-[#222222] p-3 flex items-center justify-between gap-3 text-xs font-mono">
+                    <div className="bg-surface border border-subtle rounded-lg p-3 flex items-center justify-between gap-3 text-xs font-mono">
                       <div>
-                        <span className="text-[10px] text-[#71717A] uppercase block">PAGA CON ($):</span>
+                        <span className="text-[10px] text-muted uppercase block">PAGA CON ($):</span>
                         <input
                           type="number"
                           value={pagaConEfectivo}
                           onChange={(e) => setPagaConEfectivo(e.target.value)}
                           placeholder={montoFinalCobrar.toString()}
-                          className="bg-[#090909] border border-[#333333] text-[#FAFAFA] px-2 py-1 text-xs w-32 outline-none font-bold mt-1"
+                          className="bg-elevated border border-subtle rounded text-primary px-2 py-1 text-xs w-32 outline-none font-bold mt-1 tabular-nums"
                         />
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-[#71717A] uppercase block">VUELTO A ENTREGAR:</span>
-                        <span className="text-sm font-heading font-bold text-emerald-400">
+                        <span className="text-[10px] text-muted uppercase block">VUELTO A ENTREGAR:</span>
+                        <span className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                           {formatearDinero(vueltoEfectivo)}
                         </span>
                       </div>
@@ -934,35 +934,35 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                   )}
 
                   {metodoPago === MetodosPago.Transferencia && (
-                    <div className="bg-[#141414] border border-[#222222] p-3 text-xs font-mono space-y-1">
-                      <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">
+                    <div className="bg-surface border border-subtle rounded-lg p-3 text-xs font-mono space-y-1">
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider block">
                         RECORDATORIO DE ALIAS // VERIFICAR ACREDITACIÓN:
                       </span>
-                      <p className="text-[#A1A1AA]">
-                        • Alias Ale: <strong className="text-white">ale.dastik</strong> | Alias Gordo:{' '}
-                        <strong className="text-white">gordo.dastik</strong>
+                      <p className="text-secondary">
+                        • Alias Ale: <strong className="text-primary">ale.dastik</strong> | Alias Gordo:{' '}
+                        <strong className="text-primary">gordo.dastik</strong>
                       </p>
-                      <p className="text-[11px] text-[#71717A]">
+                      <p className="text-[11px] text-muted">
                         Verifica el comprobante bancario antes de confirmar la entrega.
                       </p>
                     </div>
                   )}
 
                   {metodoPago === MetodosPago.Credito && (
-                    <div className="bg-[#141414] border border-[#222222] p-3 flex items-center justify-between text-xs font-mono">
+                    <div className="bg-surface border border-subtle rounded-lg p-3 flex items-center justify-between text-xs font-mono">
                       <div>
-                        <span className="font-bold text-white block">CUOTAS CON INTERÉS (+25%)</span>
-                        <span className="text-[10px] text-[#71717A]">
+                        <span className="font-bold text-primary block">CUOTAS CON INTERÉS (+25%)</span>
+                        <span className="text-[10px] text-muted">
                           Recargo financiero aplicable para 3 o 6 cuotas.
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setAplicaRecargoCredito(!aplicaRecargoCredito)}
-                        className={`text-[10px] font-mono uppercase px-3 py-1.5 border transition-fast cursor-pointer ${
+                        className={`text-[10px] font-mono uppercase px-3 py-1.5 rounded-md border transition-colors cursor-pointer ${
                           aplicaRecargoCredito
-                            ? 'border-amber-400 bg-amber-950/40 text-amber-300 font-bold'
-                            : 'border-[#333333] text-[#71717A] hover:text-white'
+                            ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold'
+                            : 'border-subtle text-secondary hover:text-primary'
                         }`}
                       >
                         {aplicaRecargoCredito ? 'RECARGO ACTIVADO (+25%)' : '1 PAGO (SIN RECARGO)'}
@@ -974,19 +974,19 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
 
               {/* CASO C: Diferencia < $0 (Saldo a Favor del Cliente) */}
               {diferenciaBase < 0 && (
-                <div className="border border-amber-600/70 bg-amber-950/20 p-4 space-y-2">
+                <div className="border border-amber-500/30 bg-amber-500/10 rounded-xl p-4 space-y-2">
                   <div className="flex items-center gap-3">
-                    <WarningCircle size={24} weight="bold" className="text-amber-400 shrink-0" />
+                    <WarningCircle size={24} weight="bold" className="text-amber-500 dark:text-amber-400 shrink-0" />
                     <div>
-                      <span className="text-xs font-heading font-black text-amber-300 uppercase tracking-wider block">
+                      <span className="text-xs font-heading font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block tabular-nums">
                         SALDO A FAVOR DEL CLIENTE: {formatearDinero(Math.abs(diferenciaBase))}
                       </span>
-                      <span className="text-[11px] font-mono text-[#D4D4D8]">
+                      <span className="text-[11px] font-mono text-primary">
                         La prenda nueva es de menor valor que la prenda devuelta.
                       </span>
                     </div>
                   </div>
-                  <p className="text-[11px] font-mono text-[#A1A1AA] pt-2 border-t border-amber-900/50">
+                  <p className="text-[11px] font-mono text-secondary pt-2 border-t border-amber-500/20">
                     * No se realiza egreso de caja física. Se registra el comprobante de cambio con crédito a favor en cuenta del cliente.
                   </p>
                 </div>
@@ -996,7 +996,7 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
         </div>
 
         {/* Footer con Navegación de Pasos y Confirmación */}
-        <div className="p-4 sm:p-5 border-t border-[#222222] bg-[#0C0C0C] flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-t border-subtle bg-elevated/60 flex items-center justify-between gap-3">
           <div>
             {pasoActual > 1 && (
               <Button
@@ -1004,7 +1004,7 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                 size="sm"
                 disabled={isSubmitting}
                 onClick={() => setPasoActual((prev) => (prev - 1) as any)}
-                className="text-[11px] font-mono tracking-wider px-3 border-[#333333]"
+                className="text-[11px] font-mono tracking-wider px-3"
               >
                 ← ANTERIOR
               </Button>
@@ -1032,7 +1032,7 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                 size="md"
                 disabled={isSubmitting}
                 onClick={handleConfirmarCambio}
-                className="text-xs font-heading font-bold tracking-wider px-5 bg-amber-400 text-black hover:bg-amber-300 border-amber-400"
+                className="text-xs font-heading font-bold tracking-wider px-5 bg-amber-400 text-zinc-950 hover:bg-amber-300 border-amber-400"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">

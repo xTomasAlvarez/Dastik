@@ -7,92 +7,111 @@ import {
   ChartBar,
   TrendUp,
   Users,
+  Gear,
+  Sun,
+  Moon,
   SignOut,
   ShieldCheck,
   TestTube,
-  ArrowSquareOut
+  ArrowSquareOut,
 } from '@phosphor-icons/react';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useTenantStore } from '../../../stores/useTenantStore';
+import { useThemeStore } from '../../../stores/useThemeStore';
 
 export const AdminLayout: React.FC = () => {
   const { usuario, logout } = useAuthStore();
   const { isSandboxMode, toggleSandboxMode } = useTenantStore();
+  const { theme, toggleTheme } = useThemeStore();
 
   const navItems = [
     {
       to: '/admin',
       label: 'Dashboard',
-      icon: <ChartBar size={18} weight="light" />,
+      icon: <ChartBar size={18} weight="duotone" />,
       description: 'Métricas & Alertas',
-      end: true
+      end: true,
     },
     {
       to: '/admin/inventario',
       label: 'Inventario',
-      icon: <Package size={18} weight="light" />,
-      description: 'Stock & Catálogo'
+      icon: <Package size={18} weight="duotone" />,
+      description: 'Stock & Catálogo',
     },
     {
       to: '/admin/arqueos',
       label: 'Arqueos',
-      icon: <Receipt size={18} weight="light" />,
-      description: 'Cierres de Caja'
+      icon: <Receipt size={18} weight="duotone" />,
+      description: 'Cierres de Caja',
     },
     {
       to: '/admin/empleados',
       label: 'Empleados',
-      icon: <Users size={18} weight="light" />,
-      description: 'Sueldos & Staff'
+      icon: <Users size={18} weight="duotone" />,
+      description: 'Sueldos & Staff',
     },
     {
       to: '/admin/metricas',
       label: 'Finanzas',
-      icon: <TrendUp size={18} weight="light" />,
-      description: 'Rentabilidad & Rotación'
-    }
+      icon: <TrendUp size={18} weight="duotone" />,
+      description: 'Rentabilidad',
+    },
+    {
+      to: '/admin/configuracion',
+      label: 'Configuración',
+      icon: <Gear size={18} weight="duotone" />,
+      description: 'Catálogos & Tema',
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-[#000000] text-[#FAFAFA] flex flex-col md:flex-row font-sans selection:bg-[#FAFAFA] selection:text-[#000000]">
-      {/* Sidebar Izquierda Fija (w-64, border derecho #333333) */}
-      <aside className="w-full md:w-64 bg-[#090909] border-b md:border-b-0 md:border-r border-[#333333] flex flex-col md:h-screen md:sticky md:top-0 shrink-0">
-        {/* Branding Avant-Garde */}
-        <div className="p-6 border-b border-[#333333]">
+    <div className="min-h-screen bg-canvas text-primary flex flex-col md:flex-row font-sans">
+      {/* Sidebar Izquierda Fija (w-64) */}
+      <aside className="w-full md:w-64 bg-surface border-b md:border-b-0 md:border-r border-subtle flex flex-col md:h-screen md:sticky md:top-0 shrink-0 shadow-surface">
+        {/* Branding */}
+        <div className="p-5 border-b border-subtle">
           <div className="flex items-center gap-3">
-            <div className="border border-[#333333] bg-[#111111] p-2 text-[#FAFAFA] shrink-0">
-              <Storefront size={20} weight="light" />
+            <div className="border border-subtle bg-elevated rounded-lg p-2 text-primary shrink-0 shadow-surface">
+              <Storefront size={20} weight="duotone" className="text-amber-500" />
             </div>
             <div>
-              <h1 className="text-base font-heading font-extrabold tracking-tight text-[#FAFAFA]">
-                DASTIK <span className="text-[#71717A] font-normal">//</span> ADMIN
+              <h1 className="text-base font-heading font-extrabold tracking-tight text-primary">
+                DASTIK <span className="text-muted font-normal">//</span> ADMIN
               </h1>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-sans block">
-                BACK-OFFICE & CONTROL
+              <span className="text-[11px] font-medium text-muted font-sans block">
+                Back-Office &amp; Control
               </span>
             </div>
           </div>
         </div>
 
         {/* Acceso Rápido al Terminal POS */}
-        <div className="p-4 border-b border-[#222222]">
+        <div className="p-3.5 border-b border-subtle">
           <Link
             to="/"
-            className="w-full border border-[#333333] bg-[#111111] hover:bg-[#1A1A1A] hover:border-[#555555] text-[#FAFAFA] px-3 py-2.5 flex items-center justify-between text-xs font-heading font-semibold uppercase tracking-wider transition-fast group"
+            className="w-full rounded-lg border border-subtle bg-elevated hover:bg-surface hover:border-strong text-primary px-3 py-2.5 flex items-center justify-between text-xs font-sans font-semibold transition-fast group shadow-surface active:scale-[0.98]"
             title="Ir a la terminal de punto de venta"
           >
             <div className="flex items-center gap-2.5">
-              <Storefront size={16} weight="light" className="text-amber-400 group-hover:scale-110 transition-transform" />
-              <span>TERMINAL POS</span>
+              <Storefront
+                size={16}
+                weight="duotone"
+                className="text-amber-500 group-hover:scale-110 transition-transform"
+              />
+              <span>Terminal POS</span>
             </div>
-            <ArrowSquareOut size={14} weight="light" className="text-[#71717A] group-hover:text-[#FAFAFA]" />
+            <ArrowSquareOut
+              size={14}
+              weight="regular"
+              className="text-muted group-hover:text-primary"
+            />
           </Link>
         </div>
 
         {/* Navegación Principal */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <div className="text-[10px] uppercase tracking-widest text-[#71717A] px-3 py-2 font-sans font-semibold">
-            GESTIÓN OPERATIVA
+        <nav className="flex-1 p-3.5 space-y-1 overflow-y-auto">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted px-3 py-1.5 font-sans">
+            Gestión Operativa
           </div>
           {navItems.map((item) => (
             <NavLink
@@ -100,24 +119,24 @@ export const AdminLayout: React.FC = () => {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `w-full px-3 py-3 flex items-center justify-between text-xs transition-fast ${
+                `w-full px-3 py-2.5 rounded-lg flex items-center justify-between text-xs transition-fast ${
                   isActive
-                    ? 'bg-[#FAFAFA] text-[#000000] font-heading font-bold shadow-none'
-                    : 'text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#111111] font-sans border border-transparent'
+                    ? 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-semibold shadow-sm'
+                    : 'text-secondary hover:text-primary hover:bg-elevated font-medium'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <div className="flex items-center gap-3">
-                    <span className={isActive ? 'text-[#000000]' : 'text-[#71717A]'}>
+                  <div className="flex items-center gap-2.5">
+                    <span className={isActive ? 'opacity-100' : 'text-muted'}>
                       {item.icon}
                     </span>
-                    <span className="uppercase tracking-wider">{item.label}</span>
+                    <span>{item.label}</span>
                   </div>
                   <span
-                    className={`text-[10px] tracking-widest uppercase font-mono ${
-                      isActive ? 'text-[#000000]/60' : 'text-[#555555]'
+                    className={`text-[10px] font-sans ${
+                      isActive ? 'opacity-75' : 'text-muted'
                     }`}
                   >
                     {item.description}
@@ -128,36 +147,71 @@ export const AdminLayout: React.FC = () => {
           ))}
         </nav>
 
-        {/* Controles de Entorno y Operador */}
-        <div className="p-4 border-t border-[#333333] bg-[#0A0A0A] space-y-3">
-          {/* Indicador de Tenant / Base */}
-          <div className="border border-[#222222] bg-[#111111] px-3 py-2 flex items-center justify-between text-xs">
+        {/* Controles de Entorno, Tema y Operador */}
+        <div className="p-3.5 border-t border-subtle bg-elevated/40 space-y-2">
+          {/* Toggle Dark / Light Mode Instantáneo */}
+          <div className="rounded-lg border border-subtle bg-surface px-3 py-2 flex items-center justify-between text-xs shadow-surface">
             <div className="flex items-center gap-2">
-              <TestTube size={15} weight="light" className={isSandboxMode ? 'text-amber-400' : 'text-[#71717A]'} />
-              <span className="text-[10px] uppercase tracking-widest text-[#71717A]">BASE:</span>
-              <span className={`text-[11px] font-heading font-semibold tracking-wider ${isSandboxMode ? 'text-amber-400' : 'text-[#FAFAFA]'}`}>
-                {isSandboxMode ? 'SANDBOX' : 'PROD'}
+              {theme === 'dark' ? (
+                <Moon size={15} weight="duotone" className="text-indigo-400" />
+              ) : (
+                <Sun size={15} weight="duotone" className="text-amber-500" />
+              )}
+              <span className="text-[11px] font-medium text-muted">Tema:</span>
+              <span className="text-xs font-semibold text-primary">
+                {theme === 'dark' ? 'Dark' : 'Light'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="text-[11px] font-semibold text-secondary hover:text-primary transition-fast cursor-pointer"
+              title={
+                theme === 'dark'
+                  ? 'Cambiar a modo claro (Light Mode)'
+                  : 'Cambiar a modo oscuro (Dark Mode)'
+              }
+            >
+              {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+            </button>
+          </div>
+
+          {/* Indicador de Tenant / Base */}
+          <div className="rounded-lg border border-subtle bg-surface px-3 py-2 flex items-center justify-between text-xs shadow-surface">
+            <div className="flex items-center gap-2">
+              <TestTube
+                size={15}
+                weight="duotone"
+                className={isSandboxMode ? 'text-amber-500' : 'text-muted'}
+              />
+              <span className="text-[11px] font-medium text-muted">Base:</span>
+              <span
+                className={`text-xs font-semibold ${
+                  isSandboxMode ? 'text-amber-600 dark:text-amber-400' : 'text-primary'
+                }`}
+              >
+                {isSandboxMode ? 'Sandbox' : 'Producción'}
               </span>
             </div>
             <button
               type="button"
               onClick={toggleSandboxMode}
-              className="text-[10px] uppercase font-sans tracking-widest text-[#71717A] hover:text-[#FAFAFA] transition-fast cursor-pointer"
+              className="text-[11px] font-semibold text-secondary hover:text-primary transition-fast cursor-pointer"
             >
               Cambiar
             </button>
           </div>
 
           {/* Datos del Usuario (Dueño / Empleado) */}
-          <div className="border border-[#222222] bg-[#111111] px-3 py-2 flex items-center justify-between">
+          <div className="rounded-lg border border-subtle bg-surface px-3 py-2 flex items-center justify-between shadow-surface">
             <div className="flex items-center gap-2 overflow-hidden">
-              <ShieldCheck size={16} weight="light" className="text-green-400 shrink-0" />
+              <ShieldCheck size={16} weight="duotone" className="text-emerald-500 shrink-0" />
               <div className="truncate">
-                <div className="text-xs font-heading font-medium text-[#FAFAFA] truncate">
+                <div className="text-xs font-semibold text-primary truncate">
                   {usuario?.nombre || 'Dueño'}
                 </div>
-                <div className="text-[10px] text-[#71717A] uppercase tracking-widest font-mono">
-                  {usuario?.rol === 'Admin' ? 'Dueño' : 'Empleado'}
+                <div className="text-[11px] text-muted font-sans">
+                  {usuario?.rol === 'Admin' ? 'Dueño' : 'Staff'}
                 </div>
               </div>
             </div>
@@ -165,17 +219,17 @@ export const AdminLayout: React.FC = () => {
             <button
               type="button"
               onClick={logout}
-              className="p-1.5 border border-[#333333] hover:border-red-500 hover:text-red-400 text-[#71717A] transition-fast cursor-pointer shrink-0"
+              className="p-1.5 rounded-md border border-subtle hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-500 text-secondary transition-fast cursor-pointer shrink-0"
               title="Cerrar sesión"
             >
-              <SignOut size={14} weight="light" />
+              <SignOut size={14} weight="regular" />
             </button>
           </div>
         </div>
       </aside>
 
       {/* Área Principal de Contenido */}
-      <main className="flex-1 bg-[#000000] min-h-screen flex flex-col overflow-y-auto">
+      <main className="flex-1 bg-canvas min-h-screen flex flex-col overflow-y-auto">
         <Outlet />
       </main>
     </div>

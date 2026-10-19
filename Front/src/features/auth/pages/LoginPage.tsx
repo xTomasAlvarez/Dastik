@@ -12,29 +12,29 @@ export const LoginPage: React.FC = () => {
   const [fillCreds, setFillCreds] = React.useState<{ email: string; password: string } | null>(null);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#000000] text-[#FAFAFA] flex items-center justify-center p-6 selection:bg-[#FAFAFA] selection:text-[#000000]">
-      {/* Contenedor Arquitectónico Flat Design: Perfectamente centrado con márgenes simétricos arriba y abajo */}
-      <div className="w-full max-w-[440px] border border-[#333333] bg-[#090909] p-8 md:p-9">
+    <div className="h-screen w-screen overflow-hidden bg-canvas text-primary flex items-center justify-center p-6">
+      {/* Contenedor Arquitectónico con tokens semánticos */}
+      <div className="w-full max-w-[440px] border border-subtle bg-surface rounded-xl shadow-floating p-8 md:p-9">
         {/* Brand Header */}
-        <div className="flex items-center justify-between border-b border-[#333333] pb-4 mb-5">
+        <div className="flex items-center justify-between border-b border-subtle pb-4 mb-5">
           <div>
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-sans block">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-muted font-mono block">
               RETAIL POS & ERP // TERMINAL
             </span>
-            <h1 className="text-2xl md:text-3xl font-heading font-extrabold tracking-tight mt-1">
-              DASTIK <span className="text-[#71717A] font-normal">//</span> HIDDEN SNEAKERS
+            <h1 className="text-2xl font-heading font-bold tracking-tight mt-1 text-primary">
+              DASTIK <span className="text-muted font-normal">//</span> HIDDEN SNEAKERS
             </h1>
           </div>
-          <Storefront size={26} weight="light" className="text-[#FAFAFA] shrink-0" />
+          <Storefront size={26} weight="duotone" className="text-primary shrink-0" />
         </div>
 
         {/* Sandbox Mode Toggle Banner */}
-        <div className="border border-[#222222] bg-[#111111] px-3.5 py-2.5 flex items-center justify-between mb-5">
+        <div className="border border-subtle bg-elevated rounded-lg px-3.5 py-2.5 flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
-            <TestTube size={17} weight="light" className={isSandboxMode ? 'text-amber-400' : 'text-[#71717A]'} />
+            <TestTube size={18} weight="bold" className={isSandboxMode ? 'text-amber-500 dark:text-amber-400' : 'text-muted'} />
             <div>
-              <span className="text-[10px] uppercase tracking-widest text-[#71717A] block">MODO BASE DE DATOS</span>
-              <span className="font-heading text-xs font-semibold tracking-wider">
+              <span className="text-[10px] uppercase tracking-widest text-muted font-mono block">MODO BASE DE DATOS</span>
+              <span className="font-heading text-xs font-bold tracking-wide text-primary">
                 {isSandboxMode ? 'SANDBOX (ENTRENAMIENTO)' : 'PRODUCCIÓN (OFICIAL)'}
               </span>
             </div>
@@ -42,7 +42,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={toggleSandboxMode}
-            className="text-[10px] uppercase font-sans tracking-wider border border-[#333333] px-2.5 py-1 text-[#FAFAFA] hover:bg-[#222222] transition-fast cursor-pointer"
+            className="text-[11px] uppercase font-sans font-semibold tracking-wider border border-subtle rounded-md bg-surface px-2.5 py-1 text-primary hover:border-strong transition-colors cursor-pointer"
           >
             Alternar
           </button>
@@ -52,50 +52,56 @@ export const LoginPage: React.FC = () => {
         <LoginForm fillCredentials={fillCreds} />
 
         {/* Developer Sandbox Accounts Helper */}
-        <div className="mt-6 pt-4 border-t border-[#1F1F1F] text-left">
+        <div className="mt-6 pt-4 border-t border-subtle text-left">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] uppercase tracking-widest text-[#555555] font-semibold">
+            <span className="text-[10px] uppercase tracking-widest text-muted font-semibold">
               ACCESOS RÁPIDOS (CLIC PARA AUTOLLENAR):
             </span>
           </div>
-          <div className="space-y-1.5 text-[10px] font-sans text-[#71717A]">
+          <div className="space-y-1.5 text-[11px] font-sans text-secondary">
             <button
               type="button"
               onClick={() => setFillCreds({ email: 'tomidev@dastik.com', password: 'Dastik2026!' })}
-              className="w-full text-left flex justify-between items-center border border-[#1A1A1A] hover:border-[#333333] bg-[#0D0D0D] hover:bg-[#141414] px-2.5 py-1.5 transition-fast cursor-pointer group"
+              className="w-full text-left flex justify-between items-center border border-subtle hover:border-strong bg-elevated/60 hover:bg-elevated rounded-lg px-3 py-2 transition-colors cursor-pointer group"
               title="Autollenar credenciales de Admin tomiDev"
             >
               <div>
-                <span className="text-[#FAFAFA] font-medium block">Dueño tomiDev (Directo)</span>
-                <code className="text-[#A1A1AA] text-[10px]">tomidev@dastik.com</code>
+                <span className="text-primary font-semibold block">Dueño tomiDev (Directo)</span>
+                <code className="text-muted font-mono text-[10px]">tomidev@dastik.com</code>
               </div>
-              <span className="text-emerald-400 font-mono text-[10px] bg-emerald-950/40 border border-emerald-900/50 px-1.5 py-0.5">DUEÑO</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[10px] bg-emerald-500/10 border border-emerald-500/30 rounded px-1.5 py-0.5">
+                DUEÑO
+              </span>
             </button>
 
             <button
               type="button"
               onClick={() => setFillCreds({ email: 'admin@dastik.com', password: 'Dastik2026!' })}
-              className="w-full text-left flex justify-between items-center border border-[#1A1A1A] hover:border-[#333333] bg-[#0D0D0D] hover:bg-[#141414] px-2.5 py-1.5 transition-fast cursor-pointer group"
+              className="w-full text-left flex justify-between items-center border border-subtle hover:border-strong bg-elevated/60 hover:bg-elevated rounded-lg px-3 py-2 transition-colors cursor-pointer group"
               title="Autollenar credenciales de Dueño Fundador"
             >
               <div>
-                <span className="text-[#E4E4E7] block">Dueño Fundador (Reseteo)</span>
-                <code className="text-[#71717A] text-[10px]">admin@dastik.com</code>
+                <span className="text-primary font-medium block">Dueño Fundador (Reseteo)</span>
+                <code className="text-muted font-mono text-[10px]">admin@dastik.com</code>
               </div>
-              <span className="text-[#71717A] font-mono text-[10px] border border-[#222222] px-1.5 py-0.5">RESETEO</span>
+              <span className="text-secondary font-mono text-[10px] border border-subtle rounded px-1.5 py-0.5">
+                RESETEO
+              </span>
             </button>
 
             <button
               type="button"
               onClick={() => setFillCreds({ email: 'cajero.sandbox@dastik.com', password: 'Dastik2026!' })}
-              className="w-full text-left flex justify-between items-center border border-[#1A1A1A] hover:border-[#333333] bg-[#0D0D0D] hover:bg-[#141414] px-2.5 py-1.5 transition-fast cursor-pointer group"
+              className="w-full text-left flex justify-between items-center border border-subtle hover:border-strong bg-elevated/60 hover:bg-elevated rounded-lg px-3 py-2 transition-colors cursor-pointer group"
               title="Autollenar credenciales de Empleado Sandbox"
             >
               <div>
-                <span className="text-[#E4E4E7] block">Empleado Sandbox (Directo)</span>
-                <code className="text-[#71717A] text-[10px]">cajero.sandbox@dastik.com</code>
+                <span className="text-primary font-medium block">Empleado Sandbox (Directo)</span>
+                <code className="text-muted font-mono text-[10px]">cajero.sandbox@dastik.com</code>
               </div>
-              <span className="text-amber-400 font-mono text-[10px] bg-amber-950/40 border border-amber-900/50 px-1.5 py-0.5">EMPLEADO</span>
+              <span className="text-amber-600 dark:text-amber-400 font-mono font-bold text-[10px] bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-0.5">
+                EMPLEADO
+              </span>
             </button>
           </div>
         </div>

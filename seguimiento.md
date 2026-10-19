@@ -998,12 +998,51 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **4. Verificación de Compilación:**
   - `dotnet test`: 116/116 pruebas superadas en verde.
   - `npm run build`: compilación de producción exitosa con 0 errores TypeScript.
+- **5. Merge a `develop`:**
+  - Rama `feature/admin-metricas-avanzadas` fusionada en `develop` con `--no-ff`.
 
+---
 
+### [feature/admin-configuracion-y-tema] Módulo de Configuración de Catálogos Base (`/admin/configuracion`) y Light/Dark Mode - COMPLETADO
 
+**Objetivo:** Completar el último módulo del sistema según los requerimientos: gestión de catálogos base (Proveedores con Markup % por defecto, Marcas y Categorías con Temporada y Esquema de Talles) y soporte nativo para modo claro ("Light Mode") y modo oscuro ("Dark Mode") tanto en la terminal POS como en el panel de Administración.
 
-
-
-
-
+- **Rama:** `feature/admin-configuracion-y-tema` (creada a partir de `develop`).
+- **1. Backend - Endpoints de Configuración (`ConfiguracionEndpoints.cs`):**
+  - Endpoints protegidos con la política `.RequireAuthorization("AdminOnly")` expuestos bajo `/api/inventario/*` (y alias `/api/configuracion/*`):
+    - **Proveedores:**
+      - `GET /api/inventario/proveedores`: devuelve `Id`, `Nombre`, `MarkupPorDefecto` y `CantidadProductos`.
+      - `POST /api/inventario/proveedores`: recibe `Nombre` y `MarkupPorDefecto`, valida unicidad case-insensitive y persiste el proveedor.
+    - **Marcas:**
+      - `GET /api/inventario/marcas`: devuelve `Id`, `Nombre` y `CantidadProductos`.
+      - `POST /api/inventario/marcas`: recibe `Nombre`, valida duplicados y crea la marca.
+    - **Categorías:**
+      - `GET /api/inventario/categorias`: devuelve `Id`, `Nombre`, `Temporada`, `EsquemaTalles` y `CantidadProductos`.
+      - `POST /api/inventario/categorias`: recibe `Nombre`, `Temporada` y `EsquemaTalles`, valida campos y persiste la categoría.
+  - Registrado en `Program.cs` mediante `app.MapConfiguracionEndpoints()`.
+  - Suite de pruebas `ConfiguracionEndpointsTests.cs`: **119/119 tests pasando en verde**.
+- **2. Frontend - Panel de Configuración (`ConfiguracionPage.tsx` & `configuracionApi.ts`):**
+  - Nueva página en `/admin/configuracion` agregada al sidebar de `AdminLayout.tsx` con icono `Gear` y protegida por `AdminRoute` en `App.tsx`.
+  - Diseño estructurado en 3 pestañas interactivas:
+    1. **Proveedores:** Grilla de proveedores con su factor/porcentaje de Markup y formulario `"Nuevo Proveedor"` con presets rápidos (+50%, +55%, +60%, +80%, +100%).
+    2. **Marcas:** Grilla de marcas comerciales ("Dastik", "Hidden Sneakers", "Nike", "Adidas", etc.) con alta rápida en línea.
+    3. **Categorías:** Tabla de categorías ("Remeras", "Pantalones", etc.) con selector de `"Temporada"` y `"Esquema de Talles"`.
+  - Integración dinámica en `ModalCrearProducto.tsx`: consume los catálogos desde `configuracionApi` y recalcula automáticamente el precio de venta sugerido al seleccionar un proveedor según su `MarkupPorDefecto`.
+- **3. Frontend - Sistema de Diseño "Carbon Slate & Alabaster" (Etapas 1 a 4 Completadas):**
+  - **Fundación Tipográfica (`index.html` & `index.css`):**
+    - Eliminada por completo la fuente `Syne`.
+    - Incorporadas **Plus Jakarta Sans** (`--font-sans` y `--font-heading`) para UI/títulos geométricos limpios y **JetBrains Mono** (`--font-mono` con `font-variant-numeric: tabular-nums`) para precios, SKUs, EAN-13 y KPIs financieros.
+  - **Tokens Semánticos Reales y Cambio de Tema 0ms Sin Lag (`index.css` & `useThemeStore.ts`):**
+    - Eliminados todos los selectores forzados `html:not(.dark) .bg-\[...\]` y el bloqueo global `* { box-shadow: none !important; }`.
+    - Tokens semánticos CSS nativos: `:root` (**Alabaster Light Mode**: `--bg-canvas: #F8FAFC`, `--bg-surface: #FFFFFF`, `--bg-elevated: #F1F5F9`, `--border-subtle: #E2E8F0`) y `html.dark` (**Carbon Slate Dark Mode**: `--bg-canvas: #09090B`, `--bg-surface: #121215`, `--bg-elevated: #18181C`, `--border-subtle: #27272A`).
+    - Utilitarios semánticos (`bg-canvas`, `bg-surface`, `bg-elevated`, `border-subtle`, `border-strong`, `text-primary`, `text-secondary`, `text-muted`, `shadow-surface`, `shadow-floating`).
+    - Supresión temporal de transiciones CSS (`transition: none !important`) durante el cambio de tema en `useThemeStore.ts` con reflow sincrónico para lograr conmutación instantánea (0ms lag).
+  - **Refactor Integral de Primitivos, Terminal POS, Admin y Modales:**
+    - `Button.tsx` e `Input.tsx` actualizados con `rounded-lg`, estados focus ring y feedback táctil `active:scale-[0.98]`.
+    - **Terminal POS (`PosHeader`, `PosBarcodeScanner`, `CatalogoGrid`, `ProductCard`, `DashboardPos`):** corregidos los bloques negros en Modo Claro en el buscador, cabecera `ORDEN EN CURSO` y bloque inferior `TOTAL A COBRAR`; eliminada la barra de scroll horizontal en el header; tarjetas de producto con `rounded-xl`, `shadow-surface` y precios en `JetBrains Mono`.
+    - **Back-Office (`AdminLayout`, `DashboardPage`, `InventarioPage`, `ArqueosPage`, `EmpleadosPage`, `MetricasPage`, `ConfiguracionPage`)** y **Autenticación (`LoginPage`, `LoginForm`, `CambiarPasswordModal`)**: migrados al sistema de superficies elevadas `rounded-xl` / `rounded-lg` con soporte nativo Claro/Oscuro.
+    - **Modales POS y Admin (`ModalAbrirTurno`, `ModalCerrarTurno`, `ModalPago`, `ModalCambio`, `ModalCrearProducto`, `ModalDetalleProducto`, `ModalImprimirEtiquetas`):** migrados a tokens semánticos manteniendo **100% intacta** la geometría e inline styles de `.etiqueta-38x21` y `#print-sheet-a4` (`144px x 80px` / `38x21mm`).
+- **4. Verificación Final:**
+  - `dotnet test`: **119/119 pruebas superadas en verde**.
+  - `npm run build`: **0 errores TypeScript**, build de producción limpio en 1.66s.
 

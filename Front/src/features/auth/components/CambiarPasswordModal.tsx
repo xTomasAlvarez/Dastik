@@ -64,18 +64,18 @@ export const CambiarPasswordModal: React.FC<CambiarPasswordModalProps> = ({ isOp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
-      {/* Ventana Modal Flat Design 1px */}
-      <div className="w-full max-w-lg border border-[#333333] bg-[#090909] p-8 md:p-10 text-left">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+      {/* Ventana Modal con tokens semánticos */}
+      <div className="w-full max-w-lg border border-subtle bg-surface rounded-xl shadow-floating p-8 md:p-10 text-left">
         {/* Header con botón de Cancelar/Salir */}
-        <div className="flex items-start justify-between border-b border-[#333333] pb-4 mb-6">
+        <div className="flex items-start justify-between border-b border-subtle pb-4 mb-6">
           <div className="flex items-start gap-3">
-            <Key size={26} weight="light" className="text-[#FAFAFA] shrink-0 mt-0.5" />
+            <Key size={26} weight="duotone" className="text-primary shrink-0 mt-0.5" />
             <div>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] font-sans">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted font-mono">
                 SEGURIDAD OBLIGATORIA // CUENTA INICIAL
               </span>
-              <h2 className="text-xl md:text-2xl font-heading font-extrabold tracking-tight mt-1 text-[#FAFAFA]">
+              <h2 className="text-xl md:text-2xl font-heading font-bold tracking-tight mt-1 text-primary">
                 RESETEO DE CONTRASEÑA
               </h2>
             </div>
@@ -83,51 +83,51 @@ export const CambiarPasswordModal: React.FC<CambiarPasswordModalProps> = ({ isOp
           <button
             type="button"
             onClick={logout}
-            className="text-[#71717A] hover:text-[#FAFAFA] border border-[#222222] hover:border-[#444444] px-2.5 py-1.5 transition-fast cursor-pointer flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-sans shrink-0 ml-3"
+            className="text-secondary hover:text-primary border border-subtle hover:border-strong rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-sans shrink-0 ml-3"
             title="Cerrar sesión y volver al Login"
           >
             <span>CANCELAR</span>
-            <X size={14} weight="light" />
+            <X size={14} weight="bold" />
           </button>
         </div>
 
-        <p className="text-xs font-sans text-[#71717A] mb-6 leading-relaxed">
+        <p className="text-xs font-sans text-secondary mb-6 leading-relaxed">
           Tu cuenta fue creada con una credencial temporal. Por política de ciberseguridad corporativa, es obligatorio
           establecer una contraseña personal y segura antes de operar la terminal POS.
         </p>
 
         {errorMessage && (
-          <div className="border border-red-900 bg-red-950/40 p-3.5 text-red-200 text-xs font-sans flex items-start justify-between gap-3 mb-6">
+          <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-3.5 text-red-600 dark:text-red-400 text-xs font-sans flex items-start justify-between gap-3 mb-6">
             <div className="flex items-start gap-2.5">
-              <WarningCircle size={18} weight="light" className="shrink-0 text-red-400 mt-0.5" />
+              <WarningCircle size={18} weight="bold" className="shrink-0 mt-0.5" />
               <span className="leading-snug">{errorMessage}</span>
             </div>
             <button
               type="button"
               onClick={() => setErrorMessage(null)}
-              className="text-red-400 hover:text-red-200 p-0.5 transition-fast cursor-pointer shrink-0 focus:outline-none"
+              className="hover:opacity-75 p-0.5 transition-opacity cursor-pointer shrink-0 focus:outline-none"
               aria-label="Cerrar error"
               title="Cerrar mensaje"
             >
-              <X size={16} weight="light" />
+              <X size={16} weight="bold" />
             </button>
           </div>
         )}
 
         {successMessage && (
-          <div className="border border-green-900 bg-green-950/40 p-3.5 text-green-200 text-xs font-sans flex items-start justify-between gap-3 mb-6">
+          <div className="border border-emerald-500/30 bg-emerald-500/10 rounded-lg p-3.5 text-emerald-600 dark:text-emerald-400 text-xs font-sans flex items-start justify-between gap-3 mb-6">
             <div className="flex items-start gap-2.5">
-              <CheckCircle size={18} weight="light" className="shrink-0 text-green-400 mt-0.5" />
+              <CheckCircle size={18} weight="bold" className="shrink-0 mt-0.5" />
               <span className="leading-snug">{successMessage}</span>
             </div>
             <button
               type="button"
               onClick={() => setSuccessMessage(null)}
-              className="text-green-400 hover:text-green-200 p-0.5 transition-fast cursor-pointer shrink-0 focus:outline-none"
+              className="hover:opacity-75 p-0.5 transition-opacity cursor-pointer shrink-0 focus:outline-none"
               aria-label="Cerrar mensaje"
               title="Cerrar mensaje"
             >
-              <X size={16} weight="light" />
+              <X size={16} weight="bold" />
             </button>
           </div>
         )}
@@ -168,23 +168,23 @@ export const CambiarPasswordModal: React.FC<CambiarPasswordModalProps> = ({ isOp
           />
 
           {/* Checklist de Requisitos en Tiempo Real */}
-          <div className="border border-[#222222] bg-[#0E0E0E] p-4 text-[11px] font-sans space-y-1.5 my-1">
-            <span className="text-[10px] uppercase tracking-widest text-[#555555] block mb-2 font-semibold">
+          <div className="border border-subtle bg-elevated rounded-lg p-4 text-[11px] font-sans space-y-1.5 my-1">
+            <span className="text-[10px] uppercase tracking-widest text-muted block mb-2 font-semibold">
               REGLAS DE COMPLEJIDAD:
             </span>
-            <div className={`flex items-center gap-2 ${tieneMinimo8 ? 'text-green-400' : 'text-[#555555]'}`}>
+            <div className={`flex items-center gap-2 ${tieneMinimo8 ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-muted'}`}>
               <span>•</span>
               <span>Mínimo 8 caracteres</span>
             </div>
-            <div className={`flex items-center gap-2 ${tieneMayuscula ? 'text-green-400' : 'text-[#555555]'}`}>
+            <div className={`flex items-center gap-2 ${tieneMayuscula ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-muted'}`}>
               <span>•</span>
               <span>Al menos una letra mayúscula</span>
             </div>
-            <div className={`flex items-center gap-2 ${tieneNumero ? 'text-green-400' : 'text-[#555555]'}`}>
+            <div className={`flex items-center gap-2 ${tieneNumero ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-muted'}`}>
               <span>•</span>
               <span>Al menos un número</span>
             </div>
-            <div className={`flex items-center gap-2 ${passwordsCoinciden ? 'text-green-400' : 'text-[#555555]'}`}>
+            <div className={`flex items-center gap-2 ${passwordsCoinciden ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-muted'}`}>
               <span>•</span>
               <span>Las contraseñas coinciden</span>
             </div>
@@ -204,7 +204,7 @@ export const CambiarPasswordModal: React.FC<CambiarPasswordModalProps> = ({ isOp
               type="button"
               variant="secondary"
               size="md"
-              className="w-full text-xs text-[#71717A] hover:text-[#FAFAFA]"
+              className="w-full text-xs"
               onClick={logout}
               disabled={isLoading}
             >
