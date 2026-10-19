@@ -10,11 +10,11 @@ public static class ConfiguracionEndpoints
     {
         var invGroup = app.MapGroup("/api/inventario")
             .WithTags("Configuración y Catálogos Base")
-            .RequireAuthorization("AdminOnly");
+            .RequireAuthorization();
 
         var cfgGroup = app.MapGroup("/api/configuracion")
             .WithTags("Configuración y Catálogos Base")
-            .RequireAuthorization("AdminOnly");
+            .RequireAuthorization();
 
         // ==========================================
         // 1. PROVEEDORES
@@ -78,12 +78,13 @@ public static class ConfiguracionEndpoints
             .WithOpenApi();
 
         invGroup.MapPost("/proveedores", crearProveedorHandler)
+            .RequireAuthorization("AdminOnly")
             .WithName("CrearProveedor")
             .WithSummary("Crea un nuevo proveedor con su markup por defecto.")
             .WithOpenApi();
 
         cfgGroup.MapGet("/proveedores", listarProveedoresHandler).ExcludeFromDescription();
-        cfgGroup.MapPost("/proveedores", crearProveedorHandler).ExcludeFromDescription();
+        cfgGroup.MapPost("/proveedores", crearProveedorHandler).RequireAuthorization("AdminOnly").ExcludeFromDescription();
 
         // ==========================================
         // 2. MARCAS
@@ -140,12 +141,13 @@ public static class ConfiguracionEndpoints
             .WithOpenApi();
 
         invGroup.MapPost("/marcas", crearMarcaHandler)
+            .RequireAuthorization("AdminOnly")
             .WithName("CrearMarca")
             .WithSummary("Registra una nueva marca comercial.")
             .WithOpenApi();
 
         cfgGroup.MapGet("/marcas", listarMarcasHandler).ExcludeFromDescription();
-        cfgGroup.MapPost("/marcas", crearMarcaHandler).ExcludeFromDescription();
+        cfgGroup.MapPost("/marcas", crearMarcaHandler).RequireAuthorization("AdminOnly").ExcludeFromDescription();
 
         // ==========================================
         // 3. CATEGORÍAS
@@ -218,12 +220,13 @@ public static class ConfiguracionEndpoints
             .WithOpenApi();
 
         invGroup.MapPost("/categorias", crearCategoriaHandler)
+            .RequireAuthorization("AdminOnly")
             .WithName("CrearCategoria")
             .WithSummary("Crea una nueva categoría con su temporada y esquema de talles.")
             .WithOpenApi();
 
         cfgGroup.MapGet("/categorias", listarCategoriasHandler).ExcludeFromDescription();
-        cfgGroup.MapPost("/categorias", crearCategoriaHandler).ExcludeFromDescription();
+        cfgGroup.MapPost("/categorias", crearCategoriaHandler).RequireAuthorization("AdminOnly").ExcludeFromDescription();
     }
 }
 

@@ -779,6 +779,195 @@ public class CajaHandlersTests : IDisposable
         result.Error.Should().Contain("inferior al mínimo permitido");
     }
 
+    [Theory]
+    [InlineData(MetodoPago.Efectivo)]
+    [InlineData(MetodoPago.Transferencia)]
+    [InlineData(MetodoPago.Debito)]
+    [InlineData(MetodoPago.Credito)]
+    public async Task CobrarOrden_ConCadaMetodoDePago_DeberiaPersistirOrdenDetallesPagosYDescontarStock(MetodoPago metodoPago)
+    {
+        // Arrange
+        var turno = new Turno
+        {
+            EmpleadoId = 1,
+            FechaApertura = DateTime.UtcNow,
+            SaldoInicial = 10_000.00m,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turno);
+
+        var (unidad, categoria, marca, proveedor) = CrearDependenciasCatalogo();
+        var producto = new Producto
+        {
+            UnidadNegocio = unidad,
+            Categoria = categoria,
+            Marca = marca,
+            Proveedor = proveedor,
+            Nombre = $"Prenda Test {metodoPago}",
+            CostoBase = 15_000.00m,
+            MarkupAplicado = 1.50m,
+            PrecioVenta = 22_500.00m,
+            Activo = true
+        };
+        var variante = new Variante
+        {
+            Producto = producto,
+            Talle = "L",
+            Color = "Negro",
+            CodigoBarras = "2000000000881",
+            StockFisico = 8
+        };
+        _context.Variantes.Add(variante);
+        await _context.SaveChangesAsync();
+
+        var handler = new CobrarOrdenCommandHandler(_context, _calculadoraComisiones);
+        var command = new CobrarOrdenCommand(
+            TurnoId: turno.Id,
+            Items: new List<ItemCobroDto> { new(VarianteId: variante.Id, Cantidad: 2, PrecioUnitario: 22_500.00m) },
+            Pagos: new List<PagoCobroDto> { new(metodoPago, 45_000.00m) }
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Total.Should().Be(45_000.00m);
+
+        var ordenBd = await _context.Ordenes
+            .Include(o => o.Detalles)
+            .Include(o => o.Pagos)
+            .FirstOrDefaultAsync(o => o.Id == result.Value.OrdenId);
+
+        ordenBd.Should().NotBeNull();
+        ordenBd!.EsCambio.Should().BeFalse();
+        ordenBd.MotivoCambio.Should().BeNull();
+        ordenBd.Detalles.Should().HaveCount(1);
+        ordenBd.Pagos.Should().ContainSingle(p => p.MetodoPago == metodoPago && p.Monto == 45_000.00m);
+
+        var varianteBd = await _context.Variantes.FindAsync(variante.Id);
+        varianteBd!.StockFisico.Should().Be(6);
+    }
+
+    [Fact]
+    public async Task SqliteSchemaPatcher_SobreEsquemaAntiguoSinMotivoCambio_DeberiaAgregarColumnasYPermitirCobrarOrden()
+    {
+        // Arrange: simular una base SQLite con esquema legado (sin EsCambio ni MotivoCambio en Ordenes)
+        await using var legacyConn = new SqliteConnection("DataSource=:memory:");
+        await legacyConn.OpenAsync();
+
+        await using (var cmd = legacyConn.CreateCommand())
+        {
+            cmd.CommandText = """
+                CREATE TABLE "Turnos" (
+                    "Id" INTEGER NOT NULL CONSTRAINT "PK_Turnos" PRIMARY KEY AUTOINCREMENT,
+                    "EmpleadoId" INTEGER NOT NULL,
+                    "FechaApertura" TEXT NOT NULL,
+                    "FechaCierre" TEXT NULL,
+                    "SaldoInicial" TEXT NOT NULL,
+                    "SaldoFinal" TEXT NULL,
+                    "Estado" TEXT NOT NULL
+                );
+                CREATE TABLE "Ordenes" (
+                    "Id" INTEGER NOT NULL CONSTRAINT "PK_Ordenes" PRIMARY KEY AUTOINCREMENT,
+                    "TurnoId" INTEGER NOT NULL,
+                    "Fecha" TEXT NOT NULL,
+                    "Total" TEXT NOT NULL,
+                    "Estado" TEXT NOT NULL
+                );
+                """;
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        var legacyOptions = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(legacyConn)
+            .Options;
+
+        await using var legacyContext = new AppDbContext(legacyOptions);
+
+        // Act 1: Ejecutar el parcheador no destructivo
+        await SqliteSchemaPatcher.EnsureSchemaUpdatedAsync(legacyContext);
+
+        // Sembrar datos mínimos y cobrar una orden en el contexto parcheado
+        var unidad = new UnidadNegocio { Nombre = "Dastik", TieneTiendaNube = false };
+        var categoria = new Categoria { Nombre = "Indumentaria", Temporada = "Todo el año", EsquemaTalles = "XS-XL" };
+        var marca = new Marca { Nombre = "Dastik" };
+        var proveedor = new Proveedor { Nombre = "Proveedor Textil", MarkupPorDefecto = 1.50m };
+        var producto = new Producto
+        {
+            UnidadNegocio = unidad,
+            Categoria = categoria,
+            Marca = marca,
+            Proveedor = proveedor,
+            Nombre = "Remera Sandbox Patch Test",
+            CostoBase = 10_000m,
+            MarkupAplicado = 1.50m,
+            PrecioVenta = 15_000m,
+            Activo = true
+        };
+        var variante = new Variante
+        {
+            Producto = producto,
+            Talle = "M",
+            Color = "Negro",
+            CodigoBarras = "2000000000777",
+            StockFisico = 5
+        };
+        var turno = new Turno
+        {
+            EmpleadoId = 1,
+            FechaApertura = DateTime.UtcNow,
+            SaldoInicial = 5_000m,
+            Estado = EstadoTurno.Abierto
+        };
+
+        legacyContext.Variantes.Add(variante);
+        legacyContext.Turnos.Add(turno);
+        await legacyContext.SaveChangesAsync();
+
+        var handler = new CobrarOrdenCommandHandler(legacyContext, _calculadoraComisiones);
+        var cobroResult = await handler.Handle(new CobrarOrdenCommand(
+            TurnoId: turno.Id,
+            Items: new List<ItemCobroDto> { new(variante.Id, 1, 15_000m) },
+            Pagos: new List<PagoCobroDto> { new(MetodoPago.Efectivo, 15_000m) }
+        ), CancellationToken.None);
+
+        // Assert
+        cobroResult.IsSuccess.Should().BeTrue();
+        var ordenPersistida = await legacyContext.Ordenes.FindAsync(cobroResult.Value!.OrdenId);
+        ordenPersistida.Should().NotBeNull();
+        ordenPersistida!.EsCambio.Should().BeFalse();
+        ordenPersistida.MotivoCambio.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SqliteSchemaPatcher_SobreArchivosLocalesDeDesarrollo_DeberiaSincronizarEsquemaSinDestruirDatos()
+    {
+        // Sincroniza de forma no destructiva dastik_sandbox_dev.db y dastik_dev.db si existen en el entorno local
+        var apiDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Dastik.Api"));
+        var dbFiles = new[]
+        {
+            Path.Combine(apiDir, "dastik_sandbox_dev.db"),
+            Path.Combine(apiDir, "dastik_dev.db")
+        };
+
+        foreach (var dbPath in dbFiles)
+        {
+            if (!File.Exists(dbPath))
+            {
+                continue;
+            }
+
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlite($"Data Source={dbPath}")
+                .Options;
+
+            await using var dbContext = new AppDbContext(options);
+            await SqliteSchemaPatcher.EnsureSchemaUpdatedAsync(dbContext);
+        }
+    }
+
     private (UnidadNegocio, Categoria, Marca, Proveedor) CrearDependenciasCatalogo()
     {
         var unidad = new UnidadNegocio { Nombre = "Dastik" };

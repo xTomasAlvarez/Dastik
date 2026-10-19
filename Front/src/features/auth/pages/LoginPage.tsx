@@ -1,5 +1,5 @@
 import React from 'react';
-import { Storefront, TestTube } from '@phosphor-icons/react';
+import { TestTube } from '@phosphor-icons/react';
 import { LoginForm } from '../components/LoginForm';
 import { CambiarPasswordModal } from '../components/CambiarPasswordModal';
 import { useAuthStore } from '../../../stores/useAuthStore';
@@ -16,16 +16,22 @@ export const LoginPage: React.FC = () => {
       {/* Contenedor Arquitectónico con tokens semánticos */}
       <div className="w-full max-w-[440px] border border-subtle bg-surface rounded-xl shadow-floating p-8 md:p-9">
         {/* Brand Header */}
-        <div className="flex items-center justify-between border-b border-subtle pb-4 mb-5">
+        <div className="flex items-center justify-between border-b border-subtle pb-4 mb-5 gap-3">
           <div>
             <span className="text-[10px] uppercase tracking-[0.2em] text-muted font-mono block">
-              RETAIL POS & ERP // TERMINAL
+              RETAIL POS &amp; ERP // TERMINAL
             </span>
-            <h1 className="text-2xl font-heading font-bold tracking-tight mt-1 text-primary">
+            <h1 className="text-xl sm:text-2xl font-heading font-bold tracking-tight mt-1 text-primary">
               DASTIK <span className="text-muted font-normal">//</span> HIDDEN SNEAKERS
             </h1>
           </div>
-          <Storefront size={26} weight="duotone" className="text-primary shrink-0" />
+          <div className="border border-subtle bg-black rounded-lg px-3 py-2 flex items-center justify-center shrink-0 shadow-surface">
+            <img
+              src="/dastik-logo.png"
+              alt="Dastik"
+              className="h-6 w-auto object-contain select-none"
+            />
+          </div>
         </div>
 
         {/* Sandbox Mode Toggle Banner */}

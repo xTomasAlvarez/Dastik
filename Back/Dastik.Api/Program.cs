@@ -177,7 +177,7 @@ app.MapMetricasEndpoints();
 app.MapUsuariosEndpoints();
 app.MapConfiguracionEndpoints();
 
-// Seeder de datos iniciales (Usuario Fundador)
+// Sincronización no destructiva de esquema y Seeder de datos iniciales (Producción)
 try
 {
     using (var scope = app.Services.CreateScope())
@@ -186,50 +186,7 @@ try
         if (db.Database.IsSqlite())
         {
             await db.Database.EnsureCreatedAsync();
-            try
-            {
-                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Turnos\" ADD COLUMN \"GastosTurno\" TEXT DEFAULT '0' NOT NULL;");
-            }
-            catch
-            {
-                // La columna ya existe o recién fue creada
-            }
-
-            try
-            {
-                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Usuarios\" ADD COLUMN \"TurnoAsignado\" TEXT DEFAULT 'Completo' NOT NULL;");
-            }
-            catch
-            {
-                // La columna ya existe
-            }
-
-            try
-            {
-                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Usuarios\" ADD COLUMN \"TarifaPorHora\" TEXT DEFAULT '0' NOT NULL;");
-            }
-            catch
-            {
-                // La columna ya existe
-            }
-
-            try
-            {
-                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Ordenes\" ADD COLUMN \"EsCambio\" INTEGER DEFAULT 0 NOT NULL;");
-            }
-            catch
-            {
-                // La columna ya existe
-            }
-
-            try
-            {
-                await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Ordenes\" ADD COLUMN \"MotivoCambio\" TEXT NULL;");
-            }
-            catch
-            {
-                // La columna ya existe
-            }
+            await SqliteSchemaPatcher.EnsureSchemaUpdatedAsync(db);
         }
     }
     await DataSeeder.SeedInitialDataAsync(app.Services);
@@ -239,17 +196,14 @@ catch (Exception ex)
     app.Logger.LogWarning(ex, "No se pudo ejecutar el DataSeeder inicial (¿base de datos desconectada?).");
 }
 
-// Seeder de catálogo de prueba para Modo Sandbox (exclusivo para desarrollo)
-if (app.Environment.IsDevelopment())
+// Sincronización de esquema y Seeder de catálogo de prueba para Modo Sandbox
+try
 {
-    try
-    {
-        await SandboxDataSeeder.SeedSandboxDataAsync(app.Services);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "No se pudo ejecutar el SandboxDataSeeder (¿base de datos sandbox desconectada?).");
-    }
+    await SandboxDataSeeder.SeedSandboxDataAsync(app.Services);
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "No se pudo ejecutar el SandboxDataSeeder (¿base de datos sandbox desconectada?).");
 }
 
 app.Run();
