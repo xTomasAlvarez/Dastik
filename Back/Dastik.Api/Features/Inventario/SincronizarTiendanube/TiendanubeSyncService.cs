@@ -205,13 +205,26 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                         if (vDto.Stock.HasValue) varianteExistente.StockFisico = vDto.Stock.Value;
                         if (!string.IsNullOrWhiteSpace(vDto.Talle)) varianteExistente.Talle = vDto.Talle;
                         if (!string.IsNullOrWhiteSpace(vDto.Color)) varianteExistente.Color = vDto.Color;
-                        if (!string.IsNullOrWhiteSpace(vDto.Barcode)) varianteExistente.CodigoBarras = vDto.Barcode;
+
+                        // REGLA DE INMUTABILIDAD EAN-13: Si la variante existente ya tiene un CodigoBarras asignado, jamás sobrescribirlo
+                        if (string.IsNullOrWhiteSpace(varianteExistente.CodigoBarras))
+                        {
+                            bool tieneBarcodeValido = GeneradorEan13.TieneBarcode13DigitosValido(vDto.Barcode);
+                            varianteExistente.CodigoBarras = tieneBarcodeValido
+                                ? vDto.Barcode!.Trim()
+                                : _generadorEan13.GenerarDeterminista(tnVarId, pDto.Nombre, vDto.Talle);
+                            varianteExistente.EsCodigoGenerado = !tieneBarcodeValido;
+                        }
+
                         varianteExistente.TiendanubeVariantId = tnVarId;
                     }
                     else
                     {
-                        bool esGenerado = string.IsNullOrWhiteSpace(vDto.Barcode);
-                        string codigoBarras = esGenerado ? _generadorEan13.Generar() : vDto.Barcode!;
+                        bool tieneBarcodeValido = GeneradorEan13.TieneBarcode13DigitosValido(vDto.Barcode);
+                        bool esGenerado = !tieneBarcodeValido;
+                        string codigoBarras = tieneBarcodeValido
+                            ? vDto.Barcode!.Trim()
+                            : _generadorEan13.GenerarDeterminista(tnVarId, pDto.Nombre, vDto.Talle);
 
                         prodExistente.Variantes.Add(new Variante
                         {
@@ -258,8 +271,12 @@ public class TiendanubeSyncService : ITiendanubeSyncService
 
                 foreach (var vDto in pDto.Variantes)
                 {
-                    bool esGenerado = string.IsNullOrWhiteSpace(vDto.Barcode);
-                    string codigoBarras = esGenerado ? _generadorEan13.Generar() : vDto.Barcode!;
+                    string tnVarId = vDto.Id.ToString();
+                    bool tieneBarcodeValido = GeneradorEan13.TieneBarcode13DigitosValido(vDto.Barcode);
+                    bool esGenerado = !tieneBarcodeValido;
+                    string codigoBarras = tieneBarcodeValido
+                        ? vDto.Barcode!.Trim()
+                        : _generadorEan13.GenerarDeterminista(tnVarId, pDto.Nombre, vDto.Talle);
 
                     nuevoProducto.Variantes.Add(new Variante
                     {
@@ -268,7 +285,7 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                         CodigoBarras = codigoBarras,
                         EsCodigoGenerado = esGenerado,
                         StockFisico = vDto.Stock ?? 0,
-                        TiendanubeVariantId = vDto.Id.ToString()
+                        TiendanubeVariantId = tnVarId
                     });
 
                     totalVariantesImportadas++;
