@@ -12,7 +12,6 @@ import {
   CaretRight,
   EyeSlash,
   SortAscending,
-  Lightning,
 } from '@phosphor-icons/react';
 import {
   inventarioApi,
@@ -38,43 +37,6 @@ type OrdenCatalogoPos =
 
 const PAGE_SIZE = 12;
 
-/**
- * Emite un beep corto de lector láser POS mediante Web Audio API (sin archivos externos).
- */
-function reproducirBeepLaser(tipo: 'ok' | 'error' = 'ok'): void {
-  try {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!AudioCtx) return;
-
-    const ctx = new AudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = tipo === 'ok' ? 'sine' : 'sawtooth';
-    osc.frequency.setValueAtTime(tipo === 'ok' ? 1320 : 280, ctx.currentTime);
-
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,
-      ctx.currentTime + (tipo === 'ok' ? 0.085 : 0.18)
-    );
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start();
-    osc.stop(ctx.currentTime + (tipo === 'ok' ? 0.09 : 0.19));
-    setTimeout(() => {
-      ctx.close().catch(() => {});
-    }, 250);
-  } catch {
-    // Silencioso en entornos sin AudioContext
-  }
-}
-
 export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded }) => {
   const [omnibarInput, setOmnibarInput] = useState('');
   const [filtroUnidad, setFiltroUnidad] = useState<'TODOS' | 'DASTIK' | 'HIDDEN'>('TODOS');
@@ -91,7 +53,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
 
   const inputRef = useRef<HTMLInputElement>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const simCursorRef = useRef<number>(0);
 
   const addItem = useCartStore((state) => state.addItem);
 
@@ -118,7 +79,7 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
     setScanFeedback({ type, message });
     feedbackTimerRef.current = setTimeout(() => {
       setScanFeedback(null);
-    }, 3500);
+    }, 3000);
   };
 
   useEffect(() => {
@@ -139,10 +100,11 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Motor central de lectura EAN-13 (pistola láser física USB o simulador 1-clic)
-  const ejecutarEscaneoCodigo = (rawCode: string, esSimulacion = false): boolean => {
-    const code = rawCode.trim();
-    if (!code) return false;
+  // Procesar escaneo EAN-13 al presionar Enter en la Omnibar (pistola lectora USB física)
+  const handleOmnibarSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = omnibarInput.trim();
+    if (!code) return;
 
     for (const prod of productos) {
       const variante = prod.variantes.find(
@@ -151,13 +113,12 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
 
       if (variante) {
         if (variante.stockFisico <= 0) {
-          reproducirBeepLaser('error');
           showScanFeedback(
             'error',
-            `Sin stock: ${prod.nombre} (${variante.talle}) · EAN: ${variante.codigoBarras}`
+            `Sin stock: ${prod.nombre} (${variante.talle})`
           );
           setOmnibarInput('');
-          return true;
+          return;
         }
 
         const rawImagen =
@@ -178,42 +139,19 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
           imagenUrl: normalizarUrlImagenAltaRes(rawImagen),
         });
 
-        reproducirBeepLaser('ok');
         showScanFeedback(
           'success',
-          `${esSimulacion ? '⚡ [Láser Simulado] ' : ''}+1 ${prod.nombre} (${variante.talle}) · EAN: ${variante.codigoBarras}`
+          `+1 ${prod.nombre} (${variante.talle})`
         );
         setOmnibarInput('');
-        return true;
+        return;
       }
     }
 
-    if (/^\d{8,14}$/.test(code) || esSimulacion) {
-      reproducirBeepLaser('error');
+    if (/^\d{8,14}$/.test(code)) {
       showScanFeedback('error', `EAN no encontrado: ${code}`);
       setOmnibarInput('');
-      return true;
     }
-
-    return false;
-  };
-
-  // Procesar escaneo EAN-13 al presionar Enter en la Omnibar
-  const handleOmnibarSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    ejecutarEscaneoCodigo(omnibarInput, false);
-  };
-
-  // Simular ráfaga de pistola láser USB con un código EAN-13 específico
-  const handleSimulateLaserScan = (codigoBarras: string) => {
-    const clean = codigoBarras.trim();
-    if (!clean) return;
-
-    // Mostrar brevemente la ráfaga de 13 dígitos en el input antes de disparar Enter
-    setOmnibarInput(clean);
-    setTimeout(() => {
-      ejecutarEscaneoCodigo(clean, true);
-    }, 120);
   };
 
   // Productos filtrados por Unidad y Ocultar Agotados (base para conteo de pills de categorías)
@@ -313,30 +251,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
     });
   }, [productosBaseParaCategorias, categoriaActiva, omnibarInput, ordenActivo]);
 
-  // Botón 1-Clic en Omnibar: toma una variante con stock de la vista actual y simula un disparo láser
-  const handleSimularDisparoRapido = () => {
-    const pool = productosFiltrados.length > 0 ? productosFiltrados : productos;
-    const variantesConStock: string[] = [];
-
-    for (const prod of pool) {
-      for (const v of prod.variantes) {
-        if (v.stockFisico > 0 && v.codigoBarras) {
-          variantesConStock.push(v.codigoBarras);
-        }
-      }
-      if (variantesConStock.length >= 24) break;
-    }
-
-    if (variantesConStock.length === 0) {
-      showScanFeedback('error', 'No hay variantes con stock disponible para simular lectura.');
-      return;
-    }
-
-    const idx = simCursorRef.current % variantesConStock.length;
-    simCursorRef.current += 1;
-    handleSimulateLaserScan(variantesConStock[idx]);
-  };
-
   // Resetear a la página 1 cuando cambian los filtros u orden
   useEffect(() => {
     setPaginaActual(1);
@@ -389,20 +303,8 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
             </div>
           </form>
 
-          {/* Controles de Filtro, Simulador Láser y Ordenamiento en la misma barra */}
+          {/* Controles de Filtro y Ordenamiento en la misma barra */}
           <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
-            {/* Botón 1-Clic Simular Pistola Láser USB */}
-            <button
-              type="button"
-              onClick={handleSimularDisparoRapido}
-              disabled={isLoading || productos.length === 0}
-              className="px-2.5 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-mono font-bold flex items-center gap-1.5 transition-fast cursor-pointer disabled:opacity-40 active:scale-[0.97]"
-              title="Simular disparo de lector de código de barras láser USB sobre una prenda en stock"
-            >
-              <Lightning size={14} weight="fill" />
-              <span>Simular Láser</span>
-            </button>
-
             {/* Segmented Control con Indicador Deslizante (Motion layoutId) */}
             <div className="flex items-center bg-elevated p-1 rounded-lg border border-subtle">
               {(
@@ -686,12 +588,11 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
         </div>
       )}
 
-      {/* 4. Modal Quick-View con Carrusel de Fotos, Código EAN-13 y Disparo Láser 1-Clic */}
+      {/* 4. Modal Quick-View con Carrusel de Fotos y Código EAN-13 */}
       <ModalQuickViewPos
         isOpen={Boolean(quickViewProducto)}
         onClose={() => setQuickViewProducto(null)}
         producto={quickViewProducto}
-        onSimulateLaserScan={handleSimulateLaserScan}
       />
     </div>
   );

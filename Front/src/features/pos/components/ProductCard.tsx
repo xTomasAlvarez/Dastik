@@ -85,7 +85,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const cantidadFotos = producto.imagenes?.length || (imagenPrincipal ? 1 : 0);
 
   return (
-    <article className="rounded-xl border border-subtle hover:border-strong bg-surface overflow-hidden flex flex-col justify-between shadow-surface hover:shadow-floating transition-fast group">
+    <article className="rounded-xl border border-subtle hover:border-strong bg-surface overflow-hidden flex flex-col shadow-surface hover:shadow-floating transition-fast group">
       {/* 1. Cabecera Visual con Proporción Vertical de Indumentaria (aspect-[4/5]) y Alta Resolución */}
       <div
         role="button"
@@ -137,7 +137,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* 2. Cuerpo: Nombre + Precio + Categoría */}
-      <div className="p-3.5 flex-1 flex flex-col justify-between gap-3">
+      <div className="p-3.5 flex-1 flex flex-col">
         <div
           onClick={() => onOpenQuickView?.(producto)}
           className="cursor-pointer group/title"
@@ -160,8 +160,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
 
-        {/* 3. Pills Táctiles de Talles con Flex Wrap (soporta talles largos como '7 3/8 (58.7 CM)' sin romper línea) */}
-        <div className="pt-2.5 border-t border-subtle">
+        {/* 3. Pills Táctiles de Talles con línea divisoria fija debajo del precio */}
+        <div className="mt-3 pt-3 border-t border-subtle">
           <div className="flex flex-wrap gap-1.5">
             {producto.variantes.map((variante) => {
               const isOutOfStock = variante.stockFisico <= 0;
@@ -175,7 +175,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   onClick={() => handleSelectVariant(variante)}
                   disabled={isOutOfStock}
                   title={`Talle ${variante.talle} (${variante.color}) · ${variante.stockFisico} disp. · EAN: ${variante.codigoBarras}`}
-                  className={`relative rounded-lg border min-w-[2.5rem] w-auto px-2.5 py-1.5 whitespace-nowrap text-center transition-fast flex flex-col items-center justify-center ${
+                  className={`relative rounded-lg border min-w-[2.1rem] w-auto px-2 py-1 whitespace-nowrap text-center transition-fast flex flex-col items-center justify-center ${
                     isOutOfStock
                       ? 'border-subtle bg-elevated/35 text-muted opacity-40 line-through cursor-not-allowed'
                       : isJustAdded
