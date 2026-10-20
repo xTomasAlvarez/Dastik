@@ -4,7 +4,6 @@ export interface ProveedorDto {
   id: number;
   nombre: string;
   markupPorDefecto: number;
-  cantidadProductos: number;
 }
 
 export interface CrearProveedorRequest {
@@ -12,13 +11,21 @@ export interface CrearProveedorRequest {
   markupPorDefecto: number;
 }
 
+export interface ActualizarProveedorRequest {
+  nombre: string;
+  markupPorDefecto: number;
+}
+
 export interface MarcaDto {
   id: number;
   nombre: string;
-  cantidadProductos: number;
 }
 
 export interface CrearMarcaRequest {
+  nombre: string;
+}
+
+export interface ActualizarMarcaRequest {
   nombre: string;
 }
 
@@ -27,19 +34,26 @@ export interface CategoriaDto {
   nombre: string;
   temporada: string;
   esquemaTalles: string;
-  categoriaPadreId?: number | null;
-  cantidadProductos: number;
 }
 
 export interface CrearCategoriaRequest {
   nombre: string;
-  temporada: string;
-  esquemaTalles: string;
-  categoriaPadreId?: number | null;
+  temporada?: string;
+  esquemaTalles?: string;
+}
+
+export interface ActualizarCategoriaRequest {
+  nombre: string;
+  temporada?: string;
+  esquemaTalles?: string;
+}
+
+export interface EliminarCatalogoResponse {
+  mensaje: string;
+  productosReasignados: number;
 }
 
 export const configuracionApi = {
-  // Proveedores
   obtenerProveedores: async (): Promise<ProveedorDto[]> => {
     const response = await apiClient.get<ProveedorDto[]>('/api/inventario/proveedores');
     return response.data;
@@ -50,7 +64,16 @@ export const configuracionApi = {
     return response.data;
   },
 
-  // Marcas
+  actualizarProveedor: async (id: number, data: ActualizarProveedorRequest): Promise<ProveedorDto> => {
+    const response = await apiClient.put<ProveedorDto>(`/api/inventario/proveedores/${id}`, data);
+    return response.data;
+  },
+
+  eliminarProveedor: async (id: number): Promise<EliminarCatalogoResponse> => {
+    const response = await apiClient.delete<EliminarCatalogoResponse>(`/api/inventario/proveedores/${id}`);
+    return response.data;
+  },
+
   obtenerMarcas: async (): Promise<MarcaDto[]> => {
     const response = await apiClient.get<MarcaDto[]>('/api/inventario/marcas');
     return response.data;
@@ -61,7 +84,16 @@ export const configuracionApi = {
     return response.data;
   },
 
-  // Categorías
+  actualizarMarca: async (id: number, data: ActualizarMarcaRequest): Promise<MarcaDto> => {
+    const response = await apiClient.put<MarcaDto>(`/api/inventario/marcas/${id}`, data);
+    return response.data;
+  },
+
+  eliminarMarca: async (id: number): Promise<EliminarCatalogoResponse> => {
+    const response = await apiClient.delete<EliminarCatalogoResponse>(`/api/inventario/marcas/${id}`);
+    return response.data;
+  },
+
   obtenerCategorias: async (): Promise<CategoriaDto[]> => {
     const response = await apiClient.get<CategoriaDto[]>('/api/inventario/categorias');
     return response.data;
@@ -69,6 +101,16 @@ export const configuracionApi = {
 
   crearCategoria: async (data: CrearCategoriaRequest): Promise<CategoriaDto> => {
     const response = await apiClient.post<CategoriaDto>('/api/inventario/categorias', data);
+    return response.data;
+  },
+
+  actualizarCategoria: async (id: number, data: ActualizarCategoriaRequest): Promise<CategoriaDto> => {
+    const response = await apiClient.put<CategoriaDto>(`/api/inventario/categorias/${id}`, data);
+    return response.data;
+  },
+
+  eliminarCategoria: async (id: number): Promise<EliminarCatalogoResponse> => {
+    const response = await apiClient.delete<EliminarCatalogoResponse>(`/api/inventario/categorias/${id}`);
     return response.data;
   },
 };

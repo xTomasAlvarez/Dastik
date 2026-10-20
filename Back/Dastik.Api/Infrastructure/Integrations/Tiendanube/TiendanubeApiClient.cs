@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Dastik.Api.Common;
 using Dastik.Api.Domain.Integrations.Tiendanube;
+using Dastik.Api.Domain.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Dastik.Api.Infrastructure.Integrations.Tiendanube;
@@ -102,7 +103,7 @@ public class TiendanubeApiClient : ITiendanubeApiClient
             return Result<List<TiendanubeProductResponse>>.Success(GenerarCatalogoMock());
         }
 
-        // 2. Request REST con bucle de paginación seguro: GET {storeId}/products?per_page=200&page={page}
+        // 2. Request REST con bucle de paginación seguro (SOLO LECTURA GET): GET {storeId}/products?per_page=200&page={page}
         var todosLosProductos = new List<TiendanubeProductResponse>();
         var tokenLimpio = TiendanubeTokenHelper.NormalizarToken(accessToken)?.Trim() ?? accessToken.Trim();
         int page = 1;
@@ -144,7 +145,6 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 // CRÍTICO: Pausa obligatoria después de procesar cada página para prevenir bloqueo de Tiendanube (429 Rate Limit)
                 await Task.Delay(500, ct);
 
-                // Evalúa la cantidad de productos devueltos en la página actual. Si es menor a 200 (o 0), rompe el bucle
                 if (productos.Count < 200)
                 {
                     break;
@@ -182,7 +182,7 @@ public class TiendanubeApiClient : ITiendanubeApiClient
             string nombre = ExtraerTexto(prodElem, "name") ?? $"Producto {id}";
             string? descripcion = ExtraerTexto(prodElem, "description");
 
-            // Galería completa de imágenes (y primera imagen destacada)
+            // Galería completa de imágenes (normalizada a alta resolución -1024-1024)
             var imagenes = new List<string>();
             if (prodElem.TryGetProperty("images", out var imgProp) && imgProp.ValueKind == JsonValueKind.Array)
             {
@@ -193,14 +193,29 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                         srcProp.ValueKind == JsonValueKind.String)
                     {
                         var src = srcProp.GetString();
-                        if (!string.IsNullOrWhiteSpace(src))
+                        var altaRes = CatalogClassifierService.NormalizarUrlImagenAltaRes(src);
+                        if (!string.IsNullOrWhiteSpace(altaRes))
                         {
-                            imagenes.Add(src.Trim());
+                            imagenes.Add(altaRes);
                         }
                     }
                 }
             }
             string? imagenUrl = imagenes.FirstOrDefault();
+
+            // Categorías de Tiendanube
+            var categoriasTn = new List<string>();
+            if (prodElem.TryGetProperty("categories", out var catProp) && catProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var catElem in catProp.EnumerateArray())
+                {
+                    var catNombre = ExtraerTexto(catElem, "name");
+                    if (!string.IsNullOrWhiteSpace(catNombre))
+                    {
+                        categoriasTn.Add(catNombre.Trim());
+                    }
+                }
+            }
 
             // Variantes
             var variantes = new List<TiendanubeProductVariantResponse>();
@@ -257,7 +272,8 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 precioProducto,
                 costoProducto,
                 variantes,
-                imagenes
+                imagenes,
+                categoriasTn
             ));
         }
 
@@ -335,7 +351,8 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 {
                     "https://dastik.com/img/boxy-tee.jpg",
                     "https://dastik.com/img/boxy-tee-back.jpg"
-                }
+                },
+                Categorias: new List<string> { "Remeras" }
             ),
             new(
                 Id: 102,
@@ -352,7 +369,8 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 Imagenes: new List<string>
                 {
                     "https://dastik.com/img/hoodie-black.jpg"
-                }
+                },
+                Categorias: new List<string> { "Buzos & Hoodies" }
             ),
             new(
                 Id: 103,
@@ -369,7 +387,8 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 Imagenes: new List<string>
                 {
                     "https://dastik.com/img/pant-ripstop.jpg"
-                }
+                },
+                Categorias: new List<string> { "Pantalones & Jeans" }
             )
         };
     }

@@ -98,7 +98,7 @@ public static class DataSeeder
                 Email = "tomidev@dastik.com",
                 PasswordHash = hasher.Hash(AdminDefaultPassword),
                 Rol = RolUsuario.Admin,
-                DebeCambiarPassword = false, // Permite acceder directamente al panel admin sin forzar reseteo
+                DebeCambiarPassword = false,
                 Activo = true,
                 FechaCreacion = DateTime.UtcNow
             };
@@ -170,13 +170,18 @@ public static class DataSeeder
 
         await context.SaveChangesAsync();
 
-        // Sembrar Categorías si no existen
+        // Sembrar Categorías Oficiales si no existen
         if (!await context.Categorias.AnyAsync())
         {
-            context.Categorias.AddRange(
-                new Categoria { Nombre = "Indumentaria", Temporada = "Todo el año", EsquemaTalles = "XS-XL" },
-                new Categoria { Nombre = "Calzado", Temporada = "Todo el año", EsquemaTalles = "US 8-11" }
-            );
+            foreach (var (nombreCat, esquema) in CatalogClassifierService.CategoriasOficiales)
+            {
+                context.Categorias.Add(new Categoria
+                {
+                    Nombre = nombreCat,
+                    Temporada = "Todo el año",
+                    EsquemaTalles = esquema
+                });
+            }
             await context.SaveChangesAsync();
         }
 
@@ -191,15 +196,18 @@ public static class DataSeeder
             await context.SaveChangesAsync();
         }
 
-        // Sembrar Proveedores si no existen
+        // Sembrar Proveedores reales por defecto (Sample 55% y Proveedor General 50%) si no existen
         if (!await context.Proveedores.AnyAsync())
         {
             context.Proveedores.AddRange(
-                new Proveedor { Nombre = "Proveedor Textil Dastik", MarkupPorDefecto = 1.50m },
-                new Proveedor { Nombre = "Proveedor Sneakerheads", MarkupPorDefecto = 1.60m }
+                new Proveedor { Nombre = "Sample", MarkupPorDefecto = 55m },
+                new Proveedor { Nombre = "Proveedor General", MarkupPorDefecto = 50m }
             );
             await context.SaveChangesAsync();
         }
+
+        // Ejecutar Limpieza de Proveedores y Clasificación Inteligente sobre todo el catálogo existente
+        await CatalogClassifierService.ClasificarCatalogoExistenteAsync(context);
 
         // Sembrar Turnos Históricos Cerrados de Demostración si no existen
         if (!await context.Turnos.AnyAsync(t => t.Estado == EstadoTurno.Cerrado))

@@ -80,7 +80,7 @@ public static class SandboxDataSeeder
                 Email = SandboxUserEmailDefault,
                 PasswordHash = passwordHasher.Hash(SandboxUserPasswordDefault),
                 Rol = RolUsuario.Empleado,
-                DebeCambiarPassword = false, // En sandbox el cajero puede operar inmediatamente
+                DebeCambiarPassword = false,
                 Activo = true,
                 FechaCreacion = DateTime.UtcNow
             });
@@ -182,54 +182,61 @@ public static class SandboxDataSeeder
             context.Marcas.Add(marcaAdidas);
         }
 
-        // 4. Categorías
-        var catIndumentaria = await context.Categorias.FirstOrDefaultAsync(c => c.Nombre == "Indumentaria");
-        if (catIndumentaria is null)
+        // 4. Categorías reales
+        var catRemeras = await context.Categorias.FirstOrDefaultAsync(c => c.Nombre == "Remeras");
+        if (catRemeras is null)
         {
-            catIndumentaria = new Categoria { Nombre = "Indumentaria", Temporada = "Todo el año", EsquemaTalles = "XS-XL" };
-            context.Categorias.Add(catIndumentaria);
+            catRemeras = new Categoria { Nombre = "Remeras", Temporada = "Todo el año", EsquemaTalles = "S-XXL" };
+            context.Categorias.Add(catRemeras);
         }
 
-        var catCalzado = await context.Categorias.FirstOrDefaultAsync(c => c.Nombre == "Calzado");
+        var catPantalones = await context.Categorias.FirstOrDefaultAsync(c => c.Nombre == "Pantalones & Jeans");
+        if (catPantalones is null)
+        {
+            catPantalones = new Categoria { Nombre = "Pantalones & Jeans", Temporada = "Todo el año", EsquemaTalles = "38-48 / S-XXL" };
+            context.Categorias.Add(catPantalones);
+        }
+
+        var catCalzado = await context.Categorias.FirstOrDefaultAsync(c => c.Nombre == "Zapatillas & Sneakers");
         if (catCalzado is null)
         {
-            catCalzado = new Categoria { Nombre = "Calzado", Temporada = "Todo el año", EsquemaTalles = "US 8-11" };
+            catCalzado = new Categoria { Nombre = "Zapatillas & Sneakers", Temporada = "Todo el año", EsquemaTalles = "US 8-11" };
             context.Categorias.Add(catCalzado);
         }
 
-        // 5. Proveedores
-        var provDastik = await context.Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Proveedor Textil Dastik");
-        if (provDastik is null)
+        // 5. Proveedores reales ("Sample" 55% y "Proveedor General" 50%)
+        var provSample = await context.Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Sample");
+        if (provSample is null)
         {
-            provDastik = new Proveedor { Nombre = "Proveedor Textil Dastik", MarkupPorDefecto = 1.50m };
-            context.Proveedores.Add(provDastik);
+            provSample = new Proveedor { Nombre = "Sample", MarkupPorDefecto = 55m };
+            context.Proveedores.Add(provSample);
         }
 
-        var provSneakers = await context.Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Proveedor Sneakerheads");
-        if (provSneakers is null)
+        var provGeneral = await context.Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Proveedor General");
+        if (provGeneral is null)
         {
-            provSneakers = new Proveedor { Nombre = "Proveedor Sneakerheads", MarkupPorDefecto = 1.60m };
-            context.Proveedores.Add(provSneakers);
+            provGeneral = new Proveedor { Nombre = "Proveedor General", MarkupPorDefecto = 50m };
+            context.Proveedores.Add(provGeneral);
         }
 
         await context.SaveChangesAsync();
 
-        // Si ya existen productos en la base de datos Sandbox, no duplicar el catálogo de prueba
+        // Si ya existen productos en la base de datos Sandbox, reclasificar/limpiar proveedores y no duplicar
         if (await context.Productos.AnyAsync())
         {
+            await CatalogClassifierService.ClasificarCatalogoExistenteAsync(context);
             return;
         }
 
         // 6. Productos y Variantes - Unidad "Dastik"
-        // Producto 1: Remera Oversize Básica (Talles XS a XL)
         var remera = new Producto
         {
             Nombre = "Remera Oversize Básica",
             Descripcion = "Remera de algodón premium corte oversize para entrenamiento y pruebas de POS.",
             UnidadNegocioId = unidadDastik.Id,
-            CategoriaId = catIndumentaria.Id,
+            CategoriaId = catRemeras.Id,
             MarcaId = marcaDastik.Id,
-            ProveedorId = provDastik.Id,
+            ProveedorId = provSample.Id,
             CostoBase = 15000.00m,
             MarkupAplicado = 1.50m,
             PrecioVenta = 22500.00m,
@@ -244,15 +251,14 @@ public static class SandboxDataSeeder
             }
         };
 
-        // Producto 2: Pantalón Cargo (Talles XS a XL)
         var pantalon = new Producto
         {
             Nombre = "Pantalón Cargo",
             Descripcion = "Pantalón cargo ripstop con bolsillos funcionales para pruebas de caja.",
             UnidadNegocioId = unidadDastik.Id,
-            CategoriaId = catIndumentaria.Id,
+            CategoriaId = catPantalones.Id,
             MarcaId = marcaDastik.Id,
-            ProveedorId = provDastik.Id,
+            ProveedorId = provSample.Id,
             CostoBase = 28000.00m,
             MarkupAplicado = 1.50m,
             PrecioVenta = 42000.00m,
@@ -268,7 +274,6 @@ public static class SandboxDataSeeder
         };
 
         // 7. Productos y Variantes - Unidad "Hidden Sneakers"
-        // Producto 3: Nike Dunk Low Panda (Talles US 8 a US 11)
         var dunk = new Producto
         {
             Nombre = "Nike Dunk Low Panda",
@@ -276,7 +281,7 @@ public static class SandboxDataSeeder
             UnidadNegocioId = unidadHidden.Id,
             CategoriaId = catCalzado.Id,
             MarcaId = marcaNike.Id,
-            ProveedorId = provSneakers.Id,
+            ProveedorId = provGeneral.Id,
             CostoBase = 90000.00m,
             MarkupAplicado = 1.60m,
             PrecioVenta = 144000.00m,
@@ -290,7 +295,6 @@ public static class SandboxDataSeeder
             }
         };
 
-        // Producto 4: Adidas Yeezy Slide (Talles US 8 a US 11)
         var yeezy = new Producto
         {
             Nombre = "Adidas Yeezy Slide",
@@ -298,7 +302,7 @@ public static class SandboxDataSeeder
             UnidadNegocioId = unidadHidden.Id,
             CategoriaId = catCalzado.Id,
             MarcaId = marcaAdidas.Id,
-            ProveedorId = provSneakers.Id,
+            ProveedorId = provGeneral.Id,
             CostoBase = 60000.00m,
             MarkupAplicado = 1.50m,
             PrecioVenta = 90000.00m,
@@ -315,12 +319,11 @@ public static class SandboxDataSeeder
         context.Productos.AddRange(remera, pantalon, dunk, yeezy);
         await context.SaveChangesAsync();
 
+        await CatalogClassifierService.ClasificarCatalogoExistenteAsync(context);
+
         logger?.LogInformation("SandboxDataSeeder completado: 4 productos y sus variantes fueron sembrados en la base de datos Sandbox.");
     }
 
-    /// <summary>
-    /// Comprueba que la conexión de la base de datos corresponda estrictamente al Sandbox (o contexto en memoria en pruebas).
-    /// </summary>
     public static bool EsBaseDeDatosSandbox(AppDbContext context)
     {
         var connString = context.Database.GetConnectionString();

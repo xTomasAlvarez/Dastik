@@ -61,7 +61,7 @@ public class TiendanubeSyncService : ITiendanubeSyncService
 
         var finalAccessToken = TiendanubeTokenHelper.NormalizarToken(rawAccessToken) ?? "mock-token-dastik";
 
-        // 2. Obtener productos desde la API de Tiendanube
+        // 2. Obtener productos desde la API de Tiendanube (SOLO LECTURA GET)
         var responseApi = await _apiClient.ObtenerProductosAsync(finalStoreId, finalAccessToken, ct);
         if (!responseApi.IsSuccess)
         {
@@ -72,32 +72,55 @@ public class TiendanubeSyncService : ITiendanubeSyncService
         var productosNube = responseApi.Value ?? new List<TiendanubeProductResponse>();
         _logger.LogInformation("Se recibieron {Cantidad} productos desde Tiendanube API.", productosNube.Count);
 
-        // 3. Obtener o crear referencias por defecto para Catálogo (Categoría, Marca, Proveedor)
-        var categoriaDefault = await _context.Categorias.FirstOrDefaultAsync(c => c.Nombre == "Indumentaria", ct)
-            ?? await _context.Categorias.FirstOrDefaultAsync(ct);
-        if (categoriaDefault is null)
-        {
-            categoriaDefault = new Categoria { Nombre = "Indumentaria", Temporada = "Todo el año", EsquemaTalles = "XS-XL" };
-            _context.Categorias.Add(categoriaDefault);
-            await _context.SaveChangesAsync(ct);
-        }
-
-        var marcaDefault = await _context.Marcas.FirstOrDefaultAsync(m => m.Nombre == "Dastik", ct)
-            ?? await _context.Marcas.FirstOrDefaultAsync(ct);
-        if (marcaDefault is null)
-        {
-            marcaDefault = new Marca { Nombre = "Dastik" };
-            _context.Marcas.Add(marcaDefault);
-            await _context.SaveChangesAsync(ct);
-        }
-
-        var proveedorDefault = await _context.Proveedores.FirstOrDefaultAsync(p => p.Nombre.Contains("Dastik"), ct)
+        // 3. Obtener o crear proveedor por defecto ("Sample" con Markup 55%) y mapas de Categorías y Marcas reales
+        var proveedorDefault = await _context.Proveedores
+            .FirstOrDefaultAsync(p => p.Nombre == "Sample", ct)
             ?? await _context.Proveedores.FirstOrDefaultAsync(ct);
+
         if (proveedorDefault is null)
         {
-            proveedorDefault = new Proveedor { Nombre = "Proveedor Textil Dastik", MarkupPorDefecto = 1.50m };
+            proveedorDefault = new Proveedor { Nombre = "Sample", MarkupPorDefecto = 55m };
             _context.Proveedores.Add(proveedorDefault);
             await _context.SaveChangesAsync(ct);
+        }
+
+        var categoriasDb = await _context.Categorias.ToListAsync(ct);
+        var mapaCategorias = new Dictionary<string, Categoria>(StringComparer.OrdinalIgnoreCase);
+        foreach (var c in categoriasDb)
+        {
+            mapaCategorias[c.Nombre] = c;
+        }
+
+        var marcasDb = await _context.Marcas.ToListAsync(ct);
+        var mapaMarcas = new Dictionary<string, Marca>(StringComparer.OrdinalIgnoreCase);
+        foreach (var m in marcasDb)
+        {
+            mapaMarcas[m.Nombre] = m;
+        }
+
+        async Task<Categoria> ObtenerOCrearCategoriaAsync(string nombreCat, string esquemaTalles)
+        {
+            if (mapaCategorias.TryGetValue(nombreCat, out var cat)) return cat;
+            var nueva = new Categoria
+            {
+                Nombre = nombreCat,
+                Temporada = "Todo el año",
+                EsquemaTalles = esquemaTalles
+            };
+            _context.Categorias.Add(nueva);
+            await _context.SaveChangesAsync(ct);
+            mapaCategorias[nombreCat] = nueva;
+            return nueva;
+        }
+
+        async Task<Marca> ObtenerOCrearMarcaAsync(string nombreMarca)
+        {
+            if (mapaMarcas.TryGetValue(nombreMarca, out var marca)) return marca;
+            var nueva = new Marca { Nombre = nombreMarca };
+            _context.Marcas.Add(nueva);
+            await _context.SaveChangesAsync(ct);
+            mapaMarcas[nombreMarca] = nueva;
+            return nueva;
         }
 
         // 4. Cargar productos existentes con TiendanubeProductId para realizar Upsert
@@ -117,10 +140,22 @@ public class TiendanubeSyncService : ITiendanubeSyncService
         {
             string tnProdId = pDto.Id.ToString();
 
+            var (nombreCatInferida, esquemaInferido) = CatalogClassifierService.InferirCategoria(pDto.Nombre, pDto.Categorias);
+            var categoriaReal = await ObtenerOCrearCategoriaAsync(nombreCatInferida, esquemaInferido);
+
+            var nombreMarcaInferida = CatalogClassifierService.InferirMarca(pDto.Nombre);
+            var marcaReal = await ObtenerOCrearMarcaAsync(nombreMarcaInferida);
+
+            var listaImagenesAltaRes = CatalogClassifierService.NormalizarListaImagenesAltaRes(pDto.Imagenes, pDto.ImagenUrl);
+            var imagenPrincipalAltaRes = listaImagenesAltaRes.FirstOrDefault() ?? CatalogClassifierService.NormalizarUrlImagenAltaRes(pDto.ImagenUrl);
+
             if (existentesDict.TryGetValue(tnProdId, out var prodExistente))
             {
                 // ACTUALIZACIÓN (UPDATE)
                 prodExistente.Nombre = pDto.Nombre;
+                prodExistente.CategoriaId = categoriaReal.Id;
+                prodExistente.MarcaId = marcaReal.Id;
+
                 if (!string.IsNullOrWhiteSpace(pDto.Descripcion))
                 {
                     var descLimpia = LimpiarHtml(pDto.Descripcion);
@@ -129,16 +164,13 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                         prodExistente.Descripcion = descLimpia;
                     }
                 }
-                if (!string.IsNullOrWhiteSpace(pDto.ImagenUrl))
+                if (!string.IsNullOrWhiteSpace(imagenPrincipalAltaRes))
                 {
-                    prodExistente.ImagenUrl = pDto.ImagenUrl;
+                    prodExistente.ImagenUrl = imagenPrincipalAltaRes;
                 }
-                var listaImagenesUpd = pDto.Imagenes is { Count: > 0 }
-                    ? pDto.Imagenes
-                    : (!string.IsNullOrWhiteSpace(pDto.ImagenUrl) ? new List<string> { pDto.ImagenUrl } : new List<string>());
-                if (listaImagenesUpd.Count > 0)
+                if (listaImagenesAltaRes.Count > 0)
                 {
-                    prodExistente.ImagenesJson = JsonSerializer.Serialize(listaImagenesUpd);
+                    prodExistente.ImagenesJson = JsonSerializer.Serialize(listaImagenesAltaRes);
                 }
                 if (pDto.Precio.HasValue && pDto.Precio.Value > 0)
                 {
@@ -205,22 +237,18 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                 decimal costoBase = pDto.Costo ?? (pDto.Precio.HasValue ? Math.Round(pDto.Precio.Value / 1.5m, 2) : 13333m);
                 decimal markup = costoBase > 0 ? Math.Round(precioVenta / costoBase, 2) : 1.5m;
 
-                var listaImagenesIns = pDto.Imagenes is { Count: > 0 }
-                    ? pDto.Imagenes
-                    : (!string.IsNullOrWhiteSpace(pDto.ImagenUrl) ? new List<string> { pDto.ImagenUrl } : new List<string>());
-
                 var nuevoProducto = new Producto
                 {
                     UnidadNegocioId = unidadDastik.Id, // REGLA DE TENANT: Dastik exclusivo
-                    CategoriaId = categoriaDefault.Id,
-                    MarcaId = marcaDefault.Id,
+                    CategoriaId = categoriaReal.Id,
+                    MarcaId = marcaReal.Id,
                     ProveedorId = proveedorDefault.Id,
                     Nombre = pDto.Nombre,
                     Descripcion = !string.IsNullOrWhiteSpace(LimpiarHtml(pDto.Descripcion))
                         ? LimpiarHtml(pDto.Descripcion)
                         : $"{pDto.Nombre} - Importado Tiendanube",
-                    ImagenUrl = pDto.ImagenUrl ?? "",
-                    ImagenesJson = JsonSerializer.Serialize(listaImagenesIns),
+                    ImagenUrl = imagenPrincipalAltaRes ?? "",
+                    ImagenesJson = JsonSerializer.Serialize(listaImagenesAltaRes),
                     PrecioVenta = precioVenta,
                     CostoBase = costoBase,
                     MarkupAplicado = markup,

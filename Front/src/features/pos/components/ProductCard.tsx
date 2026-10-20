@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Sneaker, TShirt, Package, Check, CornersOut } from '@phosphor-icons/react';
-import type { ProductoCatalogoDto, VarianteDto } from '../api/inventarioApi';
+import {
+  normalizarUrlImagenAltaRes,
+  type ProductoCatalogoDto,
+  type VarianteDto,
+} from '../api/inventarioApi';
 import { useCartStore } from '../stores/useCartStore';
 
 interface ProductCardProps {
@@ -25,10 +29,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }).format(monto);
   };
 
-  const imagenPrincipal =
+  const rawImagenPrincipal =
     (producto.imagenes && producto.imagenes.length > 0
       ? producto.imagenes[0]
       : producto.imagenUrl) || '';
+
+  const imagenPrincipal = normalizarUrlImagenAltaRes(rawImagenPrincipal);
 
   const handleSelectVariant = (variante: VarianteDto) => {
     if (variante.stockFisico <= 0) return;
@@ -56,18 +62,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     const catLower = producto.categoria?.toLowerCase() || '';
     if (
       catLower.includes('calzado') ||
+      catLower.includes('zapatilla') ||
+      catLower.includes('sneaker') ||
       producto.unidadNegocio?.toLowerCase().includes('sneakers')
     ) {
-      return <Sneaker size={32} weight="duotone" className="text-amber-500/80" />;
+      return <Sneaker size={36} weight="duotone" className="text-amber-500/80" />;
     }
     if (
       catLower.includes('indumentaria') ||
       catLower.includes('remera') ||
-      catLower.includes('pantalon')
+      catLower.includes('pantalon') ||
+      catLower.includes('buzo') ||
+      catLower.includes('campera')
     ) {
-      return <TShirt size={32} weight="duotone" className="text-muted" />;
+      return <TShirt size={36} weight="duotone" className="text-muted" />;
     }
-    return <Package size={32} weight="duotone" className="text-muted" />;
+    return <Package size={36} weight="duotone" className="text-muted" />;
   };
 
   const stockTotal = producto.variantes.reduce((sum, v) => sum + v.stockFisico, 0);
@@ -76,7 +86,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <article className="rounded-xl border border-subtle hover:border-strong bg-surface overflow-hidden flex flex-col justify-between shadow-surface hover:shadow-floating transition-fast group">
-      {/* 1. Cabecera Visual con Imagen Protagonista (h-36) y clic para Quick-View */}
+      {/* 1. Cabecera Visual con Proporción Vertical de Indumentaria (aspect-[4/5]) y Alta Resolución */}
       <div
         role="button"
         tabIndex={0}
@@ -87,7 +97,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onOpenQuickView?.(producto);
           }
         }}
-        className="relative h-36 w-full bg-elevated/70 border-b border-subtle overflow-hidden flex items-center justify-center cursor-pointer"
+        className="relative aspect-[4/5] w-full bg-elevated/70 border-b border-subtle overflow-hidden flex items-center justify-center cursor-pointer"
         title="Ver galería de fotos y códigos EAN-13"
       >
         {mostrarImagenReal ? (
@@ -95,14 +105,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             src={imagenPrincipal}
             alt={producto.nombre}
             loading="lazy"
+            decoding="async"
             onError={() => setImageError(true)}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           renderProductIcon()
         )}
 
-        {/* Badge Flotante Izquierdo: Categoría / Marca (sin repetir DASTIK + Dastik) */}
+        {/* Badge Flotante Izquierdo: Marca */}
         <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-surface/90 backdrop-blur-sm border border-subtle text-[10px] font-sans font-semibold text-secondary truncate max-w-[60%]">
           {producto.marca}
         </span>
@@ -125,7 +136,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
 
-      {/* 2. Cuerpo: Nombre + Precio */}
+      {/* 2. Cuerpo: Nombre + Precio + Categoría */}
       <div className="p-3.5 flex-1 flex flex-col justify-between gap-3">
         <div
           onClick={() => onOpenQuickView?.(producto)}
@@ -139,8 +150,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               {producto.nombre}
             </h3>
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <p className="font-mono tabular-nums text-sm sm:text-base font-bold text-primary tracking-tight">
+          <div className="flex items-baseline justify-between mt-1 gap-2">
+            <p className="font-mono tabular-nums text-sm sm:text-base font-bold text-primary tracking-tight shrink-0">
               {formatearDinero(producto.precioVenta)}
             </p>
             <span className="text-[10px] text-muted font-sans truncate">
@@ -149,9 +160,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
 
-        {/* 3. Pills Táctiles de Talles con Motion */}
+        {/* 3. Pills Táctiles de Talles con Flex Wrap (soporta talles largos como '7 3/8 (58.7 CM)' sin romper línea) */}
         <div className="pt-2.5 border-t border-subtle">
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             {producto.variantes.map((variante) => {
               const isOutOfStock = variante.stockFisico <= 0;
               const isJustAdded = lastAddedVariantId === variante.id;
@@ -164,7 +175,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   onClick={() => handleSelectVariant(variante)}
                   disabled={isOutOfStock}
                   title={`Talle ${variante.talle} (${variante.color}) · ${variante.stockFisico} disp. · EAN: ${variante.codigoBarras}`}
-                  className={`relative rounded-lg border py-1.5 px-1 text-center transition-fast flex flex-col items-center justify-center ${
+                  className={`relative rounded-lg border min-w-[2.5rem] w-auto px-2.5 py-1.5 whitespace-nowrap text-center transition-fast flex flex-col items-center justify-center ${
                     isOutOfStock
                       ? 'border-subtle bg-elevated/35 text-muted opacity-40 line-through cursor-not-allowed'
                       : isJustAdded
@@ -176,10 +187,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     <Check size={13} weight="bold" />
                   ) : (
                     <>
-                      <span className="font-mono tabular-nums text-[11px] font-bold leading-none">
+                      <span className="font-mono tabular-nums text-[11px] font-bold leading-none whitespace-nowrap">
                         {variante.talle}
                       </span>
-                      <span className="text-[9px] font-mono tabular-nums text-muted mt-0.5 leading-none">
+                      <span className="text-[9px] font-mono tabular-nums text-muted mt-0.5 leading-none whitespace-nowrap">
                         {variante.stockFisico}u
                       </span>
                     </>

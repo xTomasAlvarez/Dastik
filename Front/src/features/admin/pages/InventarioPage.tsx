@@ -13,11 +13,25 @@ import {
   CaretLeft,
   CaretRight,
   X,
+  SortAscending,
 } from '@phosphor-icons/react';
-import { inventarioApi, type ProductoCatalogoDto } from '../../pos/api/inventarioApi';
+import {
+  inventarioApi,
+  calcularStockTotalProducto,
+  compararProductosMasNuevosConStock,
+  ORDEN_CATEGORIAS_OFICIALES,
+  normalizarUrlImagenAltaRes,
+  type ProductoCatalogoDto,
+} from '../../pos/api/inventarioApi';
 import { Button } from '../../../components/ui/Button';
 import { ModalCrearProducto } from '../components/ModalCrearProducto';
 import { ModalDetalleProducto } from '../components/ModalDetalleProducto';
+
+type OrdenInventario =
+  | 'NUEVOS_CON_STOCK'
+  | 'MENOR_PRECIO'
+  | 'MAYOR_PRECIO'
+  | 'MAYOR_STOCK';
 
 export const InventarioPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -26,6 +40,7 @@ export const InventarioPage: React.FC = () => {
   const [unidadFiltro, setUnidadFiltro] = useState<'TODAS' | 'DASTIK' | 'HIDDEN'>('TODAS');
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>('TODAS');
   const [stockFiltro, setStockFiltro] = useState<'TODOS' | 'CON_STOCK' | 'SIN_STOCK' | 'BAJO_STOCK'>('TODOS');
+  const [ordenActivo, setOrdenActivo] = useState<OrdenInventario>('NUEVOS_CON_STOCK');
 
   const PAGE_SIZE = 15;
   const [paginaActual, setPaginaActual] = useState(1);
@@ -54,6 +69,8 @@ export const InventarioPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
       queryClient.invalidateQueries({ queryKey: ['catalogo-pos'] });
       queryClient.invalidateQueries({ queryKey: ['productos'] });
+      queryClient.invalidateQueries({ queryKey: ['config-categorias'] });
+      queryClient.invalidateQueries({ queryKey: ['config-marcas'] });
       setMensajeNotificacion({
         tipo: 'exito',
         texto: `Sincronización completada: ${res.productosNuevos} nuevos, ${res.productosActualizados} actualizados (${res.totalVariantesImportadas} variantes).`,
@@ -73,29 +90,50 @@ export const InventarioPage: React.FC = () => {
     },
   });
 
-  const categoriasDisponibles = useMemo(() => {
-    const setCat = new Set<string>();
-    productos.forEach((p) => {
-      if (p.categoria) setCat.add(p.categoria);
-    });
-    return Array.from(setCat).sort();
-  }, [productos]);
-
-  const productosFiltrados = useMemo(() => {
+  // Base de productos filtrados por unidad para calcular conteos reales de cada categoría
+  const productosPorUnidad = useMemo(() => {
     return productos.filter((p) => {
       if (unidadFiltro === 'DASTIK') {
-        const esDastik = p.unidadNegocio?.toLowerCase().includes('dastik') ?? false;
-        if (!esDastik) return false;
-      } else if (unidadFiltro === 'HIDDEN') {
-        const esHidden = p.unidadNegocio?.toLowerCase().includes('hidden') ?? false;
-        if (!esHidden) return false;
+        return p.unidadNegocio?.toLowerCase().includes('dastik') ?? false;
       }
+      if (unidadFiltro === 'HIDDEN') {
+        return p.unidadNegocio?.toLowerCase().includes('hidden') ?? false;
+      }
+      return true;
+    });
+  }, [productos, unidadFiltro]);
 
+  const categoriasConConteo = useMemo(() => {
+    const mapa = new Map<string, number>();
+    for (const p of productosPorUnidad) {
+      const cat = p.categoria || 'General';
+      mapa.set(cat, (mapa.get(cat) || 0) + 1);
+    }
+
+    const lista = Array.from(mapa.entries()).map(([nombre, cantidad]) => ({
+      nombre,
+      cantidad,
+    }));
+
+    lista.sort((a, b) => {
+      const idxA = ORDEN_CATEGORIAS_OFICIALES.indexOf(a.nombre);
+      const idxB = ORDEN_CATEGORIAS_OFICIALES.indexOf(b.nombre);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return b.cantidad - a.cantidad;
+    });
+
+    return lista;
+  }, [productosPorUnidad]);
+
+  const productosFiltrados = useMemo(() => {
+    const filtrados = productosPorUnidad.filter((p) => {
       if (categoriaFiltro !== 'TODAS' && p.categoria !== categoriaFiltro) {
         return false;
       }
 
-      const stockTotal = p.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
+      const stockTotal = calcularStockTotalProducto(p);
       if (stockFiltro === 'CON_STOCK' && stockTotal <= 0) return false;
       if (stockFiltro === 'SIN_STOCK' && stockTotal > 0) return false;
       if (stockFiltro === 'BAJO_STOCK' && (stockTotal <= 0 || stockTotal > 5)) return false;
@@ -114,11 +152,32 @@ export const InventarioPage: React.FC = () => {
 
       return true;
     });
-  }, [productos, unidadFiltro, categoriaFiltro, stockFiltro, busqueda]);
+
+    return [...filtrados].sort((a, b) => {
+      const stockA = calcularStockTotalProducto(a);
+      const stockB = calcularStockTotalProducto(b);
+
+      const tieneStockA = stockA > 0 ? 1 : 0;
+      const tieneStockB = stockB > 0 ? 1 : 0;
+      if (tieneStockA !== tieneStockB) {
+        return tieneStockB - tieneStockA;
+      }
+
+      if (ordenActivo === 'MENOR_PRECIO') {
+        if (a.precioVenta !== b.precioVenta) return a.precioVenta - b.precioVenta;
+      } else if (ordenActivo === 'MAYOR_PRECIO') {
+        if (a.precioVenta !== b.precioVenta) return b.precioVenta - a.precioVenta;
+      } else if (ordenActivo === 'MAYOR_STOCK') {
+        if (stockA !== stockB) return stockB - stockA;
+      }
+
+      return compararProductosMasNuevosConStock(a, b);
+    });
+  }, [productosPorUnidad, categoriaFiltro, stockFiltro, busqueda, ordenActivo]);
 
   useEffect(() => {
     setPaginaActual(1);
-  }, [busqueda, unidadFiltro, categoriaFiltro, stockFiltro]);
+  }, [busqueda, unidadFiltro, categoriaFiltro, stockFiltro, ordenActivo]);
 
   const totalPaginas = Math.max(1, Math.ceil(productosFiltrados.length / PAGE_SIZE));
   const indiceInicio = (paginaActual - 1) * PAGE_SIZE;
@@ -128,16 +187,12 @@ export const InventarioPage: React.FC = () => {
 
   const totalItemsEnStock = useMemo(() => {
     return productos.reduce((accProd, p) => {
-      const stockProd = p.variantes?.reduce((accVar, v) => accVar + (v.stockFisico || 0), 0) ?? 0;
-      return accProd + stockProd;
+      return accProd + calcularStockTotalProducto(p);
     }, 0);
   }, [productos]);
 
   const totalSinStock = useMemo(() => {
-    return productos.filter((p) => {
-      const stock = p.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
-      return stock === 0;
-    }).length;
+    return productos.filter((p) => calcularStockTotalProducto(p) === 0).length;
   }, [productos]);
 
   const handleVerDetalle = (producto: ProductoCatalogoDto) => {
@@ -276,70 +331,122 @@ export const InventarioPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Barra de Filtros y Búsqueda */}
-      <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 shadow-surface">
-        {/* Buscador */}
-        <div className="relative flex-1">
-          <MagnifyingGlass
-            size={17}
-            weight="regular"
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            type="text"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre, marca, categoría o código de barras EAN..."
-            className="w-full bg-elevated focus:bg-surface border border-subtle focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-lg pl-10 pr-4 py-2 text-xs md:text-sm font-sans text-primary placeholder:text-muted outline-none transition-fast"
-          />
-        </div>
-
-        {/* Filtros Selectores */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Segmented Control de Unidad */}
-          <div className="flex items-center rounded-lg border border-subtle bg-elevated p-1">
-            {(['TODAS', 'DASTIK', 'HIDDEN'] as const).map((u) => (
-              <button
-                key={u}
-                type="button"
-                onClick={() => setUnidadFiltro(u)}
-                className={`px-3 py-1 text-xs font-sans font-semibold rounded-md transition-fast cursor-pointer ${
-                  unidadFiltro === u
-                    ? 'bg-surface text-primary shadow-sm'
-                    : 'text-secondary hover:text-primary'
-                }`}
-              >
-                {u === 'TODAS' ? 'Todas' : u === 'DASTIK' ? 'Dastik' : 'Hidden'}
-              </button>
-            ))}
+      {/* Barra de Filtros, Ordenamiento y Pills de Categorías */}
+      <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col gap-3 shadow-surface">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Buscador */}
+          <div className="relative flex-1">
+            <MagnifyingGlass
+              size={17}
+              weight="regular"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar por nombre, marca, categoría o código de barras EAN..."
+              className="w-full bg-elevated focus:bg-surface border border-subtle focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-lg pl-10 pr-4 py-2 text-xs md:text-sm font-sans text-primary placeholder:text-muted outline-none transition-fast"
+            />
           </div>
 
-          {/* Selector de Categoría */}
-          <select
-            value={categoriaFiltro}
-            onChange={(e) => setCategoriaFiltro(e.target.value)}
-            className="bg-elevated border border-subtle rounded-lg px-3 py-2 text-xs font-sans font-medium text-primary focus:outline-none focus:border-amber-500/80 transition-fast cursor-pointer"
-          >
-            <option value="TODAS">Todas las categorías</option>
-            {categoriasDisponibles.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          {/* Filtros Selectores */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Segmented Control de Unidad */}
+            <div className="flex items-center rounded-lg border border-subtle bg-elevated p-1">
+              {(['TODAS', 'DASTIK', 'HIDDEN'] as const).map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => setUnidadFiltro(u)}
+                  className={`px-3 py-1 text-xs font-sans font-semibold rounded-md transition-fast cursor-pointer ${
+                    unidadFiltro === u
+                      ? 'bg-surface text-primary shadow-sm'
+                      : 'text-secondary hover:text-primary'
+                  }`}
+                >
+                  {u === 'TODAS' ? 'Todas' : u === 'DASTIK' ? 'Dastik' : 'Hidden'}
+                </button>
+              ))}
+            </div>
 
-          {/* Selector de Stock */}
-          <select
-            value={stockFiltro}
-            onChange={(e) => setStockFiltro(e.target.value as any)}
-            className="bg-elevated border border-subtle rounded-lg px-3 py-2 text-xs font-sans font-medium text-primary focus:outline-none focus:border-amber-500/80 transition-fast cursor-pointer"
-          >
-            <option value="TODOS">Todos los niveles</option>
-            <option value="CON_STOCK">Disponibles (&gt; 0)</option>
-            <option value="BAJO_STOCK">Stock bajo (1 a 5)</option>
-            <option value="SIN_STOCK">Quiebre (= 0)</option>
-          </select>
+            {/* Selector de Ordenamiento */}
+            <div className="relative flex items-center">
+              <SortAscending
+                size={14}
+                weight="bold"
+                className="absolute left-2.5 text-amber-500 pointer-events-none"
+              />
+              <select
+                value={ordenActivo}
+                onChange={(e) => setOrdenActivo(e.target.value as OrdenInventario)}
+                className="bg-elevated border border-subtle rounded-lg pl-8 pr-3 py-2 text-xs font-sans font-medium text-primary focus:outline-none focus:border-amber-500/80 transition-fast cursor-pointer"
+              >
+                <option value="NUEVOS_CON_STOCK">Más nuevos (Con stock)</option>
+                <option value="MENOR_PRECIO">Menor precio</option>
+                <option value="MAYOR_PRECIO">Mayor precio</option>
+                <option value="MAYOR_STOCK">Mayor stock</option>
+              </select>
+            </div>
+
+            {/* Selector de Stock */}
+            <select
+              value={stockFiltro}
+              onChange={(e) => setStockFiltro(e.target.value as any)}
+              className="bg-elevated border border-subtle rounded-lg px-3 py-2 text-xs font-sans font-medium text-primary focus:outline-none focus:border-amber-500/80 transition-fast cursor-pointer"
+            >
+              <option value="TODOS">Todos los niveles</option>
+              <option value="CON_STOCK">Disponibles (&gt; 0)</option>
+              <option value="BAJO_STOCK">Stock bajo (1 a 5)</option>
+              <option value="SIN_STOCK">Quiebre (= 0)</option>
+            </select>
+          </div>
         </div>
+
+        {/* Barra Horizontal de Categorías Estilo Tiendanube */}
+        {categoriasConConteo.length > 0 && (
+          <div className="pt-2.5 border-t border-subtle flex items-center gap-1.5 overflow-x-auto pb-0.5">
+            <button
+              type="button"
+              onClick={() => setCategoriaFiltro('TODAS')}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                categoriaFiltro === 'TODAS'
+                  ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                  : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
+              }`}
+            >
+              <span>Todas</span>
+              <span className="font-mono text-[10px] opacity-80">
+                ({productosPorUnidad.length})
+              </span>
+            </button>
+
+            {categoriasConConteo.map((cat) => {
+              const activa = categoriaFiltro === cat.nombre;
+              return (
+                <button
+                  key={cat.nombre}
+                  type="button"
+                  onClick={() =>
+                    setCategoriaFiltro((prev) =>
+                      prev === cat.nombre ? 'TODAS' : cat.nombre
+                    )
+                  }
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                    activa
+                      ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                      : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
+                  }`}
+                >
+                  <span>{cat.nombre}</span>
+                  <span className="font-mono text-[10px] opacity-80">
+                    ({cat.cantidad})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Tabla Data Grid de Inventario */}
@@ -381,16 +488,18 @@ export const InventarioPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-subtle">
                 {productosPaginados.map((producto) => {
-                  const stockTotal =
-                    producto.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
+                  const stockTotal = calcularStockTotalProducto(producto);
                   const sinStock = stockTotal === 0;
+                  const thumbUrl = normalizarUrlImagenAltaRes(
+                    (producto.imagenes && producto.imagenes[0]) || producto.imagenUrl
+                  );
 
                   return (
                     <tr
                       key={producto.id}
                       onClick={() => handleVerDetalle(producto)}
                       className="hover:bg-elevated/50 transition-fast group cursor-pointer"
-                      title="Ver detalle del producto y desglose de variantes"
+                      title="Ver detalle del producto, galería de fotos y desglose de variantes"
                     >
                       {/* Columna 1: Marca */}
                       <td className="py-3.5 px-4 font-heading font-bold text-primary text-xs align-top">
@@ -411,13 +520,14 @@ export const InventarioPage: React.FC = () => {
                       {/* Columna 2: Producto */}
                       <td className="py-3.5 px-4 align-top">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 shrink-0 rounded-lg border border-subtle bg-elevated overflow-hidden flex items-center justify-center relative">
-                            {producto.imagenUrl ? (
+                          <div className="w-11 h-14 shrink-0 rounded-lg border border-subtle bg-elevated overflow-hidden flex items-center justify-center relative">
+                            {thumbUrl ? (
                               <img
-                                src={producto.imagenUrl}
+                                src={thumbUrl}
                                 alt={producto.nombre}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
+                                decoding="async"
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';
                                   const fallback =
@@ -428,7 +538,7 @@ export const InventarioPage: React.FC = () => {
                             ) : null}
                             <div
                               className={`w-full h-full flex items-center justify-center text-muted bg-elevated ${
-                                producto.imagenUrl ? 'hidden img-fallback' : ''
+                                thumbUrl ? 'hidden img-fallback' : ''
                               }`}
                               title="Sin imagen"
                             >
@@ -445,8 +555,8 @@ export const InventarioPage: React.FC = () => {
                                 {producto.descripcion}
                               </span>
                             )}
-                            <span className="text-[11px] text-muted font-sans mt-0.5">
-                              Categoría: {producto.categoria}
+                            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-sans font-medium mt-0.5">
+                              {producto.categoria}
                             </span>
                           </div>
                         </div>
@@ -468,7 +578,7 @@ export const InventarioPage: React.FC = () => {
                             {producto.variantes?.map((v) => (
                               <span
                                 key={v.id}
-                                className={`text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-md border ${
+                                className={`text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-md border whitespace-nowrap ${
                                   v.stockFisico === 0
                                     ? 'border-red-500/30 bg-red-500/10 text-red-500 line-through'
                                     : 'border-subtle bg-elevated text-primary font-medium'
