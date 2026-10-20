@@ -153,6 +153,36 @@ public static class UsuariosEndpoints
         .WithName("CalcularPagoEmpleado")
         .WithSummary("Calcula la liquidación de jornada basada en las horas trabajadas y la tarifa personalizada del empleado.")
         .WithOpenApi();
+
+        // 4. PUT /api/usuarios/empleados/{id}/reset-password: Resetear o cambiar contraseña de un empleado por el Administrador
+        group.MapPut("/empleados/{id:int}/reset-password", async (
+            int id,
+            ResetPasswordEmpleadoRequest request,
+            AppDbContext context,
+            IPasswordHasher passwordHasher,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.NuevaPassword) || request.NuevaPassword.Length < 6)
+            {
+                return Results.BadRequest(new { error = "La nueva contraseña debe tener al menos 6 caracteres." });
+            }
+
+            var empleado = await context.Usuarios.FirstOrDefaultAsync(u => u.Id == id, ct);
+            if (empleado is null)
+            {
+                return Results.NotFound(new { error = $"Empleado con ID {id} no encontrado." });
+            }
+
+            empleado.PasswordHash = passwordHasher.Hash(request.NuevaPassword);
+            empleado.DebeCambiarPassword = request.DebeCambiarPassword;
+
+            await context.SaveChangesAsync(ct);
+
+            return Results.Ok(new { message = $"Contraseña actualizada exitosamente para {empleado.Nombre}." });
+        })
+        .WithName("ResetPasswordEmpleado")
+        .WithSummary("Permite al Administrador restablecer o asignar una nueva contraseña a un empleado.")
+        .WithOpenApi();
     }
 }
 
@@ -186,4 +216,9 @@ public record CalcularPagoResponse(
     decimal TarifaPorHora,
     decimal HorasTrabajadas,
     decimal TotalAPagar
+);
+
+public record ResetPasswordEmpleadoRequest(
+    string NuevaPassword,
+    bool DebeCambiarPassword = false
 );

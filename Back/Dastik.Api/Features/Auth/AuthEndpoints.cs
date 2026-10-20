@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Dastik.Api.Features.Auth.CambiarPassword;
 using Dastik.Api.Features.Auth.Login;
+using Dastik.Api.Features.Auth.RecuperarPassword;
 using FluentValidation;
 using MediatR;
 
@@ -38,6 +39,32 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .WithName("Login")
         .WithSummary("Inicia sesión y genera el token JWT con claims de rol, sandbox y estado de contraseña.")
+        .WithOpenApi();
+
+        // 1.b Recuperación de Contraseña del Dueño/Admin con Llave Maestra del local
+        group.MapPost("/recuperar-password", async (
+            RecuperarPasswordCommand command,
+            ISender sender,
+            IValidator<RecuperarPasswordCommand> validator,
+            CancellationToken ct) =>
+        {
+            var validationResult = await validator.ValidateAsync(command, ct);
+            if (!validationResult.IsValid)
+            {
+                return Results.ValidationProblem(validationResult.ToDictionary());
+            }
+
+            var result = await sender.Send(command, ct);
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { error = result.Error });
+            }
+
+            return Results.Ok(result.Value);
+        })
+        .AllowAnonymous()
+        .WithName("RecuperarPassword")
+        .WithSummary("Restablece la contraseña de una cuenta Admin validando la Llave Maestra del local.")
         .WithOpenApi();
 
         // 2. Cambio de Contraseña (Requiere Autorización)

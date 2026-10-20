@@ -96,7 +96,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const mostrarImagenReal = Boolean(fotoFrontal) && !imageError;
 
   return (
-    <article className="border border-black/[0.08] dark:border-white/[0.07] bg-white dark:bg-[#0E1015]/90 hover:border-black/20 dark:hover:border-white/[0.22] shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300 rounded-xl overflow-hidden flex flex-col h-full group">
+    <article className="border border-subtle bg-surface hover:border-strong shadow-xs hover:shadow-floating transition-all duration-300 rounded-xl overflow-hidden flex flex-col h-full group">
       {/* 1. Cabecera Visual con Proporción Vertical (aspect-[4/5]), Flip en Hover y Vignette */}
       <div
         role="button"
@@ -138,8 +138,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           renderProductIcon()
         )}
 
-        {/* Vignette Cinematográfico sutil en el pie de la imagen */}
-        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/60 via-black/15 to-transparent pointer-events-none z-1" />
+        {/* Vignette Cinematográfico sutil en el pie de la imagen: suavizado para no oscurecer en Light Mode */}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/25 dark:from-black/70 via-black/5 dark:via-black/20 to-transparent pointer-events-none z-1" />
 
         {/* Badge Glassmorphism Superior Izquierdo: Marca */}
         <span className="absolute top-2.5 left-2.5 z-10 backdrop-blur-md bg-black/50 border border-white/10 text-white/90 font-mono text-[10px] tracking-wider px-2 py-0.5 rounded-md truncate max-w-[60%] uppercase">
@@ -212,9 +212,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   title={`Talle ${variante.talle} (${variante.color}) · ${variante.stockFisico} disp. · EAN: ${variante.codigoBarras}`}
                   className={`relative rounded-lg border min-w-[2rem] w-auto px-1.5 py-1 whitespace-nowrap text-center transition-all duration-200 flex flex-col items-center justify-center ${
                     isOutOfStock
-                      ? 'border-subtle bg-elevated/35 text-muted opacity-40 line-through cursor-not-allowed'
+                      ? 'border-slate-200 dark:border-white/[0.05] bg-slate-100 dark:bg-white/[0.03] text-slate-400 dark:text-zinc-600 line-through cursor-not-allowed opacity-80'
                       : isJustAdded
-                      ? 'border-emerald-400 bg-emerald-500/90 text-white shadow-[0_0_12px_rgba(52,211,153,0.7)] ring-2 ring-emerald-400/50 cursor-pointer'
+                      ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/30 cursor-pointer'
                       : 'border-subtle bg-elevated hover:border-amber-500/60 hover:bg-amber-500/10 text-primary cursor-pointer'
                   }`}
                 >
@@ -228,10 +228,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     </motion.div>
                   ) : (
                     <>
-                      <span className="font-mono tabular-nums text-[11px] font-bold leading-none whitespace-nowrap">
+                      <span className={`font-mono tabular-nums text-[11px] font-bold leading-none whitespace-nowrap ${isOutOfStock ? 'text-slate-400 dark:text-zinc-600' : 'text-primary'}`}>
                         {variante.talle}
                       </span>
-                      <span className="text-[9px] font-mono tabular-nums text-muted mt-0.5 leading-none whitespace-nowrap">
+                      <span className={`text-[9px] font-mono tabular-nums mt-0.5 leading-none whitespace-nowrap ${isOutOfStock ? 'text-slate-400 dark:text-zinc-600' : 'text-muted'}`}>
                         {variante.stockFisico}u
                       </span>
                     </>

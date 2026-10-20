@@ -12,10 +12,16 @@ import {
   Sun,
   Moon,
   ClockAfternoon,
+  Key,
 } from '@phosphor-icons/react';
 import { empleadosApi, type EmpleadoDto, type CrearEmpleadoRequest } from '../api/empleadosApi';
 import { Button } from '../../../components/ui/Button';
-import { ModalCrearEmpleado, ModalLiquidarJornada } from '../components/EmpleadosModals';
+import {
+  ModalCrearEmpleado,
+  ModalLiquidarJornada,
+  ModalResetPasswordEmpleado,
+} from '../components/EmpleadosModals';
+import type { AxiosError } from 'axios';
 
 export const EmpleadosPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -25,7 +31,9 @@ export const EmpleadosPage: React.FC = () => {
 
   const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
   const [empleadoParaLiquidar, setEmpleadoParaLiquidar] = useState<EmpleadoDto | null>(null);
+  const [empleadoParaResetPassword, setEmpleadoParaResetPassword] = useState<EmpleadoDto | null>(null);
   const [horasTrabajadas, setHorasTrabajadas] = useState<string>('12');
+  const [isResetPending, setIsResetPending] = useState(false);
 
   const [nuevoEmpleado, setNuevoEmpleado] = useState<CrearEmpleadoRequest>({
     nombre: '',
@@ -65,10 +73,11 @@ export const EmpleadosPage: React.FC = () => {
       });
       setTimeout(() => setNotificacion(null), 6000);
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
+      const axiosErr = err as AxiosError<{ error?: string }>;
       const errorMsg =
-        err?.response?.data?.error ||
-        err?.message ||
+        axiosErr.response?.data?.error ||
+        axiosErr.message ||
         'Error desconocido al crear el empleado.';
       setNotificacion({
         tipo: 'error',
@@ -77,6 +86,36 @@ export const EmpleadosPage: React.FC = () => {
       setTimeout(() => setNotificacion(null), 6000);
     },
   });
+
+  const handleResetPasswordSubmit = async (
+    empleadoId: number,
+    nuevaPassword: string,
+    debeCambiarPassword: boolean
+  ) => {
+    try {
+      setIsResetPending(true);
+      const res = await empleadosApi.resetPassword(empleadoId, nuevaPassword, debeCambiarPassword);
+      setNotificacion({
+        tipo: 'exito',
+        texto: res.message || 'Contraseña del empleado actualizada exitosamente.',
+      });
+      setEmpleadoParaResetPassword(null);
+      setTimeout(() => setNotificacion(null), 6000);
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<{ error?: string }>;
+      const errorMsg =
+        axiosErr.response?.data?.error ||
+        axiosErr.message ||
+        'No se pudo actualizar la contraseña.';
+      setNotificacion({
+        tipo: 'error',
+        texto: errorMsg,
+      });
+      setTimeout(() => setNotificacion(null), 6000);
+    } finally {
+      setIsResetPending(false);
+    }
+  };
 
   const formatearDinero = (monto: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -122,7 +161,7 @@ export const EmpleadosPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const algunModalAbierto = isModalCrearOpen || !!empleadoParaLiquidar;
+    const algunModalAbierto = isModalCrearOpen || !!empleadoParaLiquidar || !!empleadoParaResetPassword;
 
     if (algunModalAbierto) {
       document.body.style.overflow = 'hidden';
@@ -136,6 +175,8 @@ export const EmpleadosPage: React.FC = () => {
           setIsModalCrearOpen(false);
         } else if (empleadoParaLiquidar) {
           setEmpleadoParaLiquidar(null);
+        } else if (empleadoParaResetPassword && !isResetPending) {
+          setEmpleadoParaResetPassword(null);
         }
       }
     };
@@ -148,7 +189,7 @@ export const EmpleadosPage: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [isModalCrearOpen, empleadoParaLiquidar, crearMutation.isPending]);
+  }, [isModalCrearOpen, empleadoParaLiquidar, empleadoParaResetPassword, crearMutation.isPending, isResetPending]);
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
@@ -278,34 +319,34 @@ export const EmpleadosPage: React.FC = () => {
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre o email..."
-            className="w-full bg-elevated focus:bg-surface border border-subtle focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-lg text-primary text-xs md:text-sm font-sans pl-10 pr-4 py-2 placeholder:text-muted outline-none transition-fast"
+            placeholder="Buscar por nombre o correo de empleado..."
+            className="w-full bg-surface border border-subtle focus:border-amber-500/80 rounded-lg text-primary text-xs pl-9 pr-4 py-2 outline-none transition-fast"
           />
         </div>
 
-        <div className="flex items-center gap-1 rounded-lg border border-subtle bg-elevated p-1">
-          {(['TODOS', 'Mañana', 'Tarde', 'Completo'] as const).map((t) => (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          {(['TODOS', 'Mañana', 'Tarde', 'Completo'] as const).map((turno) => (
             <button
-              key={t}
+              key={turno}
               type="button"
-              onClick={() => setFiltroTurno(t)}
-              className={`px-3 py-1 text-xs font-sans font-semibold rounded-md transition-fast cursor-pointer ${
-                filtroTurno === t
-                  ? 'bg-surface text-primary shadow-sm'
-                  : 'text-secondary hover:text-primary'
+              onClick={() => setFiltroTurno(turno)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-fast cursor-pointer ${
+                filtroTurno === turno
+                  ? 'border border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                  : 'border border-subtle bg-elevated text-secondary hover:text-primary'
               }`}
             >
-              {t === 'TODOS' ? 'Todos' : t}
+              {turno === 'TODOS' ? 'Todos los Turnos' : `Turno ${turno}`}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Data Grid de Empleados */}
-      <div className="rounded-xl border border-subtle bg-surface overflow-hidden shadow-surface">
+      {/* Tabla de Empleados */}
+      <div className="rounded-xl border border-subtle bg-surface shadow-surface overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center space-y-3">
-            <ArrowClockwise size={28} weight="bold" className="animate-spin text-amber-500 mx-auto" />
+            <ArrowClockwise size={28} className="animate-spin text-amber-500 mx-auto" />
             <p className="text-xs font-medium text-secondary">
               Cargando equipo de empleados...
             </p>
@@ -338,7 +379,7 @@ export const EmpleadosPage: React.FC = () => {
                   <th className="py-3.5 px-4 text-right">Tarifa × Hora</th>
                   <th className="py-3.5 px-4 text-right">Jornada Completa (12h)</th>
                   <th className="py-3.5 px-4 text-center">Estado</th>
-                  <th className="py-3.5 px-4 text-center">Acción Rápida</th>
+                  <th className="py-3.5 px-4 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-subtle text-xs font-sans">
@@ -402,18 +443,30 @@ export const EmpleadosPage: React.FC = () => {
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            setEmpleadoParaLiquidar(emp);
-                            setHorasTrabajadas('12');
-                          }}
-                          title={`Calcular pago diario para ${emp.nombre}`}
-                        >
-                          <Calculator size={15} weight="duotone" className="text-emerald-500" />
-                          <span>Liquidar Jornada</span>
-                        </Button>
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setEmpleadoParaLiquidar(emp);
+                              setHorasTrabajadas('12');
+                            }}
+                            title={`Calcular liquidación diaria para ${emp.nombre}`}
+                          >
+                            <Calculator size={14} weight="duotone" className="text-emerald-500" />
+                            <span>Liquidar</span>
+                          </Button>
+
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setEmpleadoParaResetPassword(emp)}
+                            title={`Cambiar o restablecer contraseña para ${emp.nombre}`}
+                          >
+                            <Key size={14} weight="duotone" className="text-amber-500" />
+                            <span>Cambiar Clave</span>
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -441,6 +494,14 @@ export const EmpleadosPage: React.FC = () => {
         horasTrabajadas={horasTrabajadas}
         onChangeHorasTrabajadas={setHorasTrabajadas}
         formatearDinero={formatearDinero}
+      />
+
+      {/* MODAL 3: CAMBIAR / RESETEAR CONTRASEÑA DE EMPLEADO */}
+      <ModalResetPasswordEmpleado
+        empleado={empleadoParaResetPassword}
+        onClose={() => setEmpleadoParaResetPassword(null)}
+        onSubmit={handleResetPasswordSubmit}
+        isPending={isResetPending}
       />
     </div>
   );
