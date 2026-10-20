@@ -27,7 +27,12 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginRes
         var normalizedInput = request.Email.Trim().ToLowerInvariant();
 
         var usuario = await _context.Usuarios
-            .FirstOrDefaultAsync(u => (u.Email.ToLower() == normalizedInput || u.Nombre.ToLower() == normalizedInput) && u.Activo, cancellationToken);
+            .FirstOrDefaultAsync(u =>
+                (u.Email.ToLower() == normalizedInput ||
+                 u.Nombre.ToLower() == normalizedInput ||
+                 u.Email.ToLower() == normalizedInput + "@dastik.com" ||
+                 u.Nombre.ToLower().StartsWith(normalizedInput + " ")) &&
+                u.Activo, cancellationToken);
 
         if (usuario is null)
         {

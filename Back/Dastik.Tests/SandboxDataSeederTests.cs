@@ -1,3 +1,4 @@
+using Dastik.Api.Domain.Entities;
 using Dastik.Api.Domain.Services;
 using Dastik.Api.Infrastructure.Persistence;
 using Dastik.Api.Infrastructure.Security;
@@ -79,7 +80,29 @@ public class SandboxDataSeederTests : IDisposable
         yeezy.Variantes.Should().HaveCount(4);
         yeezy.Variantes.Select(v => v.Talle).Should().BeEquivalentTo(new[] { "US 8", "US 9", "US 10", "US 11" });
 
-        // Usuario cajero de sandbox creado
+        // Cuentas de prueba pre-sembradas en Sandbox
+        var tomiDev = await _context.Usuarios.FirstOrDefaultAsync(u => u.Nombre == "tomiDev");
+        tomiDev.Should().NotBeNull();
+        tomiDev!.Rol.Should().Be(RolUsuario.Admin);
+        tomiDev.DebeCambiarPassword.Should().BeFalse();
+        _passwordHasher.Verify("admin", tomiDev.PasswordHash).Should().BeTrue();
+
+        var franco = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == "franco@dastik.com");
+        franco.Should().NotBeNull();
+        franco!.Nombre.Should().Be("Franco Romero");
+        franco.Rol.Should().Be(RolUsuario.Empleado);
+        franco.TurnoAsignado.Should().Be("Tarde");
+        franco.TarifaPorHora.Should().Be(4000m);
+        _passwordHasher.Verify("1234", franco.PasswordHash).Should().BeTrue();
+
+        var lucas = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == "lucas@dastik.com");
+        lucas.Should().NotBeNull();
+        lucas!.Nombre.Should().Be("Lucas Benítez");
+        lucas.Rol.Should().Be(RolUsuario.Empleado);
+        lucas.TurnoAsignado.Should().Be("Mañana");
+        lucas.TarifaPorHora.Should().Be(4500m);
+        _passwordHasher.Verify("1234", lucas.PasswordHash).Should().BeTrue();
+
         var cajero = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == SandboxDataSeeder.SandboxUserEmailDefault);
         cajero.Should().NotBeNull();
         cajero!.DebeCambiarPassword.Should().BeFalse();

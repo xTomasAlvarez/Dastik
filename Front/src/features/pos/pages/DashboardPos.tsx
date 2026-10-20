@@ -105,7 +105,7 @@ export const DashboardPos: React.FC = () => {
   }, [items.length, turnoActivo, isModalPagoOpen, isModalCerrarTurnoOpen]);
 
   return (
-    <div className="h-screen w-screen bg-canvas text-primary flex flex-col overflow-hidden">
+    <div className="h-full w-full bg-canvas text-primary flex flex-col overflow-hidden">
       {/* 1. Header Superior */}
       <PosHeader
         turnoActivo={turnoActivo}

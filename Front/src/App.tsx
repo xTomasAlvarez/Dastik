@@ -11,7 +11,9 @@ import { EmpleadosPage } from './features/admin/pages/EmpleadosPage';
 import { MetricasPage } from './features/admin/pages/MetricasPage';
 import { ConfiguracionPage } from './features/admin/pages/ConfiguracionPage';
 import { CambiarPasswordModal } from './features/auth/components/CambiarPasswordModal';
+import { SandboxBanner } from './components/layout/SandboxBanner';
 import { useAuthStore } from './stores/useAuthStore';
+import { useTenantStore } from './stores/useTenantStore';
 import { useThemeStore } from './stores/useThemeStore';
 import { queryClient } from './lib/react-query/queryClient';
 
@@ -63,62 +65,68 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 export function App() {
   const { isAuthenticated, debeCambiarPassword } = useAuthStore();
+  const { isSandboxMode } = useTenantStore();
   // Inicializa el tema persistido en document.documentElement (.dark / .light)
   useThemeStore();
 
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              isAuthenticated && !debeCambiarPassword ? (
-                <Navigate to="/" replace />
-              ) : (
-                <LoginPage />
-              )
-            }
-          />
+        <div className="h-screen w-screen flex flex-col bg-canvas text-primary overflow-hidden">
+          {isSandboxMode && <SandboxBanner />}
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <Routes>
+              <Route
+                path="/login"
+                element={
+                  isAuthenticated && !debeCambiarPassword ? (
+                    <Navigate to="/" replace />
+                  ) : (
+                    <LoginPage />
+                  )
+                }
+              />
 
-          {/* Terminal POS (Caja de mostrador) */}
-          <Route
-            path="/"
-            element={
-              <RutaProtegida>
-                <DashboardPos />
-              </RutaProtegida>
-            }
-          />
-          <Route
-            path="/pos"
-            element={
-              <RutaProtegida>
-                <DashboardPos />
-              </RutaProtegida>
-            }
-          />
+              {/* Terminal POS (Caja de mostrador) */}
+              <Route
+                path="/"
+                element={
+                  <RutaProtegida>
+                    <DashboardPos />
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/pos"
+                element={
+                  <RutaProtegida>
+                    <DashboardPos />
+                  </RutaProtegida>
+                }
+              />
 
-          {/* Panel de Administración (Back-Office) - Exclusivo Admin */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminLayout />
-              </AdminRoute>
-            }
-          >
-            <Route index element={<DashboardPage />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="inventario" element={<InventarioPage />} />
-            <Route path="arqueos" element={<ArqueosPage />} />
-            <Route path="empleados" element={<EmpleadosPage />} />
-            <Route path="metricas" element={<MetricasPage />} />
-            <Route path="configuracion" element={<ConfiguracionPage />} />
-          </Route>
+              {/* Panel de Administración (Back-Office) - Exclusivo Admin */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminLayout />
+                  </AdminRoute>
+                }
+              >
+                <Route index element={<DashboardPage />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="inventario" element={<InventarioPage />} />
+                <Route path="arqueos" element={<ArqueosPage />} />
+                <Route path="empleados" element={<EmpleadosPage />} />
+                <Route path="metricas" element={<MetricasPage />} />
+                <Route path="configuracion" element={<ConfiguracionPage />} />
+              </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+        </div>
       </BrowserRouter>
     </QueryClientProvider>
   );
