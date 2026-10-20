@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dastik.Api.Domain.Entities;
 using Dastik.Api.Domain.Services;
 using Dastik.Api.Infrastructure.Persistence;
@@ -18,6 +19,10 @@ public class CrearProductoCommandHandler : IRequestHandler<CrearProductoCommand,
 
     public async Task<CrearProductoResult> Handle(CrearProductoCommand request, CancellationToken cancellationToken)
     {
+        var imagenesIniciales = !string.IsNullOrWhiteSpace(request.ImagenUrl)
+            ? new List<string> { request.ImagenUrl.Trim() }
+            : new List<string>();
+
         var producto = new Producto
         {
             UnidadNegocioId = request.UnidadNegocioId,
@@ -27,6 +32,7 @@ public class CrearProductoCommandHandler : IRequestHandler<CrearProductoCommand,
             Nombre = request.Nombre,
             Descripcion = request.Descripcion,
             ImagenUrl = request.ImagenUrl,
+            ImagenesJson = JsonSerializer.Serialize(imagenesIniciales),
             CostoBase = request.CostoBase,
             MarkupAplicado = request.MarkupAplicado,
             PrecioVenta = request.PrecioVenta,

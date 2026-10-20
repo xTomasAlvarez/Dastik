@@ -68,25 +68,24 @@ export const AdminLayout: React.FC = () => {
     <div className="min-h-screen bg-canvas text-primary flex flex-col md:flex-row font-sans">
       {/* Sidebar Izquierda Fija (w-64) */}
       <aside className="w-full md:w-64 bg-surface border-b md:border-b-0 md:border-r border-subtle flex flex-col md:h-screen md:sticky md:top-0 shrink-0 shadow-surface">
-        {/* Branding */}
-        <div className="p-5 border-b border-subtle">
-          <div className="flex items-center gap-3">
-            <div className="border border-subtle bg-black rounded-lg px-2.5 py-1.5 flex items-center justify-center shrink-0 shadow-surface">
-              <img
-                src="/dastik-logo.png"
-                alt="Dastik"
-                className="h-5 w-auto object-contain select-none"
-              />
-            </div>
-            <div>
-              <h1 className="text-base font-heading font-extrabold tracking-tight text-primary">
-                DASTIK <span className="text-muted font-normal">//</span> ADMIN
-              </h1>
-              <span className="text-[11px] font-medium text-muted font-sans block">
-                Back-Office &amp; Control
-              </span>
-            </div>
+        {/* Branding limpio con DastikSinFondo.png */}
+        <div className="px-5 py-4 border-b border-subtle flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <img
+              src="/DastikSinFondo.png"
+              alt="Dastik"
+              className="h-6 w-auto object-contain select-none brightness-50 contrast-125 dark:brightness-110 dark:contrast-100 shrink-0"
+            />
+            <span className="text-muted font-mono text-xs select-none">/</span>
+            <span className="text-xs font-heading font-bold tracking-wider text-secondary uppercase">
+              ADMIN
+            </span>
           </div>
+          {isSandboxMode && (
+            <span className="inline-flex items-center gap-1 border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold shrink-0">
+              SANDBOX
+            </span>
+          )}
         </div>
 
         {/* Acceso Rápido al Terminal POS */}

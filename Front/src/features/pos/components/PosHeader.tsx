@@ -65,34 +65,23 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
 
   return (
     <header className="w-full bg-surface border-b border-subtle px-4 lg:px-5 py-2.5 flex items-center justify-between gap-3 shrink-0 z-30 shadow-surface">
-      {/* Brand con Logo Oficial Dastik & Título de Terminal */}
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="border border-subtle bg-black rounded-lg px-2.5 py-1.5 flex items-center justify-center shrink-0 shadow-surface">
-          <img
-            src="/dastik-logo.png"
-            alt="Dastik"
-            className="h-5 sm:h-6 w-auto object-contain select-none"
-          />
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm md:text-base font-heading font-extrabold tracking-tight text-primary truncate">
-              DASTIK <span className="text-muted font-normal">//</span> HIDDEN SNEAKERS
-            </h1>
-            <span className="border border-subtle bg-elevated rounded-md px-1.5 py-0.5 text-[10px] font-mono font-semibold text-secondary shrink-0">
-              POS v1.0
-            </span>
-            {isSandboxMode && (
-              <span className="hidden md:inline-flex items-center gap-1 border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold shrink-0">
-                <TestTube size={11} weight="fill" />
-                SANDBOX
-              </span>
-            )}
-          </div>
-          <span className="text-[11px] text-muted font-sans hidden sm:block truncate">
-            Terminal de Cobro &amp; Control de Inventario
+      {/* Brand con Logo Oficial Dastik Sin Fondo (Sin duplicar texto "DASTIK") */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <img
+          src="/DastikSinFondo.png"
+          alt="Dastik"
+          className="h-6 sm:h-7 w-auto object-contain select-none brightness-50 contrast-125 dark:brightness-110 dark:contrast-100 shrink-0"
+        />
+        <span className="text-muted font-mono text-sm select-none">/</span>
+        <span className="text-xs sm:text-sm font-heading font-bold tracking-tight text-secondary truncate">
+          HIDDEN SNEAKERS
+        </span>
+        {isSandboxMode && (
+          <span className="hidden md:inline-flex items-center gap-1 border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold shrink-0">
+            <TestTube size={11} weight="fill" />
+            SANDBOX
           </span>
-        </div>
+        )}
       </div>
 
       {/* Controles Operativos Inmediatos de Caja + Menú Hamburguesa */}

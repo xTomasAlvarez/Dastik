@@ -52,6 +52,7 @@ export const InventarioPage: React.FC = () => {
     mutationFn: inventarioApi.sincronizarTiendanube,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
+      queryClient.invalidateQueries({ queryKey: ['catalogo-pos'] });
       queryClient.invalidateQueries({ queryKey: ['productos'] });
       setMensajeNotificacion({
         tipo: 'exito',
@@ -146,6 +147,7 @@ export const InventarioPage: React.FC = () => {
 
   const handleCreacionExitosa = () => {
     queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
+    queryClient.invalidateQueries({ queryKey: ['catalogo-pos'] });
     queryClient.invalidateQueries({ queryKey: ['productos'] });
     setMensajeNotificacion({
       tipo: 'exito',

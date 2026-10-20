@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dastik.Api.Common;
 using Dastik.Api.Domain.Entities;
 using Dastik.Api.Domain.Integrations.Tiendanube;
@@ -132,6 +133,13 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                 {
                     prodExistente.ImagenUrl = pDto.ImagenUrl;
                 }
+                var listaImagenesUpd = pDto.Imagenes is { Count: > 0 }
+                    ? pDto.Imagenes
+                    : (!string.IsNullOrWhiteSpace(pDto.ImagenUrl) ? new List<string> { pDto.ImagenUrl } : new List<string>());
+                if (listaImagenesUpd.Count > 0)
+                {
+                    prodExistente.ImagenesJson = JsonSerializer.Serialize(listaImagenesUpd);
+                }
                 if (pDto.Precio.HasValue && pDto.Precio.Value > 0)
                 {
                     prodExistente.PrecioVenta = pDto.Precio.Value;
@@ -197,6 +205,10 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                 decimal costoBase = pDto.Costo ?? (pDto.Precio.HasValue ? Math.Round(pDto.Precio.Value / 1.5m, 2) : 13333m);
                 decimal markup = costoBase > 0 ? Math.Round(precioVenta / costoBase, 2) : 1.5m;
 
+                var listaImagenesIns = pDto.Imagenes is { Count: > 0 }
+                    ? pDto.Imagenes
+                    : (!string.IsNullOrWhiteSpace(pDto.ImagenUrl) ? new List<string> { pDto.ImagenUrl } : new List<string>());
+
                 var nuevoProducto = new Producto
                 {
                     UnidadNegocioId = unidadDastik.Id, // REGLA DE TENANT: Dastik exclusivo
@@ -208,6 +220,7 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                         ? LimpiarHtml(pDto.Descripcion)
                         : $"{pDto.Nombre} - Importado Tiendanube",
                     ImagenUrl = pDto.ImagenUrl ?? "",
+                    ImagenesJson = JsonSerializer.Serialize(listaImagenesIns),
                     PrecioVenta = precioVenta,
                     CostoBase = costoBase,
                     MarkupAplicado = markup,

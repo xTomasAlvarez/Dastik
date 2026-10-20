@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dastik.Api.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +26,8 @@ public record ProductoCatalogoDto(
     decimal PrecioVenta,
     List<VarianteCatalogoDto> Variantes,
     decimal CostoBase = 0,
-    decimal MarkupAplicado = 0
+    decimal MarkupAplicado = 0,
+    List<string>? Imagenes = null
 );
 
 public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery, List<ProductoCatalogoDto>>
@@ -39,23 +41,25 @@ public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery,
 
     public async Task<List<ProductoCatalogoDto>> Handle(ListarProductosQuery request, CancellationToken cancellationToken)
     {
-        return await _context.Productos
+        var rows = await _context.Productos
             .AsNoTracking()
             .Where(p => p.Activo)
             .Include(p => p.UnidadNegocio)
             .Include(p => p.Marca)
             .Include(p => p.Categoria)
             .Include(p => p.Variantes)
-            .Select(p => new ProductoCatalogoDto(
+            .Select(p => new
+            {
                 p.Id,
                 p.Nombre,
                 p.Descripcion,
-                p.Marca.Nombre,
-                p.Categoria.Nombre,
-                p.UnidadNegocio.Nombre,
+                Marca = p.Marca.Nombre,
+                Categoria = p.Categoria.Nombre,
+                UnidadNegocio = p.UnidadNegocio.Nombre,
                 p.ImagenUrl,
+                p.ImagenesJson,
                 p.PrecioVenta,
-                p.Variantes.Select(v => new VarianteCatalogoDto(
+                Variantes = p.Variantes.Select(v => new VarianteCatalogoDto(
                     v.Id,
                     v.Talle,
                     v.Color,
@@ -64,7 +68,48 @@ public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery,
                 )).ToList(),
                 p.CostoBase,
                 p.MarkupAplicado
-            ))
+            })
             .ToListAsync(cancellationToken);
+
+        return rows.Select(p => new ProductoCatalogoDto(
+            p.Id,
+            p.Nombre,
+            p.Descripcion,
+            p.Marca,
+            p.Categoria,
+            p.UnidadNegocio,
+            p.ImagenUrl,
+            p.PrecioVenta,
+            p.Variantes,
+            p.CostoBase,
+            p.MarkupAplicado,
+            ResolverGaleriaImagenes(p.ImagenesJson, p.ImagenUrl)
+        )).ToList();
+    }
+
+    private static List<string> ResolverGaleriaImagenes(string? imagenesJson, string? imagenUrl)
+    {
+        if (!string.IsNullOrWhiteSpace(imagenesJson) && imagenesJson != "[]")
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<List<string>>(imagenesJson);
+                if (parsed is { Count: > 0 })
+                {
+                    return parsed.Where(u => !string.IsNullOrWhiteSpace(u)).ToList();
+                }
+            }
+            catch
+            {
+                // Fallback a ImagenUrl individual si el JSON es inválido
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(imagenUrl))
+        {
+            return [imagenUrl];
+        }
+
+        return [];
     }
 }

@@ -284,11 +284,8 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
               <ArrowsLeftRight size={18} weight="bold" />
             </div>
             <div>
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-600 dark:text-amber-400 font-bold block">
-                TERMINAL DE COBRO // MÓDULO DE CAMBIOS
-              </span>
-              <h2 className="font-heading font-bold text-base sm:text-lg text-primary tracking-tight uppercase">
-                GESTIÓN DE CAMBIO DE PRENDA
+              <h2 className="font-heading font-bold text-base sm:text-lg text-primary tracking-tight">
+                Gestión de Cambio de Prenda
               </h2>
             </div>
           </div>
@@ -429,7 +426,7 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                     />
                   </div>
 
-                  {/* Resultados rápidos de búsqueda */}
+                  {/* Resultados rápidos de búsqueda con Miniatura */}
                   {busquedaDevuelta.trim() && (
                     <div className="border border-subtle bg-surface rounded-lg divide-y divide-subtle max-h-56 overflow-y-auto">
                       {variantesDevueltasFiltradas.length > 0 ? (
@@ -444,13 +441,26 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                             className="w-full p-2.5 flex items-center justify-between hover:bg-elevated text-left transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-xs text-primary">
-                                {v.talle}
-                              </div>
+                              {v.producto.imagenUrl ? (
+                                <img
+                                  src={v.producto.imagenUrl}
+                                  alt={v.producto.nombre}
+                                  className="w-9 h-9 rounded-lg border border-subtle object-cover shrink-0 bg-elevated"
+                                />
+                              ) : (
+                                <div className="w-9 h-9 rounded-lg border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-xs text-primary shrink-0">
+                                  {v.talle}
+                                </div>
+                              )}
                               <div>
-                                <span className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold block">
-                                  {v.producto.marca} // {v.producto.unidadNegocio}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold">
+                                    {v.producto.marca}
+                                  </span>
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-subtle bg-elevated text-primary">
+                                    Talle {v.talle}
+                                  </span>
+                                </div>
                                 <h4 className="text-xs font-heading font-semibold text-primary">
                                   {v.producto.nombre}
                                 </h4>
@@ -482,13 +492,26 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                 <div className="border border-subtle bg-elevated rounded-xl p-4 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg border border-subtle bg-surface flex items-center justify-center font-heading font-bold text-sm text-primary">
-                        {varianteDevuelta.talle}
-                      </div>
+                      {varianteDevuelta.producto.imagenUrl ? (
+                        <img
+                          src={varianteDevuelta.producto.imagenUrl}
+                          alt={varianteDevuelta.producto.nombre}
+                          className="w-12 h-12 rounded-lg border border-subtle object-cover shrink-0 bg-surface"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg border border-subtle bg-surface flex items-center justify-center font-heading font-bold text-sm text-primary shrink-0">
+                          {varianteDevuelta.talle}
+                        </div>
+                      )}
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold block">
-                          {varianteDevuelta.producto.marca} // {varianteDevuelta.producto.unidadNegocio}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold">
+                            {varianteDevuelta.producto.marca}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-subtle bg-surface text-primary">
+                            Talle {varianteDevuelta.talle}
+                          </span>
+                        </div>
                         <h4 className="text-sm font-heading font-bold text-primary">
                           {varianteDevuelta.producto.nombre}
                         </h4>
@@ -609,13 +632,26 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                               }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-xs text-primary">
-                                  {v.talle}
-                                </div>
+                                {v.producto.imagenUrl ? (
+                                  <img
+                                    src={v.producto.imagenUrl}
+                                    alt={v.producto.nombre}
+                                    className="w-9 h-9 rounded-lg border border-subtle object-cover shrink-0 bg-elevated"
+                                  />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-lg border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-xs text-primary shrink-0">
+                                    {v.talle}
+                                  </div>
+                                )}
                                 <div>
-                                  <span className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold block">
-                                    {v.producto.marca} // {v.producto.unidadNegocio}
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold">
+                                      {v.producto.marca}
+                                    </span>
+                                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-subtle bg-elevated text-primary">
+                                      Talle {v.talle}
+                                    </span>
+                                  </div>
                                   <h4 className="text-xs font-heading font-semibold text-primary">
                                     {v.producto.nombre}
                                   </h4>
@@ -652,13 +688,26 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                 <div className="border border-subtle bg-elevated rounded-xl p-4 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg border border-subtle bg-surface flex items-center justify-center font-heading font-bold text-sm text-primary">
-                        {varianteNueva.talle}
-                      </div>
+                      {varianteNueva.producto.imagenUrl ? (
+                        <img
+                          src={varianteNueva.producto.imagenUrl}
+                          alt={varianteNueva.producto.nombre}
+                          className="w-12 h-12 rounded-lg border border-subtle object-cover shrink-0 bg-surface"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg border border-subtle bg-surface flex items-center justify-center font-heading font-bold text-sm text-primary shrink-0">
+                          {varianteNueva.talle}
+                        </div>
+                      )}
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold block">
-                          {varianteNueva.producto.marca} // {varianteNueva.producto.unidadNegocio}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold">
+                            {varianteNueva.producto.marca}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-subtle bg-surface text-primary">
+                            Talle {varianteNueva.talle}
+                          </span>
+                        </div>
                         <h4 className="text-sm font-heading font-bold text-primary">
                           {varianteNueva.producto.nombre}
                         </h4>

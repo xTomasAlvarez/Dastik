@@ -1,16 +1,44 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowsClockwise, MagnifyingGlass, WarningCircle, X } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  ArrowsClockwise,
+  MagnifyingGlass,
+  Barcode,
+  WarningCircle,
+  CheckCircle,
+  X,
+  CaretLeft,
+  CaretRight,
+  EyeSlash,
+} from '@phosphor-icons/react';
 import { inventarioApi, type ProductoCatalogoDto } from '../api/inventarioApi';
+import { useCartStore } from '../stores/useCartStore';
 import { ProductCard } from './ProductCard';
+import { ModalQuickViewPos } from './ModalQuickViewPos';
 
 interface CatalogoGridProps {
   onProductosLoaded?: (productos: ProductoCatalogoDto[]) => void;
 }
 
+const PAGE_SIZE = 12;
+
 export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded }) => {
-  const [filtroTexto, setFiltroTexto] = useState('');
+  const [omnibarInput, setOmnibarInput] = useState('');
   const [filtroUnidad, setFiltroUnidad] = useState<'TODOS' | 'DASTIK' | 'HIDDEN'>('TODOS');
+  const [ocultarAgotados, setOcultarAgotados] = useState(false);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [quickViewProducto, setQuickViewProducto] = useState<ProductoCatalogoDto | null>(null);
+
+  const [scanFeedback, setScanFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const addItem = useCartStore((state) => state.addItem);
 
   const {
     data: productos = [],
@@ -30,131 +58,299 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
     },
   });
 
+  const showScanFeedback = (type: 'success' | 'error', message: string) => {
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    setScanFeedback({ type, message });
+    feedbackTimerRef.current = setTimeout(() => {
+      setScanFeedback(null);
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    };
+  }, []);
+
+  // Atajo F1 para enfocar la Omnibar inmediatamente
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F1') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Procesar escaneo EAN-13 al presionar Enter en la Omnibar
+  const handleOmnibarSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = omnibarInput.trim();
+    if (!code) return;
+
+    for (const prod of productos) {
+      const variante = prod.variantes.find(
+        (v) => v.codigoBarras.toLowerCase() === code.toLowerCase()
+      );
+
+      if (variante) {
+        if (variante.stockFisico <= 0) {
+          showScanFeedback(
+            'error',
+            `Sin stock: ${prod.nombre} (${variante.talle})`
+          );
+          setOmnibarInput('');
+          return;
+        }
+
+        const imagenPrincipal =
+          (prod.imagenes && prod.imagenes.length > 0
+            ? prod.imagenes[0]
+            : prod.imagenUrl) || '';
+
+        addItem({
+          varianteId: variante.id,
+          productoId: prod.id,
+          nombreProducto: prod.nombre,
+          marca: prod.marca,
+          talle: variante.talle,
+          color: variante.color,
+          codigoBarras: variante.codigoBarras,
+          precioUnitario: prod.precioVenta,
+          stockFisico: variante.stockFisico,
+          imagenUrl: imagenPrincipal,
+        });
+
+        showScanFeedback(
+          'success',
+          `+1 ${prod.nombre} (${variante.talle})`
+        );
+        setOmnibarInput('');
+        return;
+      }
+    }
+
+    // Si parece un código numérico EAN pero no existe, avisar
+    if (/^\d{8,14}$/.test(code)) {
+      showScanFeedback('error', `EAN no encontrado: ${code}`);
+      setOmnibarInput('');
+    }
+  };
+
   // Filtrado reactivo en memoria
   const productosFiltrados = useMemo(() => {
     return productos.filter((p) => {
-      if (filtroUnidad === 'DASTIK' && !p.unidadNegocio?.toLowerCase().includes('dastik')) {
+      if (
+        filtroUnidad === 'DASTIK' &&
+        !p.unidadNegocio?.toLowerCase().includes('dastik')
+      ) {
         return false;
       }
-      if (filtroUnidad === 'HIDDEN' && !p.unidadNegocio?.toLowerCase().includes('hidden')) {
+      if (
+        filtroUnidad === 'HIDDEN' &&
+        !p.unidadNegocio?.toLowerCase().includes('hidden')
+      ) {
         return false;
       }
 
-      if (!filtroTexto.trim()) return true;
+      if (ocultarAgotados) {
+        const stockTotal = p.variantes.reduce((acc, v) => acc + v.stockFisico, 0);
+        if (stockTotal <= 0) return false;
+      }
 
-      const termino = filtroTexto.toLowerCase().trim();
+      if (!omnibarInput.trim()) return true;
+
+      const termino = omnibarInput.toLowerCase().trim();
       const coincideNombre = p.nombre.toLowerCase().includes(termino);
       const coincideMarca = p.marca.toLowerCase().includes(termino);
       const coincideCategoria = p.categoria.toLowerCase().includes(termino);
-      const coincideTalle = p.variantes.some(
-        (v) => v.talle.toLowerCase().includes(termino) || v.codigoBarras.includes(termino)
+      const coincideVariante = p.variantes.some(
+        (v) =>
+          v.talle.toLowerCase().includes(termino) ||
+          v.codigoBarras.toLowerCase().includes(termino)
       );
 
-      return coincideNombre || coincideMarca || coincideCategoria || coincideTalle;
+      return (
+        coincideNombre ||
+        coincideMarca ||
+        coincideCategoria ||
+        coincideVariante
+      );
     });
-  }, [productos, filtroTexto, filtroUnidad]);
+  }, [productos, omnibarInput, filtroUnidad, ocultarAgotados]);
+
+  // Resetear a la página 1 cuando cambian los filtros
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [omnibarInput, filtroUnidad, ocultarAgotados]);
+
+  const totalPaginas = Math.max(1, Math.ceil(productosFiltrados.length / PAGE_SIZE));
+  const indiceInicio = (paginaActual - 1) * PAGE_SIZE;
+  const productosPaginados = useMemo(() => {
+    return productosFiltrados.slice(indiceInicio, indiceInicio + PAGE_SIZE);
+  }, [productosFiltrados, indiceInicio]);
 
   return (
-    <div className="flex-1 rounded-xl border border-subtle bg-surface p-5 flex flex-col gap-4 shadow-surface">
-      {/* 1. Header del Catálogo con Filtros y Buscador */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-subtle pb-4">
-        <div>
-          <span className="text-[11px] font-medium tracking-wider uppercase text-muted font-sans block">
-            Catálogo Retail en Tiempo Real
-          </span>
-          <h2 className="text-base md:text-lg font-heading font-bold text-primary tracking-tight">
-            Prendas &amp; Sneakers Disponibles
-          </h2>
-        </div>
-
-        {/* Segmented Control de Filtro por Unidad de Negocio */}
-        <div className="flex items-center gap-2 self-stretch sm:self-auto">
-          <div className="flex items-center bg-elevated p-1 rounded-lg border border-subtle">
-            {(['TODOS', 'DASTIK', 'HIDDEN'] as const).map((unidad) => {
-              const activo = filtroUnidad === unidad;
-              return (
-                <button
-                  key={unidad}
-                  type="button"
-                  onClick={() => setFiltroUnidad(unidad)}
-                  className={`px-3 py-1 text-xs font-sans font-semibold rounded-md transition-fast cursor-pointer ${
-                    activo
-                      ? 'bg-surface text-primary shadow-sm'
-                      : 'text-secondary hover:text-primary'
-                  }`}
-                >
-                  {unidad === 'HIDDEN' ? 'Hidden Sneakers' : unidad === 'DASTIK' ? 'Dastik' : 'Todos'}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            title="Recargar catálogo desde el backend"
-            className="border border-subtle bg-elevated hover:bg-surface hover:border-strong rounded-lg p-2 text-secondary hover:text-primary transition-fast cursor-pointer disabled:opacity-40 active:scale-[0.98]"
-          >
-            <ArrowsClockwise
-              size={15}
-              weight="regular"
-              className={isFetching ? 'animate-spin text-amber-500' : ''}
+    <div className="flex-1 flex flex-col gap-4">
+      {/* 1. Omnibar Unificada (Búsqueda + Lector EAN-13 + Segmented Control con Motion) */}
+      <div className="rounded-xl border border-subtle bg-surface p-3 shadow-surface flex flex-col gap-2.5">
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2.5">
+          {/* Input Híbrido (Buscador + Escáner EAN-13 en Enter) */}
+          <form onSubmit={handleOmnibarSubmit} className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted gap-1.5">
+              <MagnifyingGlass size={16} weight="bold" />
+            </div>
+            <input
+              ref={inputRef}
+              type="text"
+              value={omnibarInput}
+              onChange={(e) => setOmnibarInput(e.target.value)}
+              placeholder="Buscar modelo, marca, talle o escanear código EAN-13 [Enter]..."
+              className="w-full pl-10 pr-24 py-2 bg-elevated focus:bg-surface border border-subtle focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-lg text-xs sm:text-sm font-sans text-primary placeholder:text-muted outline-none transition-fast"
+              autoFocus
             />
-          </button>
+            <div className="absolute inset-y-0 right-2 flex items-center gap-1">
+              {omnibarInput ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOmnibarInput('');
+                    inputRef.current?.focus();
+                  }}
+                  className="h-6 px-2 rounded-md flex items-center gap-1 text-[11px] font-medium text-secondary hover:text-primary hover:bg-surface cursor-pointer"
+                >
+                  <X size={12} weight="bold" />
+                  <span>Limpiar</span>
+                </button>
+              ) : (
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded border border-subtle bg-surface text-[10px] font-mono text-muted select-none">
+                  <Barcode size={13} weight="bold" className="text-amber-500" />
+                  EAN / F1
+                </span>
+              )}
+            </div>
+          </form>
+
+          {/* Controles de Filtro en la misma barra */}
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
+            {/* Segmented Control con Indicador Deslizante (Motion layoutId) */}
+            <div className="flex items-center bg-elevated p-1 rounded-lg border border-subtle">
+              {(
+                [
+                  { id: 'TODOS', label: 'Todos' },
+                  { id: 'DASTIK', label: 'Dastik' },
+                  { id: 'HIDDEN', label: 'Hidden Sneakers' },
+                ] as const
+              ).map((tab) => {
+                const activo = filtroUnidad === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setFiltroUnidad(tab.id)}
+                    className={`relative px-3 py-1 text-xs font-sans font-semibold rounded-md transition-colors cursor-pointer ${
+                      activo ? 'text-primary' : 'text-secondary hover:text-primary'
+                    }`}
+                  >
+                    {activo && (
+                      <motion.div
+                        layoutId="pos-unit-pill"
+                        transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                        className="absolute inset-0 bg-surface rounded-md shadow-sm border border-subtle/60"
+                      />
+                    )}
+                    <span className="relative z-10">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Toggle Ocultar Agotados */}
+            <button
+              type="button"
+              onClick={() => setOcultarAgotados((prev) => !prev)}
+              className={`px-2.5 py-1.5 rounded-lg border text-xs font-sans font-medium flex items-center gap-1.5 transition-fast cursor-pointer ${
+                ocultarAgotados
+                  ? 'border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold'
+                  : 'border-subtle bg-elevated text-secondary hover:text-primary'
+              }`}
+              title="Ocultar productos sin stock disponible"
+            >
+              <EyeSlash size={14} weight={ocultarAgotados ? 'fill' : 'regular'} />
+              <span className="hidden sm:inline">Ocultar agotados</span>
+            </button>
+
+            {/* Botón Refrescar */}
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              title="Recargar catálogo"
+              className="border border-subtle bg-elevated hover:bg-surface hover:border-strong rounded-lg p-2 text-secondary hover:text-primary transition-fast cursor-pointer disabled:opacity-40 active:scale-[0.97]"
+            >
+              <ArrowsClockwise
+                size={15}
+                weight="bold"
+                className={isFetching ? 'animate-spin text-amber-500' : ''}
+              />
+            </button>
+          </div>
         </div>
+
+        {/* Toast Inline de Escaneo EAN-13 */}
+        <AnimatePresence>
+          {scanFeedback && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className={`rounded-lg px-3 py-1.5 flex items-center justify-between text-xs font-sans border ${
+                scanFeedback.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-medium">
+                {scanFeedback.type === 'success' ? (
+                  <CheckCircle size={15} weight="fill" />
+                ) : (
+                  <WarningCircle size={15} weight="fill" />
+                )}
+                <span>{scanFeedback.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScanFeedback(null)}
+                className="opacity-70 hover:opacity-100 cursor-pointer"
+              >
+                <X size={13} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* 2. Barra de Búsqueda Rápida de Catálogo (100% Semántica en Light y Dark Mode) */}
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted">
-          <MagnifyingGlass size={16} weight="regular" />
-        </div>
-        <input
-          type="text"
-          value={filtroTexto}
-          onChange={(e) => setFiltroTexto(e.target.value)}
-          placeholder="Filtrar por modelo, marca (Nike, Dastik), talle (M, US 9) o EAN..."
-          className="w-full pl-10 pr-20 py-2.5 bg-elevated focus:bg-surface border border-subtle focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-lg text-xs md:text-sm font-sans text-primary placeholder:text-muted outline-none transition-fast"
-        />
-        {filtroTexto && (
-          <button
-            type="button"
-            onClick={() => setFiltroTexto('')}
-            className="absolute inset-y-0 right-2 my-auto h-6 px-2 rounded-md flex items-center gap-1 text-[11px] font-medium text-secondary hover:text-primary hover:bg-surface cursor-pointer"
-          >
-            <X size={12} />
-            <span>Limpiar</span>
-          </button>
-        )}
-      </div>
-
-      {/* 3. Contenedor de la Grilla / Estados */}
-      <div className="flex-1 min-h-[360px]">
+      {/* 2. Contenedor de Grilla de Productos */}
+      <div className="flex-1 min-h-[380px]">
         {/* Loading Skeletons */}
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5">
+            {Array.from({ length: 8 }).map((_, idx) => (
               <div
                 key={idx}
-                className="rounded-xl border border-subtle bg-elevated/50 p-4 flex flex-col justify-between animate-pulse h-48"
+                className="rounded-xl border border-subtle bg-surface overflow-hidden animate-pulse flex flex-col h-64"
               >
-                <div className="flex justify-between items-center mb-3">
-                  <div className="h-4 w-16 rounded-md bg-elevated" />
-                  <div className="h-4 w-14 rounded-md bg-elevated" />
-                </div>
-                <div className="flex gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-elevated shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-20 rounded bg-elevated" />
-                    <div className="h-4 w-32 rounded bg-elevated" />
-                    <div className="h-4 w-24 rounded bg-elevated" />
+                <div className="h-36 bg-elevated" />
+                <div className="p-3.5 space-y-2.5 flex-1">
+                  <div className="h-4 w-3/4 rounded bg-elevated" />
+                  <div className="h-4 w-1/3 rounded bg-elevated" />
+                  <div className="grid grid-cols-5 gap-1.5 pt-2">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <div key={s} className="h-7 rounded-lg bg-elevated" />
+                    ))}
                   </div>
-                </div>
-                <div className="grid grid-cols-5 gap-1.5 pt-3 border-t border-subtle">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <div key={s} className="h-8 rounded-lg bg-elevated" />
-                  ))}
                 </div>
               </div>
             ))}
@@ -176,7 +372,7 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
             <button
               type="button"
               onClick={() => refetch()}
-              className="mt-2 px-4 py-2 rounded-lg border border-red-500/40 bg-red-500/15 text-red-700 dark:text-red-200 text-xs font-semibold hover:bg-red-500/25 transition-fast cursor-pointer"
+              className="mt-1 px-4 py-2 rounded-lg border border-red-500/40 bg-red-500/15 text-red-700 dark:text-red-200 text-xs font-semibold hover:bg-red-500/25 transition-fast cursor-pointer"
             >
               Reintentar conexión
             </button>
@@ -185,27 +381,84 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
 
         {/* Empty State */}
         {!isLoading && !isError && productosFiltrados.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center rounded-xl border border-dashed border-subtle p-12 text-center">
-            <MagnifyingGlass size={32} weight="duotone" className="text-muted mb-3" />
+          <div className="h-72 flex flex-col items-center justify-center rounded-xl border border-dashed border-subtle bg-surface/50 p-8 text-center">
+            <MagnifyingGlass size={32} weight="duotone" className="text-muted mb-2.5" />
             <span className="text-sm font-heading font-bold text-primary block">
               Sin coincidencias en catálogo
             </span>
             <p className="text-xs font-sans text-secondary max-w-sm mt-1">
-              No hay productos que coincidan con &quot;{filtroTexto}&quot;. Revisa los filtros o
-              busca por código EAN.
+              No encontramos artículos para &quot;{omnibarInput}&quot;. Prueba otro término o limpia los filtros activos.
             </p>
           </div>
         )}
 
-        {/* Grilla de Productos */}
-        {!isLoading && !isError && productosFiltrados.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {productosFiltrados.map((producto) => (
-              <ProductCard key={producto.id} producto={producto} />
+        {/* Grilla Paginada (12 por página) */}
+        {!isLoading && !isError && productosPaginados.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5">
+            {productosPaginados.map((producto) => (
+              <ProductCard
+                key={producto.id}
+                producto={producto}
+                onOpenQuickView={(prod) => setQuickViewProducto(prod)}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* 3. Paginador Origin UI (12 productos por página) */}
+      {!isLoading && !isError && productosFiltrados.length > PAGE_SIZE && (
+        <div className="rounded-xl border border-subtle bg-surface px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-secondary shadow-surface">
+          <span>
+            Mostrando{' '}
+            <strong className="font-mono tabular-nums text-primary">
+              {indiceInicio + 1}
+            </strong>
+            –
+            <strong className="font-mono tabular-nums text-primary">
+              {Math.min(indiceInicio + PAGE_SIZE, productosFiltrados.length)}
+            </strong>{' '}
+            de{' '}
+            <strong className="font-mono tabular-nums text-primary">
+              {productosFiltrados.length}
+            </strong>{' '}
+            productos
+          </span>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+              disabled={paginaActual <= 1}
+              className="px-2.5 py-1.5 rounded-lg border border-subtle bg-elevated hover:bg-surface text-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-medium transition-fast cursor-pointer"
+            >
+              <CaretLeft size={13} weight="bold" />
+              <span>Anterior</span>
+            </button>
+
+            <span className="px-3 py-1.5 rounded-lg border border-subtle bg-elevated font-mono tabular-nums font-semibold text-primary">
+              {paginaActual} / {totalPaginas}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+              disabled={paginaActual >= totalPaginas}
+              className="px-2.5 py-1.5 rounded-lg border border-subtle bg-elevated hover:bg-surface text-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-medium transition-fast cursor-pointer"
+            >
+              <span>Siguiente</span>
+              <CaretRight size={13} weight="bold" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Modal Quick-View con Carrusel de Fotos y Código EAN-13 */}
+      <ModalQuickViewPos
+        isOpen={Boolean(quickViewProducto)}
+        onClose={() => setQuickViewProducto(null)}
+        producto={quickViewProducto}
+      />
     </div>
   );
 };
