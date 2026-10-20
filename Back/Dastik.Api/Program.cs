@@ -7,6 +7,7 @@ using Dastik.Api.Features.Caja;
 using Dastik.Api.Features.Configuracion;
 using Dastik.Api.Features.Inventario.CrearProducto;
 using Dastik.Api.Features.Inventario.SincronizarTiendanube;
+using Dastik.Api.Features.Inventario.UploadImagenes;
 using Dastik.Api.Features.Metricas;
 using Dastik.Api.Features.Sandbox;
 using Dastik.Api.Features.Usuarios;
@@ -156,6 +157,13 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// Asegurar carpeta wwwroot/uploads/productos
+var uploadsDir = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "productos");
+if (!Directory.Exists(uploadsDir))
+{
+    Directory.CreateDirectory(uploadsDir);
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -167,12 +175,15 @@ app.UseHttpsRedirection();
 
 app.UseCors("FrontendPolicy");
 
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Endpoints (Vertical Slices)
 app.MapAuthEndpoints();
 app.MapCrearProductoEndpoint();
+app.MapUploadImagenesEndpoint();
 app.MapCajaEndpoints();
 app.MapMetricasEndpoints();
 app.MapUsuariosEndpoints();

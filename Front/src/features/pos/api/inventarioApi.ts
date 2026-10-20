@@ -6,6 +6,10 @@ export interface VarianteDto {
   color: string;
   codigoBarras: string;
   stockFisico: number;
+  precioPromocional?: number | null;
+  pesoKg?: number;
+  precioOverride?: number | null;
+  tiendanubeVariantId?: string | null;
 }
 
 export interface ProductoCatalogoDto {
@@ -22,6 +26,17 @@ export interface ProductoCatalogoDto {
   markupAplicado?: number;
   variantes: VarianteDto[];
   tiendanubeProductId?: string | null;
+  categoriaId?: number;
+  marcaId?: number;
+  proveedorId?: number;
+  unidadNegocioId?: number;
+  videoUrl?: string;
+  esFisico?: boolean;
+  subcategorias?: string[];
+  destacados?: string[];
+  tagsSeo?: string;
+  seoTitulo?: string;
+  seoDescripcion?: string;
 }
 
 export interface CrearVarianteItemRequest {
@@ -29,6 +44,9 @@ export interface CrearVarianteItemRequest {
   color: string;
   codigoBarras?: string;
   stockFisico: number;
+  precioPromocional?: number | null;
+  pesoKg?: number;
+  precioOverride?: number | null;
 }
 
 export interface CrearProductoRequest {
@@ -39,16 +57,77 @@ export interface CrearProductoRequest {
   nombre: string;
   descripcion: string;
   imagenUrl?: string;
+  imagenes?: string[];
   costoBase: number;
   markupAplicado: number;
   precioVenta: number;
   variantes: CrearVarianteItemRequest[];
+  videoUrl?: string;
+  esFisico?: boolean;
+  subcategorias?: string[];
+  destacados?: string[];
+  tagsSeo?: string;
+  seoTitulo?: string;
+  seoDescripcion?: string;
+  sincronizarTiendanube?: boolean;
 }
 
 export interface CrearProductoResponse {
   productoId: number;
   nombre: string;
   cantidadVariantesCreadas: number;
+  tiendanubeProductId?: string | null;
+  sincronizadoTiendanube?: boolean;
+}
+
+export interface EditarVarianteItemRequest {
+  id?: number;
+  talle: string;
+  color: string;
+  codigoBarras?: string;
+  stockFisico: number;
+  precioPromocional?: number | null;
+  pesoKg?: number;
+  precioOverride?: number | null;
+  tiendanubeVariantId?: string | null;
+}
+
+export interface EditarProductoRequest {
+  id: number;
+  unidadNegocioId: number;
+  categoriaId: number;
+  marcaId: number;
+  proveedorId: number;
+  nombre: string;
+  descripcion: string;
+  imagenUrl?: string;
+  imagenes?: string[];
+  costoBase: number;
+  markupAplicado: number;
+  precioVenta: number;
+  variantes: EditarVarianteItemRequest[];
+  videoUrl?: string;
+  esFisico?: boolean;
+  subcategorias?: string[];
+  destacados?: string[];
+  tagsSeo?: string;
+  seoTitulo?: string;
+  seoDescripcion?: string;
+  sincronizarTiendanube?: boolean;
+}
+
+export interface EditarProductoResponse {
+  productoId: number;
+  nombre: string;
+  cantidadVariantes: number;
+  tiendanubeProductId?: string | null;
+  sincronizadoTiendanube?: boolean;
+}
+
+export interface UnidadNegocioDto {
+  id: number;
+  nombre: string;
+  tieneTiendaNube: boolean;
 }
 
 export interface SincronizarCatalogoResponse {
@@ -158,6 +237,25 @@ export const inventarioApi = {
 
   crearProducto: async (data: CrearProductoRequest): Promise<CrearProductoResponse> => {
     const response = await apiClient.post<CrearProductoResponse>('/api/inventario', data);
+    return response.data;
+  },
+
+  editarProducto: async (data: EditarProductoRequest): Promise<EditarProductoResponse> => {
+    const response = await apiClient.put<EditarProductoResponse>(`/api/inventario/productos/${data.id}`, data);
+    return response.data;
+  },
+
+  subirImagenes: async (archivos: File[]): Promise<string[]> => {
+    const formData = new FormData();
+    archivos.forEach((file) => formData.append('files', file));
+    const response = await apiClient.post<{ urls: string[] }>('/api/inventario/upload-imagenes', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.urls;
+  },
+
+  obtenerUnidadesNegocio: async (): Promise<UnidadNegocioDto[]> => {
+    const response = await apiClient.get<UnidadNegocioDto[]>('/api/inventario/unidades-negocio');
     return response.data;
   },
 

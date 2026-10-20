@@ -119,6 +119,10 @@ public class CatalogIntelligenceTests
             string storeId, string accessToken, string productId, string variantId, int nuevoStock, CancellationToken ct = default)
             => Task.FromResult(Result<TiendanubeVariantResponse>.Success(new TiendanubeVariantResponse(1, 1, nuevoStock)));
 
+        public Task<Result<TiendanubeMutationResponse>> CrearProductoAsync(string storeId, string accessToken, TiendanubeCrearProductoPayload payload, CancellationToken ct = default) => Task.FromResult(Result<TiendanubeMutationResponse>.Success(new TiendanubeMutationResponse(999, new())));
+
+        public Task<Result<TiendanubeMutationResponse>> ActualizarProductoAsync(string storeId, string accessToken, string tiendanubeProductId, TiendanubeActualizarProductoPayload payload, CancellationToken ct = default) => Task.FromResult(Result<TiendanubeMutationResponse>.Success(new TiendanubeMutationResponse(long.TryParse(tiendanubeProductId, out var id) ? id : 999, new())));
+
         public Task<Result<List<TiendanubeProductResponse>>> ObtenerProductosAsync(
             string storeId, string accessToken, CancellationToken ct = default)
             => Task.FromResult(Result<List<TiendanubeProductResponse>>.Success(Catalogo));
@@ -346,3 +350,4 @@ public class CatalogIntelligenceTests
         }
     }
 }
+
