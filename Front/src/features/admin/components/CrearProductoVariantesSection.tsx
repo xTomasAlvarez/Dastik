@@ -6,6 +6,8 @@ import type { CrearVarianteItemRequest } from '../../pos/api/inventarioApi';
 
 export interface VarianteTemporal extends CrearVarianteItemRequest {
   tempId: string;
+  id?: number;
+  tiendanubeVariantId?: string | null;
 }
 
 export interface CurvaTallesConfig {
@@ -60,10 +62,15 @@ interface CrearProductoVariantesSectionProps {
   onChangeNuevoStock: (val: string) => void;
   nuevoCodigoBarras: string;
   onChangeNuevoCodigoBarras: (val: string) => void;
+  nuevoPrecioPromo?: string;
+  onChangeNuevoPrecioPromo?: (val: string) => void;
+  nuevoPesoKg?: string;
+  onChangeNuevoPesoKg?: (val: string) => void;
   onAutogenerarEan: () => void;
   onAgregarVariante: () => void;
   onAgregarCurvaCompleta: (talles: string[]) => void;
   onEliminarVariante: (tempId: string) => void;
+  onActualizarVariante?: (tempId: string, updates: Partial<VarianteTemporal>) => void;
   isLoading: boolean;
 }
 
@@ -79,22 +86,27 @@ export const CrearProductoVariantesSection: React.FC<CrearProductoVariantesSecti
   onChangeNuevoStock,
   nuevoCodigoBarras,
   onChangeNuevoCodigoBarras,
+  nuevoPrecioPromo = '',
+  onChangeNuevoPrecioPromo,
+  nuevoPesoKg = '0.300',
+  onChangeNuevoPesoKg,
   onAutogenerarEan,
   onAgregarVariante,
   onAgregarCurvaCompleta,
   onEliminarVariante,
+  onActualizarVariante,
   isLoading,
 }) => {
   const curvaActiva =
     CURVAS_DISPONIBLES.find((c) => c.id === curvaActivaId) || CURVAS_DISPONIBLES[0];
-  const totalStockConfigurado = variantes.reduce((acc, v) => acc + v.stockFisico, 0);
+  const totalStockConfigurado = variantes.reduce((acc, v) => acc + (v.stockFisico || 0), 0);
 
   return (
     <div className="border border-subtle bg-elevated rounded-xl p-4 md:p-5 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-subtle pb-3">
         <div>
           <span className="text-[10px] uppercase tracking-widest text-secondary font-sans font-semibold block">
-            INVENTARIO DE VARIANTES (SKUS)
+            INVENTARIO DE VARIANTES (SKUS &amp; TIENDANUBE)
           </span>
           <span className="text-xs text-secondary font-sans">
             {variantes.length} {variantes.length === 1 ? 'variante' : 'variantes'} configuradas ·{' '}
@@ -160,11 +172,11 @@ export const CrearProductoVariantesSection: React.FC<CrearProductoVariantesSecti
         <span className="text-[10px] uppercase tracking-wider text-secondary font-heading font-bold block">
           + CONFIGURAR NUEVA VARIANTE
         </span>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3">
           <Input
             id="nuevoTalle"
             label="TALLE / MEDIDA *"
-            placeholder="ej: M, L o US 10"
+            placeholder="ej: M o 42"
             value={nuevoTalle}
             onChange={(e) => onChangeNuevoTalle(e.target.value)}
             disabled={isLoading}
@@ -173,7 +185,7 @@ export const CrearProductoVariantesSection: React.FC<CrearProductoVariantesSecti
           <Input
             id="nuevoColor"
             label="COLOR"
-            placeholder="ej: Negro, Blanco"
+            placeholder="ej: Negro"
             value={nuevoColor}
             onChange={(e) => onChangeNuevoColor(e.target.value)}
             disabled={isLoading}
@@ -181,12 +193,35 @@ export const CrearProductoVariantesSection: React.FC<CrearProductoVariantesSecti
 
           <Input
             id="nuevoStock"
-            label="STOCK INICIAL *"
+            label="STOCK *"
             type="number"
             min="0"
             placeholder="5"
             value={nuevoStock}
             onChange={(e) => onChangeNuevoStock(e.target.value)}
+            disabled={isLoading}
+          />
+
+          <Input
+            id="nuevoPrecioPromo"
+            label="PRECIO PROMO"
+            type="number"
+            min="0"
+            placeholder="Opcional"
+            value={nuevoPrecioPromo}
+            onChange={(e) => onChangeNuevoPrecioPromo?.(e.target.value)}
+            disabled={isLoading}
+          />
+
+          <Input
+            id="nuevoPesoKg"
+            label="PESO (KG)"
+            type="number"
+            step="0.05"
+            min="0.01"
+            placeholder="0.300"
+            value={nuevoPesoKg}
+            onChange={(e) => onChangeNuevoPesoKg?.(e.target.value)}
             disabled={isLoading}
           />
 
@@ -201,7 +236,7 @@ export const CrearProductoVariantesSection: React.FC<CrearProductoVariantesSecti
               <input
                 id="nuevoCodigoBarras"
                 type="text"
-                placeholder="Autogenerar si vacío"
+                placeholder="Autogenerar"
                 value={nuevoCodigoBarras}
                 onChange={(e) => onChangeNuevoCodigoBarras(e.target.value)}
                 disabled={isLoading}
@@ -234,7 +269,7 @@ export const CrearProductoVariantesSection: React.FC<CrearProductoVariantesSecti
         </div>
       </div>
 
-      {/* Tabla de Variantes Temporales */}
+      {/* Tabla de Variantes */}
       {variantes.length === 0 ? (
         <div className="text-center py-6 border border-dashed border-subtle rounded-lg text-muted text-xs">
           No hay variantes añadidas. Completa los campos arriba y haz clic en &quot;AGREGAR VARIANTE&quot;.
@@ -246,9 +281,11 @@ export const CrearProductoVariantesSection: React.FC<CrearProductoVariantesSecti
               <tr className="border-b border-subtle bg-elevated text-secondary text-[10px] uppercase tracking-wider font-sans">
                 <th className="py-2.5 px-3">Talle</th>
                 <th className="py-2.5 px-3">Color</th>
-                <th className="py-2.5 px-3 text-right">Stock Físico</th>
+                <th className="py-2.5 px-3 w-24">Stock</th>
+                <th className="py-2.5 px-3 w-28">Precio Promo</th>
+                <th className="py-2.5 px-3 w-24">Peso (kg)</th>
                 <th className="py-2.5 px-3">Código EAN-13</th>
-                <th className="py-2.5 px-3 text-center">Acción</th>
+                <th className="py-2.5 px-3 text-center w-12">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-subtle font-sans">
@@ -260,15 +297,71 @@ export const CrearProductoVariantesSection: React.FC<CrearProductoVariantesSecti
                     </span>
                   </td>
                   <td className="py-2.5 px-3 text-secondary">{v.color}</td>
-                  <td className="py-2.5 px-3 text-right">
-                    <span className="font-mono text-primary font-semibold text-sm tabular-nums">
-                      {v.stockFisico}
-                    </span>
+                  <td className="py-2.5 px-3">
+                    {onActualizarVariante ? (
+                      <input
+                        type="number"
+                        min="0"
+                        value={v.stockFisico}
+                        onChange={(e) =>
+                          onActualizarVariante(v.tempId, {
+                            stockFisico: parseInt(e.target.value, 10) || 0,
+                          })
+                        }
+                        className="w-20 bg-surface border border-subtle rounded px-2 py-1 font-mono text-xs text-primary"
+                      />
+                    ) : (
+                      <span className="font-mono text-primary font-semibold text-sm tabular-nums">
+                        {v.stockFisico}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2.5 px-3">
+                    {onActualizarVariante ? (
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Sin promo"
+                        value={v.precioPromocional ?? ''}
+                        onChange={(e) =>
+                          onActualizarVariante(v.tempId, {
+                            precioPromocional: e.target.value
+                              ? parseFloat(e.target.value)
+                              : null,
+                          })
+                        }
+                        className="w-24 bg-surface border border-subtle rounded px-2 py-1 font-mono text-xs text-primary placeholder-muted"
+                      />
+                    ) : (
+                      <span className="font-mono text-secondary text-xs">
+                        {v.precioPromocional ? `$ ${v.precioPromocional}` : '-'}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2.5 px-3">
+                    {onActualizarVariante ? (
+                      <input
+                        type="number"
+                        step="0.05"
+                        min="0.01"
+                        value={v.pesoKg ?? 0.3}
+                        onChange={(e) =>
+                          onActualizarVariante(v.tempId, {
+                            pesoKg: parseFloat(e.target.value) || 0.3,
+                          })
+                        }
+                        className="w-20 bg-surface border border-subtle rounded px-2 py-1 font-mono text-xs text-primary"
+                      />
+                    ) : (
+                      <span className="font-mono text-secondary text-xs">
+                        {v.pesoKg ? `${v.pesoKg} kg` : '0.3 kg'}
+                      </span>
+                    )}
                   </td>
                   <td className="py-2.5 px-3">
                     <div className="flex items-center gap-1.5 font-mono text-[11px] text-secondary">
-                      <Barcode size={14} weight="bold" className="text-muted" />
-                      <span>{v.codigoBarras}</span>
+                      <Barcode size={14} weight="bold" className="text-muted shrink-0" />
+                      <span>{v.codigoBarras || 'Pendiente EAN-13'}</span>
                     </div>
                   </td>
                   <td className="py-2.5 px-3 text-center">

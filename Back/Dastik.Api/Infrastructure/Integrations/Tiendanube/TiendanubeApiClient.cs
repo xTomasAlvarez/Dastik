@@ -48,9 +48,9 @@ public class TiendanubeApiClient : ITiendanubeApiClient
         var endpointUrl = $"{storeId}/products/{productId}/variants/{variantId}";
         using var request = new HttpRequestMessage(HttpMethod.Put, endpointUrl);
 
-        // Header obligatorio de Tiendanube: "Authentication: bearer {token}"
         var tokenLimpio = TiendanubeTokenHelper.NormalizarToken(accessToken)?.Trim() ?? accessToken.Trim();
         request.Headers.TryAddWithoutValidation("Authentication", $"bearer {tokenLimpio}");
+        request.Headers.TryAddWithoutValidation("User-Agent", "Dastik POS/ERP (contacto@dastik.com)");
 
         var payload = JsonSerializer.Serialize(new { stock = nuevoStock });
         request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
@@ -113,6 +113,7 @@ public class TiendanubeApiClient : ITiendanubeApiClient
             var endpointUrl = $"{storeId}/products?per_page=200&page={page}";
             using var request = new HttpRequestMessage(HttpMethod.Get, endpointUrl);
             request.Headers.TryAddWithoutValidation("Authentication", $"bearer {tokenLimpio}");
+            request.Headers.TryAddWithoutValidation("User-Agent", "Dastik POS/ERP (contacto@dastik.com)");
 
             try
             {
@@ -162,6 +163,240 @@ public class TiendanubeApiClient : ITiendanubeApiClient
         return Result<List<TiendanubeProductResponse>>.Success(todosLosProductos);
     }
 
+    public async Task<Result<TiendanubeMutationResponse>> CrearProductoAsync(
+        string storeId,
+        string accessToken,
+        TiendanubeCrearProductoPayload payload,
+        CancellationToken ct = default)
+    {
+        // 1. Guardia de Seguridad para Sandbox / Modo Mock: Simular creación
+        if (EsModoMock(storeId, accessToken))
+        {
+            var mockId = Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 90000000) + 1000000;
+            _logger.LogInformation(
+                "[Tiendanube MOCK] Creación simulada de producto '{Nombre}' (ID: {MockId}) para Store: {StoreId}",
+                payload.Nombre, mockId, storeId);
+
+            var variantesMock = payload.Variantes.Select((v, idx) => new TiendanubeVariantMutationItem(
+                mockId + idx + 1,
+                v.Talle,
+                v.Color,
+                v.Barcode
+            )).ToList();
+
+            return Result<TiendanubeMutationResponse>.Success(new TiendanubeMutationResponse(mockId, variantesMock));
+        }
+
+        // 2. Creación en API oficial de Tiendanube (POST /products)
+        var endpointUrl = $"{storeId}/products";
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpointUrl);
+
+        var tokenLimpio = TiendanubeTokenHelper.NormalizarToken(accessToken)?.Trim() ?? accessToken.Trim();
+        request.Headers.TryAddWithoutValidation("Authentication", $"bearer {tokenLimpio}");
+        request.Headers.TryAddWithoutValidation("User-Agent", "Dastik POS/ERP (contacto@dastik.com)");
+
+        var jsonBody = SerializarPayloadMutacion(payload.Nombre, payload.Descripcion, payload.Brand, payload.Tags, payload.VideoUrl, payload.SeoTitulo, payload.SeoDescripcion, payload.ImagenesUrls, payload.Variantes);
+        request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+        try
+        {
+            var response = await _httpClient.SendAsync(request, ct);
+            var responseBody = await response.Content.ReadAsStringAsync(ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Tiendanube API respondió con error {(int)StatusCode} al crear producto para Store {StoreId}: {Body}",
+                    (int)response.StatusCode, storeId, responseBody);
+                return Result<TiendanubeMutationResponse>.Failure($"Tiendanube error {(int)response.StatusCode}: {responseBody}");
+            }
+
+            return ParsearMutationResponse(responseBody);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Excepción al crear producto en Tiendanube para Store {StoreId}", storeId);
+            return Result<TiendanubeMutationResponse>.Failure($"Fallo de red con Tiendanube: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<TiendanubeMutationResponse>> ActualizarProductoAsync(
+        string storeId,
+        string accessToken,
+        string tiendanubeProductId,
+        TiendanubeActualizarProductoPayload payload,
+        CancellationToken ct = default)
+    {
+        // 1. Guardia de Seguridad para Sandbox / Modo Mock: Simular actualización
+        if (EsModoMock(storeId, accessToken))
+        {
+            long pid = long.TryParse(tiendanubeProductId, out var parsed) ? parsed : 999999;
+            _logger.LogInformation(
+                "[Tiendanube MOCK] Actualización simulada de producto ID {ProductId} '{Nombre}' para Store: {StoreId}",
+                pid, payload.Nombre, storeId);
+
+            var variantesMock = payload.Variantes.Select((v, idx) => new TiendanubeVariantMutationItem(
+                long.TryParse(v.TiendanubeVariantId, out var vid) ? vid : pid + idx + 1,
+                v.Talle,
+                v.Color,
+                v.Barcode
+            )).ToList();
+
+            return Result<TiendanubeMutationResponse>.Success(new TiendanubeMutationResponse(pid, variantesMock));
+        }
+
+        // 2. Actualización en API oficial de Tiendanube (PUT /products/{id})
+        var endpointUrl = $"{storeId}/products/{tiendanubeProductId}";
+        using var request = new HttpRequestMessage(HttpMethod.Put, endpointUrl);
+
+        var tokenLimpio = TiendanubeTokenHelper.NormalizarToken(accessToken)?.Trim() ?? accessToken.Trim();
+        request.Headers.TryAddWithoutValidation("Authentication", $"bearer {tokenLimpio}");
+        request.Headers.TryAddWithoutValidation("User-Agent", "Dastik POS/ERP (contacto@dastik.com)");
+
+        var jsonBody = SerializarPayloadMutacion(payload.Nombre, payload.Descripcion, payload.Brand, payload.Tags, payload.VideoUrl, payload.SeoTitulo, payload.SeoDescripcion, payload.ImagenesUrls, payload.Variantes);
+        request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+        try
+        {
+            var response = await _httpClient.SendAsync(request, ct);
+            var responseBody = await response.Content.ReadAsStringAsync(ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Tiendanube API respondió con error {(int)StatusCode} al actualizar producto {ProductId} para Store {StoreId}: {Body}",
+                    (int)response.StatusCode, tiendanubeProductId, storeId, responseBody);
+                return Result<TiendanubeMutationResponse>.Failure($"Tiendanube error {(int)response.StatusCode}: {responseBody}");
+            }
+
+            return ParsearMutationResponse(responseBody);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Excepción al actualizar producto {ProductId} en Tiendanube", tiendanubeProductId);
+            return Result<TiendanubeMutationResponse>.Failure($"Fallo de red con Tiendanube: {ex.Message}");
+        }
+    }
+
+    private static string SerializarPayloadMutacion(
+        string nombre,
+        string? descripcion,
+        string? brand,
+        string? tags,
+        string? videoUrl,
+        string? seoTitulo,
+        string? seoDescripcion,
+        List<string> imagenesUrls,
+        List<TiendanubeVariantePayload> variantes)
+    {
+        var data = new Dictionary<string, object?>
+        {
+            ["name"] = new { es = nombre },
+            ["description"] = new { es = descripcion ?? string.Empty }
+        };
+
+        if (!string.IsNullOrWhiteSpace(brand))
+        {
+            data["brand"] = brand;
+        }
+
+        if (!string.IsNullOrWhiteSpace(tags))
+        {
+            data["tags"] = tags;
+        }
+
+        if (!string.IsNullOrWhiteSpace(videoUrl))
+        {
+            data["video_url"] = videoUrl;
+        }
+
+        if (!string.IsNullOrWhiteSpace(seoTitulo))
+        {
+            data["seo_title"] = new { es = seoTitulo };
+        }
+
+        if (!string.IsNullOrWhiteSpace(seoDescripcion))
+        {
+            data["seo_description"] = new { es = seoDescripcion };
+        }
+
+        if (imagenesUrls != null && imagenesUrls.Count > 0)
+        {
+            data["images"] = imagenesUrls.Select(src => new { src }).ToList();
+        }
+
+        if (variantes != null && variantes.Count > 0)
+        {
+            data["variants"] = variantes.Select(v =>
+            {
+                var dict = new Dictionary<string, object?>
+                {
+                    ["price"] = v.Precio.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+                    ["stock"] = v.Stock,
+                    ["weight"] = v.PesoKg.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture),
+                    ["values"] = new List<object>
+                    {
+                        new { es = v.Talle },
+                        new { es = v.Color }
+                    }
+                };
+
+                if (!string.IsNullOrWhiteSpace(v.TiendanubeVariantId) && long.TryParse(v.TiendanubeVariantId, out var vid))
+                {
+                    dict["id"] = vid;
+                }
+
+                if (v.PrecioPromocional.HasValue && v.PrecioPromocional.Value > 0)
+                {
+                    dict["promotional_price"] = v.PrecioPromocional.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+                }
+
+                if (!string.IsNullOrWhiteSpace(v.Barcode))
+                {
+                    dict["barcode"] = v.Barcode;
+                }
+
+                return dict;
+            }).ToList();
+        }
+
+        return JsonSerializer.Serialize(data);
+    }
+
+    private static Result<TiendanubeMutationResponse> ParsearMutationResponse(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        long prodId = root.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0;
+        var variantes = new List<TiendanubeVariantMutationItem>();
+
+        if (root.TryGetProperty("variants", out var varProp) && varProp.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var vElem in varProp.EnumerateArray())
+            {
+                long vId = vElem.TryGetProperty("id", out var vidProp) ? vidProp.GetInt64() : 0;
+                string? barcode = vElem.TryGetProperty("barcode", out var bcProp) && bcProp.ValueKind == JsonValueKind.String
+                    ? bcProp.GetString()
+                    : null;
+
+                string? talle = null;
+                string? color = null;
+
+                if (vElem.TryGetProperty("values", out var valProp) && valProp.ValueKind == JsonValueKind.Array)
+                {
+                    var valList = valProp.EnumerateArray().ToList();
+                    if (valList.Count > 0) talle = ExtraerTextoDeElemento(valList[0]);
+                    if (valList.Count > 1) color = ExtraerTextoDeElemento(valList[1]);
+                }
+
+                variantes.Add(new TiendanubeVariantMutationItem(vId, talle, color, barcode));
+            }
+        }
+
+        return Result<TiendanubeMutationResponse>.Success(new TiendanubeMutationResponse(prodId, variantes));
+    }
+
     private static List<TiendanubeProductResponse> ParsearProductosJson(string json)
     {
         var lista = new List<TiendanubeProductResponse>();
@@ -181,6 +416,27 @@ public class TiendanubeApiClient : ITiendanubeApiClient
 
             string nombre = ExtraerTexto(prodElem, "name") ?? $"Producto {id}";
             string? descripcion = ExtraerTexto(prodElem, "description");
+            string? videoUrl = ExtraerTexto(prodElem, "video_url");
+            string? brand = ExtraerTexto(prodElem, "brand");
+            string? seoTitulo = ExtraerTexto(prodElem, "seo_title");
+            string? seoDescripcion = ExtraerTexto(prodElem, "seo_description");
+
+            string? tags = null;
+            if (prodElem.TryGetProperty("tags", out var tagsProp))
+            {
+                if (tagsProp.ValueKind == JsonValueKind.String)
+                {
+                    tags = tagsProp.GetString();
+                }
+                else if (tagsProp.ValueKind == JsonValueKind.Array)
+                {
+                    var tagItems = tagsProp.EnumerateArray()
+                        .Select(t => t.ValueKind == JsonValueKind.String ? t.GetString() : null)
+                        .Where(t => !string.IsNullOrWhiteSpace(t))
+                        .ToList();
+                    tags = string.Join(", ", tagItems);
+                }
+            }
 
             // Galería completa de imágenes (normalizada a alta resolución -1024-1024)
             var imagenes = new List<string>();
@@ -228,6 +484,8 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                     decimal? precio = ExtraerDecimal(vElem, "price");
                     decimal? costo = ExtraerDecimal(vElem, "cost");
                     int? stock = ExtraerEntero(vElem, "stock");
+                    decimal? precioPromocional = ExtraerDecimal(vElem, "promotional_price");
+                    decimal? peso = ExtraerDecimal(vElem, "weight");
                     string? barcode = vElem.TryGetProperty("barcode", out var bcProp) && bcProp.ValueKind == JsonValueKind.String
                         ? bcProp.GetString()
                         : null;
@@ -256,7 +514,9 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                         barcode,
                         precio,
                         costo,
-                        stock
+                        stock,
+                        precioPromocional,
+                        peso
                     ));
                 }
             }
@@ -273,7 +533,12 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 costoProducto,
                 variantes,
                 imagenes,
-                categoriasTn
+                categoriasTn,
+                videoUrl,
+                tags,
+                brand,
+                seoTitulo,
+                seoDescripcion
             ));
         }
 
@@ -342,17 +607,22 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 Costo: 15000m,
                 Variantes: new List<TiendanubeProductVariantResponse>
                 {
-                    new(1001, 101, "S", "Negro", "2010100100018", 24000m, 15000m, 8),
-                    new(1002, 101, "M", "Negro", "2010100100025", 24000m, 15000m, 14),
-                    new(1003, 101, "L", "Negro", "2010100100032", 24000m, 15000m, 10),
-                    new(1004, 101, "XL", "Negro", "2010100100049", 24000m, 15000m, 5)
+                    new(1001, 101, "S", "Negro", "2010100100018", 24000m, 15000m, 8, 22000m, 0.3m),
+                    new(1002, 101, "M", "Negro", "2010100100025", 24000m, 15000m, 14, 22000m, 0.3m),
+                    new(1003, 101, "L", "Negro", "2010100100032", 24000m, 15000m, 10, 22000m, 0.35m),
+                    new(1004, 101, "XL", "Negro", "2010100100049", 24000m, 15000m, 5, 22000m, 0.35m)
                 },
                 Imagenes: new List<string>
                 {
                     "https://dastik.com/img/boxy-tee.jpg",
                     "https://dastik.com/img/boxy-tee-back.jpg"
                 },
-                Categorias: new List<string> { "Remeras" }
+                Categorias: new List<string> { "Remeras" },
+                VideoUrl: null,
+                Tags: "remera, boxy, streetwear",
+                Brand: "Dastik",
+                SeoTitulo: "Remera Boxy Heavyweight Dastik | Streetwear",
+                SeoDescripcion: "Remera corte boxy fit en algodón premium de máxima densidad."
             ),
             new(
                 Id: 102,
@@ -363,14 +633,19 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 Costo: 28000m,
                 Variantes: new List<TiendanubeProductVariantResponse>
                 {
-                    new(1005, 102, "M", "Negro", "2010100200015", 45000m, 28000m, 6),
-                    new(1006, 102, "L", "Negro", "2010100200022", 45000m, 28000m, 9)
+                    new(1005, 102, "M", "Negro", "2010100200015", 45000m, 28000m, 6, 42000m, 0.6m),
+                    new(1006, 102, "L", "Negro", "2010100200022", 45000m, 28000m, 9, 42000m, 0.65m)
                 },
                 Imagenes: new List<string>
                 {
                     "https://dastik.com/img/hoodie-black.jpg"
                 },
-                Categorias: new List<string> { "Buzos & Hoodies" }
+                Categorias: new List<string> { "Buzos & Hoodies" },
+                VideoUrl: null,
+                Tags: "hoodie, buzo, oversize",
+                Brand: "Dastik",
+                SeoTitulo: "Hoodie Oversize Essential Dastik",
+                SeoDescripcion: "Buzo canguro con frisa pesada premium."
             ),
             new(
                 Id: 103,
@@ -381,14 +656,19 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 Costo: 24000m,
                 Variantes: new List<TiendanubeProductVariantResponse>
                 {
-                    new(1007, 103, "40", "Gris", "2010100300012", 38000m, 24000m, 4),
-                    new(1008, 103, "42", "Gris", "2010100300029", 38000m, 24000m, 7)
+                    new(1007, 103, "40", "Gris", "2010100300012", 38000m, 24000m, 4, null, 0.45m),
+                    new(1008, 103, "42", "Gris", "2010100300029", 38000m, 24000m, 7, null, 0.45m)
                 },
                 Imagenes: new List<string>
                 {
                     "https://dastik.com/img/pant-ripstop.jpg"
                 },
-                Categorias: new List<string> { "Pantalones & Jeans" }
+                Categorias: new List<string> { "Pantalones & Jeans" },
+                VideoUrl: null,
+                Tags: "parachute, ripstop, pantalon",
+                Brand: "Dastik",
+                SeoTitulo: "Pantalón Parachute Ripstop Dastik",
+                SeoDescripcion: "Pantalón parachute ripstop técnico de alta durabilidad."
             )
         };
     }

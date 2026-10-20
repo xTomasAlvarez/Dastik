@@ -161,6 +161,57 @@ public class CrearProductoHandlerTests : IDisposable
         productoEnBd.Activo.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task Handle_ConCamposExtendidosYSincronizacionTiendanube_DebePersistirYVincular()
+    {
+        var (unidad, categoria, marca, proveedor) = CrearCatalogos();
+        unidad.TieneTiendaNube = true;
+        unidad.Nombre = "Dastik";
+        unidad.TiendanubeStoreId = "sandbox-dastik";
+        unidad.TiendanubeAccessToken = "mock-token";
+        _context.SaveChanges();
+
+        var handler = new CrearProductoCommandHandler(_context, _generadorEan13);
+        var command = new CrearProductoCommand(
+            UnidadNegocioId: unidad.Id,
+            CategoriaId: categoria.Id,
+            MarcaId: marca.Id,
+            ProveedorId: proveedor.Id,
+            Nombre: "Remera Boxy Streetwear",
+            Descripcion: "Edicion limitada",
+            ImagenUrl: "https://cdn.dastik.com/remera.webp",
+            CostoBase: 15000m,
+            MarkupAplicado: 1.6m,
+            PrecioVenta: 24000m,
+            Variantes: new List<CrearVarianteItemDto>
+            {
+                new("M", "Negro", null, 10, 22000m, 0.35m, null),
+                new("L", "Negro", null, 15, 22000m, 0.35m, null)
+            },
+            Imagenes: new List<string> { "https://cdn.dastik.com/remera.webp", "https://cdn.dastik.com/remera-back.webp" },
+            VideoUrl: "https://youtube.com/test",
+            EsFisico: true,
+            Subcategorias: new List<string> { "Remeras", "Boxy" },
+            Destacados: new List<string> { "Nuevos", "Destacados" },
+            TagsSeo: "remera, boxy, dastik",
+            SeoTitulo: "Remera Boxy Streetwear | Dastik",
+            SeoDescripcion: "Remera boxy fit pesada",
+            SincronizarTiendanube: true
+        );
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.SincronizadoTiendanube.Should().BeTrue();
+        result.TiendanubeProductId.Should().NotBeNullOrEmpty();
+
+        var prodBd = await _context.Productos.Include(p => p.Variantes).FirstOrDefaultAsync(p => p.Id == result.ProductoId);
+        prodBd.Should().NotBeNull();
+        prodBd!.VideoUrl.Should().Be("https://youtube.com/test");
+        prodBd.TagsSeo.Should().Be("remera, boxy, dastik");
+        prodBd.Variantes.Should().HaveCount(2);
+        prodBd.Variantes.First().TiendanubeVariantId.Should().NotBeNullOrEmpty();
+    }
+
     private (UnidadNegocio, Categoria, Marca, Proveedor) CrearCatalogos()
     {
         var unidad = new UnidadNegocio { Nombre = "Hidden Sneakers" };

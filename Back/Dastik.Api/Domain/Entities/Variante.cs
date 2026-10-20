@@ -12,6 +12,11 @@ public class Variante
     public int StockFisico { get; set; }
     public string? TiendanubeVariantId { get; set; }
 
+    // Campos extendidos de paridad con Tiendanube
+    public decimal? PrecioPromocional { get; set; }
+    public decimal PesoKg { get; set; } = 0.500m;
+    public decimal? PrecioOverride { get; set; }
+
     // Propiedad de navegación
     public Producto Producto { get; set; } = null!;
 }

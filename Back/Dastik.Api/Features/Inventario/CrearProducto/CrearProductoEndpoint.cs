@@ -1,7 +1,10 @@
+using Dastik.Api.Features.Inventario.EditarProducto;
 using Dastik.Api.Features.Inventario.ListarProductos;
 using Dastik.Api.Features.Inventario.SincronizarTiendanube;
+using Dastik.Api.Infrastructure.Persistence;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Dastik.Api.Features.Inventario.CrearProducto;
 
@@ -51,7 +54,67 @@ public static class CrearProductoEndpoint
         .RequireAuthorization("AdminOnly")
         .WithOpenApi();
 
-        // 2. Listar Catálogo para el POS
+        // 2. Editar Producto (PUT)
+        app.MapPut("/api/productos/{id:int}", async (
+            int id,
+            EditarProductoCommand command,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            if (id != command.Id)
+            {
+                return Results.BadRequest(new { error = "El ID de la ruta no coincide con el payload." });
+            }
+
+            var result = await sender.Send(command, ct);
+            return Results.Ok(result);
+        })
+        .WithName("EditarProducto")
+        .WithSummary("Edita un producto existente y sus variantes con sincronización opcional a Tiendanube.")
+        .RequireAuthorization("AdminOnly")
+        .WithOpenApi();
+
+        app.MapPut("/api/inventario/productos/{id:int}", async (
+            int id,
+            EditarProductoCommand command,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            if (id != command.Id)
+            {
+                return Results.BadRequest(new { error = "El ID de la ruta no coincide con el payload." });
+            }
+
+            var result = await sender.Send(command, ct);
+            return Results.Ok(result);
+        })
+        .WithName("EditarProductoInventario")
+        .WithSummary("Edita un producto en inventario con sincronización opcional a Tiendanube.")
+        .RequireAuthorization("AdminOnly")
+        .WithOpenApi();
+
+        // 3. Listar Unidades de Negocio para Selección en Formularios
+        app.MapGet("/api/inventario/unidades-negocio", async (AppDbContext db, CancellationToken ct) =>
+        {
+            var unidades = await db.UnidadesNegocio
+                .AsNoTracking()
+                .OrderBy(u => u.Id)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Nombre,
+                    u.TieneTiendaNube
+                })
+                .ToListAsync(ct);
+
+            return Results.Ok(unidades);
+        })
+        .WithName("ListarUnidadesNegocio")
+        .WithSummary("Lista las unidades de negocio disponibles (Dastik, Hidden Sneakers).")
+        .RequireAuthorization("OperadorCaja")
+        .WithOpenApi();
+
+        // 4. Listar Catálogo para el POS e Inventario
         app.MapGet("/api/productos", async (
             ISender sender,
             CancellationToken ct) =>
@@ -60,11 +123,11 @@ public static class CrearProductoEndpoint
             return Results.Ok(result);
         })
         .WithName("ListarProductos")
-        .WithSummary("Lista todos los productos activos con sus variantes, talles, códigos de barra y stock físico para el POS.")
+        .WithSummary("Lista todos los productos activos con sus variantes, talles, códigos de barra y stock físico.")
         .RequireAuthorization("OperadorCaja")
         .WithOpenApi();
 
-        // 3. Sincronizar Catálogo desde Tiendanube
+        // 5. Sincronizar Catálogo desde Tiendanube (SOLO LECTURA GET)
         app.MapPost("/api/inventario/sincronizar-tiendanube", async (
             ISender sender,
             CancellationToken ct,

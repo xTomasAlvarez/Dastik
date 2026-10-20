@@ -14,7 +14,11 @@ public record VarianteCatalogoDto(
     string Talle,
     string Color,
     string CodigoBarras,
-    int StockFisico
+    int StockFisico,
+    decimal? PrecioPromocional = null,
+    decimal PesoKg = 0.3m,
+    decimal? PrecioOverride = null,
+    string? TiendanubeVariantId = null
 );
 
 public record ProductoCatalogoDto(
@@ -30,7 +34,18 @@ public record ProductoCatalogoDto(
     decimal CostoBase = 0,
     decimal MarkupAplicado = 0,
     List<string>? Imagenes = null,
-    string? TiendanubeProductId = null
+    string? TiendanubeProductId = null,
+    int? CategoriaId = null,
+    int? MarcaId = null,
+    int? ProveedorId = null,
+    int? UnidadNegocioId = null,
+    string? VideoUrl = null,
+    bool EsFisico = true,
+    List<string>? Subcategorias = null,
+    List<string>? Destacados = null,
+    string? TagsSeo = null,
+    string? SeoTitulo = null,
+    string? SeoDescripcion = null
 );
 
 public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery, List<ProductoCatalogoDto>>
@@ -59,15 +74,30 @@ public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery,
                 Marca = p.Marca.Nombre,
                 Categoria = p.Categoria.Nombre,
                 UnidadNegocio = p.UnidadNegocio.Nombre,
+                p.CategoriaId,
+                p.MarcaId,
+                p.ProveedorId,
+                p.UnidadNegocioId,
                 p.ImagenUrl,
                 p.ImagenesJson,
                 p.PrecioVenta,
+                p.VideoUrl,
+                p.EsFisico,
+                p.SubcategoriasJson,
+                p.DestacadosJson,
+                p.TagsSeo,
+                p.SeoTitulo,
+                p.SeoDescripcion,
                 Variantes = p.Variantes.Select(v => new VarianteCatalogoDto(
                     v.Id,
                     v.Talle,
                     v.Color,
                     v.CodigoBarras,
-                    v.StockFisico
+                    v.StockFisico,
+                    v.PrecioPromocional,
+                    v.PesoKg,
+                    v.PrecioOverride,
+                    v.TiendanubeVariantId
                 )).ToList(),
                 p.CostoBase,
                 p.MarkupAplicado,
@@ -79,6 +109,8 @@ public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery,
         {
             var galeria = ResolverGaleriaImagenes(p.ImagenesJson, p.ImagenUrl);
             var imgPrincipal = galeria.FirstOrDefault() ?? CatalogClassifierService.NormalizarUrlImagenAltaRes(p.ImagenUrl);
+            var subcategorias = DeserializarListaSegura(p.SubcategoriasJson);
+            var destacados = DeserializarListaSegura(p.DestacadosJson);
 
             return new ProductoCatalogoDto(
                 p.Id,
@@ -93,7 +125,18 @@ public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery,
                 p.CostoBase,
                 p.MarkupAplicado,
                 galeria,
-                p.TiendanubeProductId
+                p.TiendanubeProductId,
+                p.CategoriaId,
+                p.MarcaId,
+                p.ProveedorId,
+                p.UnidadNegocioId,
+                p.VideoUrl,
+                p.EsFisico,
+                subcategorias,
+                destacados,
+                p.TagsSeo,
+                p.SeoTitulo,
+                p.SeoDescripcion
             );
         }).ToList();
 
@@ -168,5 +211,18 @@ public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery,
         }
 
         return [];
+    }
+
+    private static List<string> DeserializarListaSegura(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json == "[]") return [];
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(json) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
     }
 }

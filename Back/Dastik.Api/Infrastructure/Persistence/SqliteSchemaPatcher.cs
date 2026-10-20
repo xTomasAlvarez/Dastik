@@ -75,7 +75,14 @@ public static class SqliteSchemaPatcher
             "MarkupAplicado" TEXT NOT NULL DEFAULT '0',
             "PrecioVenta" TEXT NOT NULL DEFAULT '0',
             "TiendanubeProductId" TEXT NULL,
-            "Activo" INTEGER NOT NULL DEFAULT 1
+            "Activo" INTEGER NOT NULL DEFAULT 1,
+            "VideoUrl" TEXT NULL,
+            "EsFisico" INTEGER NOT NULL DEFAULT 1,
+            "SubcategoriasJson" TEXT NOT NULL DEFAULT '[]',
+            "DestacadosJson" TEXT NOT NULL DEFAULT '[]',
+            "TagsSeo" TEXT NULL,
+            "SeoTitulo" TEXT NULL,
+            "SeoDescripcion" TEXT NULL
         );
         """,
         """
@@ -87,7 +94,10 @@ public static class SqliteSchemaPatcher
             "CodigoBarras" TEXT NOT NULL DEFAULT '',
             "EsCodigoGenerado" INTEGER NOT NULL DEFAULT 0,
             "StockFisico" INTEGER NOT NULL DEFAULT 0,
-            "TiendanubeVariantId" TEXT NULL
+            "TiendanubeVariantId" TEXT NULL,
+            "PrecioPromocional" TEXT NULL,
+            "PesoKg" TEXT NOT NULL DEFAULT '0.500',
+            "PrecioOverride" TEXT NULL
         );
         """,
         """
@@ -106,11 +116,12 @@ public static class SqliteSchemaPatcher
         CREATE TABLE IF NOT EXISTS "Ordenes" (
             "Id" INTEGER NOT NULL CONSTRAINT "PK_Ordenes" PRIMARY KEY AUTOINCREMENT,
             "TurnoId" INTEGER NOT NULL,
-            "Fecha" TEXT NOT NULL,
+            "FechaCreacion" TEXT NOT NULL,
             "Total" TEXT NOT NULL DEFAULT '0',
-            "Estado" TEXT NOT NULL DEFAULT 'Pagada',
+            "DescuentoTotal" TEXT NOT NULL DEFAULT '0',
             "EsCambio" INTEGER NOT NULL DEFAULT 0,
-            "MotivoCambio" TEXT NULL
+            "MotivoCambio" TEXT NULL,
+            "Estado" TEXT NOT NULL DEFAULT 'Pagada'
         );
         """,
         """
@@ -176,6 +187,13 @@ public static class SqliteSchemaPatcher
         new("Productos", "PrecioVenta", "TEXT NOT NULL DEFAULT '0'"),
         new("Productos", "TiendanubeProductId", "TEXT NULL"),
         new("Productos", "Activo", "INTEGER NOT NULL DEFAULT 1"),
+        new("Productos", "VideoUrl", "TEXT NULL"),
+        new("Productos", "EsFisico", "INTEGER NOT NULL DEFAULT 1"),
+        new("Productos", "SubcategoriasJson", "TEXT NOT NULL DEFAULT '[]'"),
+        new("Productos", "DestacadosJson", "TEXT NOT NULL DEFAULT '[]'"),
+        new("Productos", "TagsSeo", "TEXT NULL"),
+        new("Productos", "SeoTitulo", "TEXT NULL"),
+        new("Productos", "SeoDescripcion", "TEXT NULL"),
 
         // Variantes
         new("Variantes", "Talle", "TEXT NOT NULL DEFAULT ''"),
@@ -184,6 +202,9 @@ public static class SqliteSchemaPatcher
         new("Variantes", "EsCodigoGenerado", "INTEGER NOT NULL DEFAULT 0"),
         new("Variantes", "StockFisico", "INTEGER NOT NULL DEFAULT 0"),
         new("Variantes", "TiendanubeVariantId", "TEXT NULL"),
+        new("Variantes", "PrecioPromocional", "TEXT NULL"),
+        new("Variantes", "PesoKg", "TEXT NOT NULL DEFAULT '0.500'"),
+        new("Variantes", "PrecioOverride", "TEXT NULL"),
 
         // Categorias
         new("Categorias", "CategoriaPadreId", "INTEGER NULL"),

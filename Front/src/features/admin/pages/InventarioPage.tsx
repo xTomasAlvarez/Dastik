@@ -14,6 +14,7 @@ import {
   CaretRight,
   X,
   SortAscending,
+  PencilSimple,
 } from '@phosphor-icons/react';
 import {
   inventarioApi,
@@ -46,6 +47,7 @@ export const InventarioPage: React.FC = () => {
   const [paginaActual, setPaginaActual] = useState(1);
 
   const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
+  const [productoAEditar, setProductoAEditar] = useState<ProductoCatalogoDto | null>(null);
   const [isModalDetalleOpen, setIsModalDetalleOpen] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoCatalogoDto | null>(null);
   const [mensajeNotificacion, setMensajeNotificacion] = useState<{
@@ -200,14 +202,28 @@ export const InventarioPage: React.FC = () => {
     setIsModalDetalleOpen(true);
   };
 
+  const handleEditarProducto = (producto: ProductoCatalogoDto) => {
+    setProductoAEditar(producto);
+    setIsModalCrearOpen(true);
+  };
+
+  const handleNuevoProducto = () => {
+    setProductoAEditar(null);
+    setIsModalCrearOpen(true);
+  };
+
   const handleCreacionExitosa = () => {
     queryClient.invalidateQueries({ queryKey: ['productos-inventario'] });
     queryClient.invalidateQueries({ queryKey: ['catalogo-pos'] });
     queryClient.invalidateQueries({ queryKey: ['productos'] });
     setMensajeNotificacion({
       tipo: 'exito',
-      texto: 'Producto creado exitosamente y sincronizado con el catálogo.',
+      texto: productoAEditar
+        ? 'Producto actualizado exitosamente y sincronizado con el catálogo.'
+        : 'Producto creado exitosamente y sincronizado con el catálogo.',
     });
+    setIsModalCrearOpen(false);
+    setProductoAEditar(null);
     setTimeout(() => setMensajeNotificacion(null), 5000);
   };
 
@@ -266,7 +282,7 @@ export const InventarioPage: React.FC = () => {
           <Button
             variant="primary"
             size="md"
-            onClick={() => setIsModalCrearOpen(true)}
+            onClick={handleNuevoProducto}
           >
             <Plus size={16} weight="bold" />
             <span>Nuevo Producto</span>
@@ -484,6 +500,7 @@ export const InventarioPage: React.FC = () => {
                   <th className="py-3.5 px-4 text-right w-32">Precio Venta</th>
                   <th className="py-3.5 px-4 w-72">Variantes (Talle / Stock)</th>
                   <th className="py-3.5 px-4 text-right w-32">Stock Total</th>
+                  <th className="py-3.5 px-4 text-center w-20">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-subtle">
@@ -619,6 +636,21 @@ export const InventarioPage: React.FC = () => {
                           </span>
                         </div>
                       </td>
+
+                      {/* Columna 6: Acciones */}
+                      <td
+                        className="py-3.5 px-4 text-center align-middle whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleEditarProducto(producto)}
+                          className="inline-flex items-center justify-center p-2 rounded-lg border border-subtle bg-elevated/80 hover:bg-amber-500/10 hover:border-amber-500/40 text-secondary hover:text-amber-500 transition-fast cursor-pointer"
+                          title="Editar producto y variantes"
+                        >
+                          <PencilSimple size={15} weight="bold" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -682,8 +714,12 @@ export const InventarioPage: React.FC = () => {
       {/* Modal de Alta de Nuevo Producto y Variantes */}
       <ModalCrearProducto
         isOpen={isModalCrearOpen}
-        onClose={() => setIsModalCrearOpen(false)}
+        onClose={() => {
+          setIsModalCrearOpen(false);
+          setProductoAEditar(null);
+        }}
         onSuccess={handleCreacionExitosa}
+        productoAEditar={productoAEditar}
       />
 
       {/* Slide-Over Drawer de Detalle y Variantes */}
@@ -694,6 +730,10 @@ export const InventarioPage: React.FC = () => {
           setProductoSeleccionado(null);
         }}
         producto={productoSeleccionado}
+        onEditar={(p) => {
+          setIsModalDetalleOpen(false);
+          handleEditarProducto(p);
+        }}
       />
     </div>
   );

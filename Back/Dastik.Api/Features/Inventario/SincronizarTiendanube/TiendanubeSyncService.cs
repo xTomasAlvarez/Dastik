@@ -187,6 +187,16 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                 // Forzar Regla de Tenant
                 prodExistente.UnidadNegocioId = unidadDastik.Id;
 
+                // Actualizar atributos extendidos de Tiendanube
+                if (!string.IsNullOrWhiteSpace(pDto.VideoUrl)) prodExistente.VideoUrl = pDto.VideoUrl;
+                if (!string.IsNullOrWhiteSpace(pDto.Tags)) prodExistente.TagsSeo = pDto.Tags;
+                if (!string.IsNullOrWhiteSpace(pDto.SeoTitulo)) prodExistente.SeoTitulo = pDto.SeoTitulo;
+                if (!string.IsNullOrWhiteSpace(pDto.SeoDescripcion)) prodExistente.SeoDescripcion = pDto.SeoDescripcion;
+                if (pDto.Categorias != null && pDto.Categorias.Count > 0)
+                {
+                    prodExistente.SubcategoriasJson = JsonSerializer.Serialize(pDto.Categorias);
+                }
+
                 // Actualizar o añadir variantes
                 foreach (var vDto in pDto.Variantes)
                 {
@@ -205,6 +215,12 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                         if (vDto.Stock.HasValue) varianteExistente.StockFisico = vDto.Stock.Value;
                         if (!string.IsNullOrWhiteSpace(vDto.Talle)) varianteExistente.Talle = vDto.Talle;
                         if (!string.IsNullOrWhiteSpace(vDto.Color)) varianteExistente.Color = vDto.Color;
+                        if (vDto.PrecioPromocional.HasValue) varianteExistente.PrecioPromocional = vDto.PrecioPromocional;
+                        if (vDto.Peso.HasValue) varianteExistente.PesoKg = vDto.Peso.Value;
+                        if (vDto.Precio.HasValue && vDto.Precio.Value != prodExistente.PrecioVenta)
+                        {
+                            varianteExistente.PrecioOverride = vDto.Precio;
+                        }
 
                         // REGLA DE INMUTABILIDAD EAN-13: Si la variante existente ya tiene un CodigoBarras asignado, jamás sobrescribirlo
                         if (string.IsNullOrWhiteSpace(varianteExistente.CodigoBarras))
@@ -234,7 +250,10 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                             CodigoBarras = codigoBarras,
                             EsCodigoGenerado = esGenerado,
                             StockFisico = vDto.Stock ?? 0,
-                            TiendanubeVariantId = tnVarId
+                            TiendanubeVariantId = tnVarId,
+                            PrecioPromocional = vDto.PrecioPromocional,
+                            PesoKg = vDto.Peso ?? 0.3m,
+                            PrecioOverride = vDto.Precio.HasValue && vDto.Precio.Value != prodExistente.PrecioVenta ? vDto.Precio : null
                         });
                     }
 
@@ -266,7 +285,14 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                     CostoBase = costoBase,
                     MarkupAplicado = markup,
                     TiendanubeProductId = tnProdId,
-                    Activo = true
+                    Activo = true,
+                    VideoUrl = pDto.VideoUrl,
+                    EsFisico = true,
+                    SubcategoriasJson = pDto.Categorias != null && pDto.Categorias.Count > 0 ? JsonSerializer.Serialize(pDto.Categorias) : "[]",
+                    DestacadosJson = "[]",
+                    TagsSeo = pDto.Tags,
+                    SeoTitulo = pDto.SeoTitulo,
+                    SeoDescripcion = pDto.SeoDescripcion
                 };
 
                 foreach (var vDto in pDto.Variantes)
@@ -285,7 +311,10 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                         CodigoBarras = codigoBarras,
                         EsCodigoGenerado = esGenerado,
                         StockFisico = vDto.Stock ?? 0,
-                        TiendanubeVariantId = tnVarId
+                        TiendanubeVariantId = tnVarId,
+                        PrecioPromocional = vDto.PrecioPromocional,
+                        PesoKg = vDto.Peso ?? 0.3m,
+                        PrecioOverride = vDto.Precio.HasValue && vDto.Precio.Value != precioVenta ? vDto.Precio : null
                     });
 
                     totalVariantesImportadas++;

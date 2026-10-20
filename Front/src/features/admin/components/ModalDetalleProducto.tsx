@@ -9,6 +9,7 @@ import {
   CurrencyDollar,
   Percent,
   Printer,
+  PencilSimple,
   CaretLeft,
   CaretRight,
 } from '@phosphor-icons/react';
@@ -23,12 +24,14 @@ interface ModalDetalleProductoProps {
   isOpen: boolean;
   onClose: () => void;
   producto: ProductoCatalogoDto | null;
+  onEditar?: (producto: ProductoCatalogoDto) => void;
 }
 
 export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
   isOpen,
   onClose,
   producto,
+  onEditar,
 }) => {
   const [isModalEtiquetasOpen, setIsModalEtiquetasOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -409,14 +412,31 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
             <span>IMPRIMIR ETIQUETAS</span>
           </Button>
 
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={onClose}
-            className="px-6 text-xs font-heading font-semibold tracking-wider"
-          >
-            CERRAR FICHA
-          </Button>
+          <div className="flex items-center gap-2">
+            {onEditar && (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => {
+                  onClose();
+                  onEditar(producto);
+                }}
+                className="gap-2 text-xs font-heading font-bold tracking-wider px-4"
+                title="Editar datos de la prenda y variantes"
+              >
+                <PencilSimple size={16} weight="bold" />
+                <span>EDITAR PRENDA</span>
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={onClose}
+              className="px-5 text-xs font-heading font-semibold tracking-wider"
+            >
+              CERRAR FICHA
+            </Button>
+          </div>
         </div>
       </div>
 

@@ -423,6 +423,10 @@ public class OutboxMessageProcessorTests : IDisposable
                 new Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeVariantResponse(v, p, nuevoStock)));
         }
 
+        public Task<Dastik.Api.Common.Result<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeMutationResponse>> CrearProductoAsync(string storeId, string accessToken, Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeCrearProductoPayload payload, CancellationToken ct = default) => Task.FromResult(Dastik.Api.Common.Result<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeMutationResponse>.Success(new Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeMutationResponse(999, new())));
+
+        public Task<Dastik.Api.Common.Result<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeMutationResponse>> ActualizarProductoAsync(string storeId, string accessToken, string tiendanubeProductId, Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeActualizarProductoPayload payload, CancellationToken ct = default) => Task.FromResult(Dastik.Api.Common.Result<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeMutationResponse>.Success(new Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeMutationResponse(long.TryParse(tiendanubeProductId, out var id) ? id : 999, new())));
+
         public Task<Dastik.Api.Common.Result<List<Dastik.Api.Domain.Integrations.Tiendanube.TiendanubeProductResponse>>> ObtenerProductosAsync(
             string storeId,
             string accessToken,
@@ -438,3 +442,4 @@ public class OutboxMessageProcessorTests : IDisposable
         }
     }
 }
+

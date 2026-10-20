@@ -20,6 +20,15 @@ public class Producto
     public string? TiendanubeProductId { get; set; }
     public bool Activo { get; set; } = true;
 
+    // Campos extendidos de paridad con Tiendanube & ERP
+    public string? VideoUrl { get; set; }
+    public bool EsFisico { get; set; } = true;
+    public string SubcategoriasJson { get; set; } = "[]";
+    public string DestacadosJson { get; set; } = "[]";
+    public string? TagsSeo { get; set; }
+    public string? SeoTitulo { get; set; }
+    public string? SeoDescripcion { get; set; }
+
     // Propiedades de navegación
     public UnidadNegocio UnidadNegocio { get; set; } = null!;
     public Categoria Categoria { get; set; } = null!;
