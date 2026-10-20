@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { Sneaker, TShirt, Package, Check, CornersOut } from '@phosphor-icons/react';
+import { Sneaker, TShirt, Package, Check, Eye } from '@phosphor-icons/react';
 import {
   normalizarUrlImagenAltaRes,
   type ProductoCatalogoDto,
@@ -29,12 +29,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }).format(monto);
   };
 
-  const rawImagenPrincipal =
-    (producto.imagenes && producto.imagenes.length > 0
-      ? producto.imagenes[0]
-      : producto.imagenUrl) || '';
+  // Extraer y normalizar galería completa de imágenes en alta resolución
+  const imagenesNormalizadas = useMemo(() => {
+    const urls: string[] = [];
+    if (producto.imagenes && producto.imagenes.length > 0) {
+      for (const u of producto.imagenes) {
+        const norm = normalizarUrlImagenAltaRes(u);
+        if (norm && !urls.includes(norm)) urls.push(norm);
+      }
+    }
+    if (urls.length === 0 && producto.imagenUrl) {
+      const norm = normalizarUrlImagenAltaRes(producto.imagenUrl);
+      if (norm) urls.push(norm);
+    }
+    return urls;
+  }, [producto]);
 
-  const imagenPrincipal = normalizarUrlImagenAltaRes(rawImagenPrincipal);
+  const fotoFrontal = imagenesNormalizadas[0] || null;
+  const fotoSecundaria = imagenesNormalizadas.length > 1 ? imagenesNormalizadas[1] : null;
 
   const handleSelectVariant = (variante: VarianteDto) => {
     if (variante.stockFisico <= 0) return;
@@ -49,7 +61,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       codigoBarras: variante.codigoBarras,
       precioUnitario: producto.precioVenta,
       stockFisico: variante.stockFisico,
-      imagenUrl: imagenPrincipal,
+      imagenUrl: fotoFrontal || '',
     });
 
     setLastAddedVariantId(variante.id);
@@ -81,12 +93,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const stockTotal = producto.variantes.reduce((sum, v) => sum + v.stockFisico, 0);
-  const mostrarImagenReal = Boolean(imagenPrincipal.trim()) && !imageError;
-  const cantidadFotos = producto.imagenes?.length || (imagenPrincipal ? 1 : 0);
+  const mostrarImagenReal = Boolean(fotoFrontal) && !imageError;
 
   return (
-    <article className="rounded-xl border border-subtle hover:border-strong bg-surface overflow-hidden flex flex-col shadow-surface hover:shadow-floating transition-fast group">
-      {/* 1. Cabecera Visual con Proporción Vertical de Indumentaria (aspect-[4/5]) y Alta Resolución */}
+    <article className="border border-black/[0.08] dark:border-white/[0.07] bg-white dark:bg-[#0E1015]/90 hover:border-black/20 dark:hover:border-white/[0.22] shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300 rounded-xl overflow-hidden flex flex-col group">
+      {/* 1. Cabecera Visual con Proporción Vertical (aspect-[4/5]), Flip en Hover y Vignette */}
       <div
         role="button"
         tabIndex={0}
@@ -97,42 +108,72 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onOpenQuickView?.(producto);
           }
         }}
-        className="relative aspect-[4/5] w-full bg-elevated/70 border-b border-subtle overflow-hidden flex items-center justify-center cursor-pointer"
-        title="Ver galería de fotos y códigos EAN-13"
+        className="relative aspect-[4/5] w-full bg-elevated/70 border-b border-subtle overflow-hidden flex items-center justify-center cursor-pointer select-none"
+        title="Ver detalles, galería y código EAN-13"
       >
         {mostrarImagenReal ? (
-          <img
-            src={imagenPrincipal}
-            alt={producto.nombre}
-            loading="lazy"
-            decoding="async"
-            onError={() => setImageError(true)}
-            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-          />
+          <>
+            {/* Foto Frontal con zoom cinemático en hover */}
+            <img
+              src={fotoFrontal!}
+              alt={producto.nombre}
+              loading="lazy"
+              decoding="async"
+              onError={() => setImageError(true)}
+              className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+            />
+
+            {/* Foto Secundaria (Flip en hover con disolvencia suave estilo Godly/editorial) */}
+            {fotoSecundaria && !imageError && (
+              <img
+                src={fotoSecundaria}
+                alt={`${producto.nombre} - dorso / lookbook`}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover object-center opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out group-hover:scale-105"
+              />
+            )}
+          </>
         ) : (
           renderProductIcon()
         )}
 
-        {/* Badge Flotante Izquierdo: Marca */}
-        <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-surface/90 backdrop-blur-sm border border-subtle text-[10px] font-sans font-semibold text-secondary truncate max-w-[60%]">
+        {/* Vignette Cinematográfico sutil en el pie de la imagen */}
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/60 via-black/15 to-transparent pointer-events-none z-1" />
+
+        {/* Badge Glassmorphism Superior Izquierdo: Marca */}
+        <span className="absolute top-2.5 left-2.5 z-10 backdrop-blur-md bg-black/50 border border-white/10 text-white/90 font-mono text-[10px] tracking-wider px-2 py-0.5 rounded-md truncate max-w-[60%] uppercase">
           {producto.marca}
         </span>
 
-        {/* Badge Flotante Derecho: Stock Total */}
-        <span
-          className={`absolute top-2.5 right-2.5 text-[10px] font-mono tabular-nums font-bold rounded-md px-2 py-0.5 border backdrop-blur-sm ${
-            stockTotal > 0
-              ? 'border-emerald-500/30 bg-surface/90 text-emerald-600 dark:text-emerald-400'
-              : 'border-red-500/30 bg-surface/90 text-red-600 dark:text-red-400'
-          }`}
-        >
-          {stockTotal > 0 ? `${stockTotal} u.` : 'Agotado'}
+        {/* Badge Glassmorphism Superior Derecho: Stock */}
+        <span className="absolute top-2.5 right-2.5 z-10 backdrop-blur-md bg-black/50 border border-white/10 text-white/90 font-mono text-[10px] tracking-wider px-2 py-0.5 rounded-md uppercase flex items-center gap-1.5">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              stockTotal > 0
+                ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]'
+                : 'bg-red-400'
+            }`}
+          />
+          <span>{stockTotal > 0 ? `[ ${String(stockTotal).padStart(2, '0')} U. ]` : '[ AGOTADO ]'}</span>
         </span>
 
-        {/* Botón sutil de Quick-View en hover */}
-        <div className="absolute bottom-2 right-2 px-2 py-1 rounded-md bg-surface/90 backdrop-blur-sm border border-subtle text-[10px] font-mono font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-sm">
-          <CornersOut size={12} weight="bold" />
-          <span>{cantidadFotos > 1 ? `${cantidadFotos} fotos · EAN` : 'Ver EAN'}</span>
+        {/* Botón Flotante Minimalista: "Vista Rápida" en Hover */}
+        <div className="absolute inset-x-0 bottom-3 z-10 flex justify-center pointer-events-none">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenQuickView?.(producto);
+            }}
+            className="pointer-events-auto backdrop-blur-md bg-black/75 hover:bg-black/90 border border-white/20 hover:border-white/40 text-white/95 px-3 py-1.5 rounded-full text-[10px] font-mono tracking-widest uppercase flex items-center gap-1.5 shadow-lg translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer active:scale-95"
+          >
+            <Eye size={13} weight="bold" className="text-amber-400" />
+            <span>Vista Rápida</span>
+            {imagenesNormalizadas.length > 1 && (
+              <span className="text-white/50 text-[9px]">({imagenesNormalizadas.length})</span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -160,7 +201,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
 
-        {/* 3. Pills Táctiles de Talles con línea divisoria fija debajo del precio */}
+        {/* 3. Pills Táctiles de Talles con micro-destello luminoso y feedback táctil */}
         <div className="mt-3 pt-3 border-t border-subtle">
           <div className="flex flex-wrap gap-1.5">
             {producto.variantes.map((variante) => {
@@ -171,20 +212,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <motion.button
                   key={variante.id}
                   type="button"
-                  whileTap={!isOutOfStock ? { scale: 0.93 } : undefined}
+                  whileHover={!isOutOfStock ? { y: -1 } : undefined}
+                  whileTap={!isOutOfStock ? { scale: 0.92 } : undefined}
                   onClick={() => handleSelectVariant(variante)}
                   disabled={isOutOfStock}
                   title={`Talle ${variante.talle} (${variante.color}) · ${variante.stockFisico} disp. · EAN: ${variante.codigoBarras}`}
-                  className={`relative rounded-lg border min-w-[2.1rem] w-auto px-2 py-1 whitespace-nowrap text-center transition-fast flex flex-col items-center justify-center ${
+                  className={`relative rounded-lg border min-w-[2.1rem] w-auto px-2 py-1 whitespace-nowrap text-center transition-all duration-200 flex flex-col items-center justify-center ${
                     isOutOfStock
                       ? 'border-subtle bg-elevated/35 text-muted opacity-40 line-through cursor-not-allowed'
                       : isJustAdded
-                      ? 'border-emerald-500 bg-emerald-500 text-white cursor-pointer shadow-sm'
+                      ? 'border-emerald-400 bg-emerald-500/90 text-white shadow-[0_0_12px_rgba(52,211,153,0.7)] ring-2 ring-emerald-400/50 cursor-pointer'
                       : 'border-subtle bg-elevated hover:border-amber-500/60 hover:bg-amber-500/10 text-primary cursor-pointer'
                   }`}
                 >
                   {isJustAdded ? (
-                    <Check size={13} weight="bold" />
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="flex items-center justify-center"
+                    >
+                      <Check size={13} weight="bold" className="text-white drop-shadow" />
+                    </motion.div>
                   ) : (
                     <>
                       <span className="font-mono tabular-nums text-[11px] font-bold leading-none whitespace-nowrap">

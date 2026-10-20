@@ -527,17 +527,42 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
           </div>
         )}
 
-        {/* Grilla Paginada (12 por página) */}
+        {/* Grilla Paginada (12 por página) con animación escalonada (Stagger) */}
         {!isLoading && !isError && productosPaginados.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5">
+          <motion.div
+            key={`${categoriaActiva}-${paginaActual}-${filtroUnidad}-${ordenActivo}-${ocultarAgotados}`}
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.03,
+                },
+              },
+            }}
+            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5"
+          >
             {productosPaginados.map((producto) => (
-              <ProductCard
+              <motion.div
                 key={producto.id}
-                producto={producto}
-                onOpenQuickView={(prod) => setQuickViewProducto(prod)}
-              />
+                variants={{
+                  hidden: { opacity: 0, y: 10 },
+                  show: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.28, ease: 'easeOut' },
+                  },
+                }}
+              >
+                <ProductCard
+                  producto={producto}
+                  onOpenQuickView={(prod) => setQuickViewProducto(prod)}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
