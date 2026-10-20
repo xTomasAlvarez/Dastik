@@ -96,7 +96,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const mostrarImagenReal = Boolean(fotoFrontal) && !imageError;
 
   return (
-    <article className="border border-black/[0.08] dark:border-white/[0.07] bg-white dark:bg-[#0E1015]/90 hover:border-black/20 dark:hover:border-white/[0.22] shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300 rounded-xl overflow-hidden flex flex-col group">
+    <article className="border border-black/[0.08] dark:border-white/[0.07] bg-white dark:bg-[#0E1015]/90 hover:border-black/20 dark:hover:border-white/[0.22] shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300 rounded-xl overflow-hidden flex flex-col h-full group">
       {/* 1. Cabecera Visual con Proporción Vertical (aspect-[4/5]), Flip en Hover y Vignette */}
       <div
         role="button"
@@ -108,7 +108,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onOpenQuickView?.(producto);
           }
         }}
-        className="relative aspect-[4/5] w-full bg-elevated/70 border-b border-subtle overflow-hidden flex items-center justify-center cursor-pointer select-none"
+        className="relative aspect-[4/5] w-full bg-elevated/70 border-b border-subtle overflow-hidden flex items-center justify-center cursor-pointer select-none shrink-0"
         title="Ver detalles, galería y código EAN-13"
       >
         {mostrarImagenReal ? (
@@ -146,16 +146,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {producto.marca}
         </span>
 
-        {/* Badge Glassmorphism Superior Derecho: Stock */}
-        <span className="absolute top-2.5 right-2.5 z-10 backdrop-blur-md bg-black/50 border border-white/10 text-white/90 font-mono text-[10px] tracking-wider px-2 py-0.5 rounded-md uppercase flex items-center gap-1.5">
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              stockTotal > 0
-                ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]'
-                : 'bg-red-400'
-            }`}
-          />
-          <span>{stockTotal > 0 ? `[ ${String(stockTotal).padStart(2, '0')} U. ]` : '[ AGOTADO ]'}</span>
+        {/* Badge Glassmorphism Superior Derecho: Stock Limpio Técnico (Sin punto verde) */}
+        <span className="absolute top-2.5 right-2.5 z-10 backdrop-blur-md bg-black/50 border border-white/10 text-zinc-300 font-mono text-[10px] tracking-wider px-2 py-0.5 rounded-md uppercase select-none">
+          {stockTotal > 0 ? `[ ${String(stockTotal).padStart(2, '0')} U. ]` : '[ AGOTADO ]'}
         </span>
 
         {/* Botón Flotante Minimalista: "Vista Rápida" en Hover */}
@@ -177,8 +170,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
 
-      {/* 2. Cuerpo: Nombre + Precio + Categoría */}
-      <div className="p-3.5 flex-1 flex flex-col">
+      {/* 2. Cuerpo: Nombre + Precio + Categoría + Talles anclados al fondo con mt-auto */}
+      <div className="p-3.5 pb-3 flex-1 flex flex-col justify-between">
         <div
           onClick={() => onOpenQuickView?.(producto)}
           className="cursor-pointer group/title"
@@ -201,9 +194,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
 
-        {/* 3. Pills Táctiles de Talles con micro-destello luminoso y feedback táctil */}
-        <div className="mt-3 pt-3 border-t border-subtle">
-          <div className="flex flex-wrap gap-1.5">
+        {/* 3. Pills Táctiles de Talles (hasta 6 talles en una fila, anclados prolijamente al fondo) */}
+        <div className="mt-auto pt-3 border-t border-subtle">
+          <div className="flex flex-wrap gap-1">
             {producto.variantes.map((variante) => {
               const isOutOfStock = variante.stockFisico <= 0;
               const isJustAdded = lastAddedVariantId === variante.id;
@@ -217,7 +210,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   onClick={() => handleSelectVariant(variante)}
                   disabled={isOutOfStock}
                   title={`Talle ${variante.talle} (${variante.color}) · ${variante.stockFisico} disp. · EAN: ${variante.codigoBarras}`}
-                  className={`relative rounded-lg border min-w-[2.1rem] w-auto px-2 py-1 whitespace-nowrap text-center transition-all duration-200 flex flex-col items-center justify-center ${
+                  className={`relative rounded-lg border min-w-[2rem] w-auto px-1.5 py-1 whitespace-nowrap text-center transition-all duration-200 flex flex-col items-center justify-center ${
                     isOutOfStock
                       ? 'border-subtle bg-elevated/35 text-muted opacity-40 line-through cursor-not-allowed'
                       : isJustAdded

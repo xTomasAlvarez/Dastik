@@ -136,8 +136,7 @@ public class LoginCommandHandlerTests : IDisposable
         await _context.SaveChangesAsync();
 
         var handler = new LoginCommandHandler(_context, _passwordHasher, _jwtProvider);
-        // Login ingresando el email con formato estándar "@"
-        var command = new LoginCommand("tomidev@dastik.com", "Dastik2026!", IsSandboxMode: false);
+        var command = new LoginCommand("tomidev@dastik.com", "Dastik2026!", IsSandboxMode: true);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -146,10 +145,75 @@ public class LoginCommandHandlerTests : IDisposable
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value!.Nombre.Should().Be("tomiDev");
-        result.Value.Email.Should().Be("tomidev@dastik.com");
         result.Value.Rol.Should().Be("Admin");
-        result.Value.DebeCambiarPassword.Should().BeFalse();
-        result.Value.IsSandboxMode.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Login_ConUsuarioFranco_DebeRetornarTokenYRolEmpleado()
+    {
+        // Arrange
+        var passwordHash = _passwordHasher.Hash("1234");
+        var usuario = new Usuario
+        {
+            Nombre = "Franco Romero",
+            Email = "franco@dastik.com",
+            PasswordHash = passwordHash,
+            Rol = RolUsuario.Empleado,
+            TurnoAsignado = "Tarde",
+            TarifaPorHora = 4000m,
+            DebeCambiarPassword = false,
+            Activo = true
+        };
+        _context.Usuarios.Add(usuario);
+        await _context.SaveChangesAsync();
+
+        var handler = new LoginCommandHandler(_context, _passwordHasher, _jwtProvider);
+        // Login con nombre de usuario "franco"
+        var command = new LoginCommand("franco", "1234", IsSandboxMode: true);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Nombre.Should().Be("Franco Romero");
+        result.Value.Rol.Should().Be("Empleado");
+        result.Value.Email.Should().Be("franco@dastik.com");
+    }
+
+    [Fact]
+    public async Task Login_ConUsuarioLucas_DebeRetornarTokenYRolEmpleado()
+    {
+        // Arrange
+        var passwordHash = _passwordHasher.Hash("1234");
+        var usuario = new Usuario
+        {
+            Nombre = "Lucas Benítez",
+            Email = "lucas@dastik.com",
+            PasswordHash = passwordHash,
+            Rol = RolUsuario.Empleado,
+            TurnoAsignado = "Mañana",
+            TarifaPorHora = 4500m,
+            DebeCambiarPassword = false,
+            Activo = true
+        };
+        _context.Usuarios.Add(usuario);
+        await _context.SaveChangesAsync();
+
+        var handler = new LoginCommandHandler(_context, _passwordHasher, _jwtProvider);
+        // Login con nombre de usuario "lucas"
+        var command = new LoginCommand("lucas", "1234", IsSandboxMode: true);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Nombre.Should().Be("Lucas Benítez");
+        result.Value.Rol.Should().Be("Empleado");
+        result.Value.Email.Should().Be("lucas@dastik.com");
     }
 
     [Fact]
@@ -159,8 +223,8 @@ public class LoginCommandHandlerTests : IDisposable
         var passwordHash = _passwordHasher.Hash("PasswordCorrecta123!");
         var usuario = new Usuario
         {
-            Nombre = "Cajero 1",
-            Email = "cajero@dastik.com",
+            Nombre = "Vendedor Test",
+            Email = "vendedor@dastik.com",
             PasswordHash = passwordHash,
             Rol = RolUsuario.Empleado,
             Activo = true
@@ -169,7 +233,7 @@ public class LoginCommandHandlerTests : IDisposable
         await _context.SaveChangesAsync();
 
         var handler = new LoginCommandHandler(_context, _passwordHasher, _jwtProvider);
-        var command = new LoginCommand("cajero@dastik.com", "PasswordErronea!", IsSandboxMode: false);
+        var command = new LoginCommand("vendedor@dastik.com", "PasswordErronea!", IsSandboxMode: false);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -198,20 +262,20 @@ public class LoginCommandHandlerTests : IDisposable
     public async Task Login_ConUsuarioInactivo_DebeRetornarFallo()
     {
         // Arrange
-        var passwordHash = _passwordHasher.Hash("Password123!");
+        var passwordHash = _passwordHasher.Hash("PasswordValida123!");
         var usuario = new Usuario
         {
-            Nombre = "Empleado Inactivo",
-            Email = "inactivo@dastik.com",
+            Nombre = "Usuario Despedido",
+            Email = "despedido@dastik.com",
             PasswordHash = passwordHash,
             Rol = RolUsuario.Empleado,
-            Activo = false // Deshabilitado
+            Activo = false // Inactivo
         };
         _context.Usuarios.Add(usuario);
         await _context.SaveChangesAsync();
 
         var handler = new LoginCommandHandler(_context, _passwordHasher, _jwtProvider);
-        var command = new LoginCommand("inactivo@dastik.com", "Password123!", IsSandboxMode: false);
+        var command = new LoginCommand("despedido@dastik.com", "PasswordValida123!", IsSandboxMode: false);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);

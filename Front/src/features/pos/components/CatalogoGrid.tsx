@@ -542,11 +542,12 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
                 },
               },
             }}
-            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5"
+            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5 items-stretch"
           >
             {productosPaginados.map((producto) => (
               <motion.div
                 key={producto.id}
+                className="h-full"
                 variants={{
                   hidden: { opacity: 0, y: 10 },
                   show: {

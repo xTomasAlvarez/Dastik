@@ -71,7 +71,93 @@ public static class SandboxDataSeeder
         eanGenerator ??= new GeneradorEan13();
         passwordHasher ??= new PasswordHasher();
 
-        // 1. Usuario Cajero de prueba para Sandbox (si no existe)
+        // 1. Cuenta Dueño: tomiDev (admin@dastik.com / tomidev@dastik.com) - pass: "admin"
+        var tomiDevSandbox = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "tomidev@dastik.com" || u.Nombre == "tomiDev" || u.Email == "admin@dastik.com");
+        if (tomiDevSandbox is null)
+        {
+            context.Usuarios.Add(new Usuario
+            {
+                Nombre = "tomiDev",
+                Email = "tomidev@dastik.com",
+                PasswordHash = passwordHasher.Hash("admin"),
+                Rol = RolUsuario.Admin,
+                DebeCambiarPassword = false,
+                Activo = true,
+                TurnoAsignado = "Completo",
+                TarifaPorHora = 0m,
+                FechaCreacion = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            tomiDevSandbox.Nombre = "tomiDev";
+            tomiDevSandbox.Email = "tomidev@dastik.com";
+            tomiDevSandbox.PasswordHash = passwordHasher.Hash("admin");
+            tomiDevSandbox.Rol = RolUsuario.Admin;
+            tomiDevSandbox.DebeCambiarPassword = false;
+            tomiDevSandbox.Activo = true;
+            tomiDevSandbox.TurnoAsignado = "Completo";
+        }
+
+        // 1.b Empleado 1: Franco Romero (franco@dastik.com) - pass: "1234", Rol: Empleado, Tarifa: $4.000/h, Turno: Tarde
+        var franco = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "franco@dastik.com" || u.Nombre == "Franco Romero" || u.Nombre == "franco");
+        if (franco is null)
+        {
+            context.Usuarios.Add(new Usuario
+            {
+                Nombre = "Franco Romero",
+                Email = "franco@dastik.com",
+                PasswordHash = passwordHasher.Hash("1234"),
+                Rol = RolUsuario.Empleado,
+                DebeCambiarPassword = false,
+                Activo = true,
+                TurnoAsignado = "Tarde",
+                TarifaPorHora = 4000m,
+                FechaCreacion = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            franco.Nombre = "Franco Romero";
+            franco.Email = "franco@dastik.com";
+            franco.PasswordHash = passwordHasher.Hash("1234");
+            franco.Rol = RolUsuario.Empleado;
+            franco.DebeCambiarPassword = false;
+            franco.Activo = true;
+            franco.TurnoAsignado = "Tarde";
+            franco.TarifaPorHora = 4000m;
+        }
+
+        // 1.c Empleado 2: Lucas Benítez (lucas@dastik.com) - pass: "1234", Rol: Empleado, Tarifa: $4.500/h, Turno: Mañana
+        var lucas = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "lucas@dastik.com" || u.Nombre == "Lucas Benítez" || u.Nombre == "lucas");
+        if (lucas is null)
+        {
+            context.Usuarios.Add(new Usuario
+            {
+                Nombre = "Lucas Benítez",
+                Email = "lucas@dastik.com",
+                PasswordHash = passwordHasher.Hash("1234"),
+                Rol = RolUsuario.Empleado,
+                DebeCambiarPassword = false,
+                Activo = true,
+                TurnoAsignado = "Mañana",
+                TarifaPorHora = 4500m,
+                FechaCreacion = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            lucas.Nombre = "Lucas Benítez";
+            lucas.Email = "lucas@dastik.com";
+            lucas.PasswordHash = passwordHasher.Hash("1234");
+            lucas.Rol = RolUsuario.Empleado;
+            lucas.DebeCambiarPassword = false;
+            lucas.Activo = true;
+            lucas.TurnoAsignado = "Mañana";
+            lucas.TarifaPorHora = 4500m;
+        }
+
+        // 1.d Usuario Cajero de prueba por defecto para retrocompatibilidad con tests
         if (!await context.Usuarios.AnyAsync(u => u.Email == SandboxUserEmailDefault))
         {
             context.Usuarios.Add(new Usuario
@@ -86,7 +172,7 @@ public static class SandboxDataSeeder
             });
         }
 
-        // 1.b Usuario Admin fundador en Sandbox (si no existe)
+        // 1.e Usuario Admin fundador en Sandbox (si no existe)
         if (!await context.Usuarios.AnyAsync(u => u.Email == DataSeeder.AdminEmailDefault))
         {
             context.Usuarios.Add(new Usuario
@@ -99,31 +185,6 @@ public static class SandboxDataSeeder
                 Activo = true,
                 FechaCreacion = DateTime.UtcNow
             });
-        }
-
-        // 1.c Usuario Admin tomiDev en Sandbox
-        var tomiDevSandbox = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "tomidev@dastik.com" || u.Nombre == "tomiDev");
-        if (tomiDevSandbox is null)
-        {
-            context.Usuarios.Add(new Usuario
-            {
-                Nombre = "tomiDev",
-                Email = "tomidev@dastik.com",
-                PasswordHash = passwordHasher.Hash(DataSeeder.AdminDefaultPassword),
-                Rol = RolUsuario.Admin,
-                DebeCambiarPassword = false,
-                Activo = true,
-                FechaCreacion = DateTime.UtcNow
-            });
-        }
-        else
-        {
-            tomiDevSandbox.Nombre = "tomiDev";
-            tomiDevSandbox.Email = "tomidev@dastik.com";
-            tomiDevSandbox.PasswordHash = passwordHasher.Hash(DataSeeder.AdminDefaultPassword);
-            tomiDevSandbox.Rol = RolUsuario.Admin;
-            tomiDevSandbox.DebeCambiarPassword = false;
-            tomiDevSandbox.Activo = true;
         }
 
         // 2. Unidades de Negocio
