@@ -11,6 +11,7 @@ export interface CartItem {
   precioUnitario: number;
   cantidad: number;
   stockFisico: number;
+  imagenUrl?: string;
 }
 
 interface CartState {
@@ -42,6 +43,7 @@ export const useCartStore = create<CartState>((set, get) => ({
 
         updatedItems[existingIndex] = {
           ...existingItem,
+          imagenUrl: newItem.imagenUrl || existingItem.imagenUrl,
           cantidad: nuevaCantidad,
         };
 

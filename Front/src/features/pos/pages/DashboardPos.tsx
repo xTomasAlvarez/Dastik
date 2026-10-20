@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Receipt, ShoppingCart, Trash, CheckCircle, X } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Receipt,
+  ShoppingCart,
+  Trash,
+  CheckCircle,
+  X,
+  Barcode,
+  Package,
+} from '@phosphor-icons/react';
 import { PosHeader } from '../components/PosHeader';
-import { PosBarcodeScanner } from '../components/PosBarcodeScanner';
 import { CatalogoGrid } from '../components/CatalogoGrid';
 import { ModalAbrirTurno } from '../components/ModalAbrirTurno';
 import { ModalPago } from '../components/ModalPago';
@@ -15,7 +23,8 @@ import { Button } from '../../../components/ui/Button';
 import { queryClient } from '../../../lib/react-query/queryClient';
 
 export const DashboardPos: React.FC = () => {
-  const { items, removeItem, updateQuantity, clearCart, getTotal, getItemCount } = useCartStore();
+  const { items, removeItem, updateQuantity, clearCart, getTotal, getItemCount } =
+    useCartStore();
 
   const [isModalPagoOpen, setIsModalPagoOpen] = useState(false);
   const [isModalCerrarTurnoOpen, setIsModalCerrarTurnoOpen] = useState(false);
@@ -29,7 +38,9 @@ export const DashboardPos: React.FC = () => {
     vuelto: number;
   } | null>(null);
 
-  const [cambioExitoso, setCambioExitoso] = useState<RegistrarCambioResponse | null>(null);
+  const [cambioExitoso, setCambioExitoso] = useState<RegistrarCambioResponse | null>(
+    null
+  );
 
   // 1. Consulta Reactiva del Turno Activo de Caja
   const {
@@ -95,7 +106,7 @@ export const DashboardPos: React.FC = () => {
 
   return (
     <div className="h-screen w-screen bg-canvas text-primary flex flex-col overflow-hidden">
-      {/* 1. Header Superior Arquitectónico */}
+      {/* 1. Header Superior */}
       <PosHeader
         turnoActivo={turnoActivo}
         onSolicitarCierreTurno={() => setIsModalCerrarTurnoOpen(true)}
@@ -174,13 +185,9 @@ export const DashboardPos: React.FC = () => {
       {/* 3. Área Principal Dividida 70% / 30% */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* ======================================================== */}
-        {/* PANEL IZQUIERDO (70%): Búsqueda, Scanner y Grilla Retail */}
+        {/* PANEL IZQUIERDO (70%): Omnibar + Grilla Retail Paginada  */}
         {/* ======================================================== */}
-        <main className="w-full lg:w-[70%] flex-1 flex flex-col overflow-y-auto p-4 md:p-5 gap-4">
-          {/* Lector Óptico de Código de Barras (EAN-13) */}
-          <PosBarcodeScanner />
-
-          {/* Catálogo Retail y Grilla de Variantes */}
+        <main className="w-full lg:w-[70%] flex-1 flex flex-col overflow-y-auto p-3.5 md:p-4">
           <CatalogoGrid />
         </main>
 
@@ -188,8 +195,8 @@ export const DashboardPos: React.FC = () => {
         {/* PANEL DERECHO (30%): Ticket de Venta en Vivo (PosCart)   */}
         {/* ======================================================== */}
         <aside className="w-full lg:w-[30%] lg:min-w-[360px] lg:max-w-[420px] border-t lg:border-t-0 lg:border-l border-subtle bg-surface flex flex-col h-full shrink-0 shadow-surface">
-          {/* Header del Ticket (100% Semántico en Light & Dark Mode) */}
-          <div className="p-4 border-b border-subtle flex items-center justify-between bg-surface">
+          {/* Header del Ticket */}
+          <div className="px-4 py-3.5 border-b border-subtle flex items-center justify-between bg-surface">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-lg bg-elevated border border-subtle text-primary">
                 <Receipt size={18} weight="duotone" className="text-amber-500" />
@@ -239,89 +246,123 @@ export const DashboardPos: React.FC = () => {
             )}
           </div>
 
-          {/* Lista de Artículos en el Carrito */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Lista de Artículos en el Carrito Animada con Miniatura y EAN-13 */}
+          <div className="flex-1 overflow-y-auto p-3.5 space-y-2.5">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8 rounded-xl border border-dashed border-subtle bg-elevated/30">
                 <ShoppingCart size={34} weight="duotone" className="text-muted mb-3" />
                 <span className="text-xs font-heading font-semibold text-primary block">
                   Ticket vacío
                 </span>
-                <p className="text-xs font-sans text-muted mt-1 max-w-[240px]">
-                  Escanea un código de barras o selecciona un talle en la grilla para iniciar la
-                  venta.
+                <p className="text-xs font-sans text-muted mt-1 max-w-[230px]">
+                  Escanea un código EAN-13 en la barra superior o toca un talle para agregarlo al ticket.
                 </p>
               </div>
             ) : (
-              items.map((item) => (
-                <div
-                  key={item.varianteId}
-                  className="rounded-xl border border-subtle bg-elevated/60 p-3.5 flex flex-col gap-2.5 text-left transition-fast"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="text-[11px] font-medium text-muted font-sans block">
-                        {item.marca}
-                      </span>
-                      <h4 className="font-heading text-xs font-bold text-primary leading-snug truncate">
-                        {item.nombreProducto}
-                      </h4>
-                      <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono tabular-nums text-secondary">
-                        <span className="rounded-md border border-subtle bg-surface px-2 py-0.5 font-medium">
-                          Talle: {item.talle}
+              <AnimatePresence initial={false}>
+                {items.map((item) => (
+                  <motion.div
+                    key={item.varianteId}
+                    layout
+                    initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 24, scale: 0.96 }}
+                    transition={{ duration: 0.16, ease: 'easeOut' }}
+                    className="rounded-xl border border-subtle bg-elevated/60 p-3 flex flex-col gap-2.5 text-left"
+                  >
+                    <div className="flex items-start justify-between gap-2.5">
+                      {/* Miniatura real de la prenda */}
+                      <div className="w-10 h-10 rounded-lg border border-subtle bg-surface overflow-hidden shrink-0 flex items-center justify-center">
+                        {item.imagenUrl ? (
+                          <img
+                            src={item.imagenUrl}
+                            alt={item.nombreProducto}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <Package size={18} weight="duotone" className="text-muted" />
+                        )}
+                      </div>
+
+                      {/* Datos del artículo + Código EAN-13 visible */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-heading text-xs font-bold text-primary leading-snug truncate">
+                          {item.nombreProducto}
+                        </h4>
+
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[10px] font-mono tabular-nums text-secondary">
+                          <span className="rounded border border-subtle bg-surface px-1.5 py-0.5 font-semibold text-primary">
+                            Talle {item.talle}
+                          </span>
+                          <span className="rounded border border-subtle bg-surface px-1.5 py-0.5">
+                            {item.color}
+                          </span>
+                          {item.codigoBarras && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded border border-subtle bg-surface px-1.5 py-0.5 text-muted select-all"
+                              title="Código EAN-13 del artículo"
+                            >
+                              <Barcode size={11} weight="bold" className="text-amber-500" />
+                              {item.codigoBarras}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.varianteId)}
+                        className="text-muted hover:text-red-500 hover:bg-red-500/10 rounded-md transition-fast cursor-pointer p-1 shrink-0"
+                        title="Eliminar de la orden"
+                      >
+                        <Trash size={14} weight="regular" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-subtle">
+                      {/* Control de cantidad */}
+                      <div className="flex items-center rounded-lg border border-subtle bg-surface overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateQuantity(item.varianteId, item.cantidad - 1)
+                          }
+                          className="px-2.5 py-1 text-xs font-bold text-primary hover:bg-elevated transition-fast cursor-pointer"
+                        >
+                          −
+                        </button>
+                        <span className="px-2.5 py-1 text-xs font-mono tabular-nums font-semibold text-primary border-x border-subtle">
+                          {item.cantidad}
                         </span>
-                        <span className="rounded-md border border-subtle bg-surface px-2 py-0.5 font-medium">
-                          {item.color}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateQuantity(item.varianteId, item.cantidad + 1)
+                          }
+                          disabled={item.cantidad >= item.stockFisico}
+                          className="px-2.5 py-1 text-xs font-bold text-primary hover:bg-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-fast cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* Subtotal del item */}
+                      <div className="text-right">
+                        <span className="text-sm font-mono tabular-nums font-bold text-primary">
+                          {formatearDinero(item.precioUnitario * item.cantidad)}
                         </span>
                       </div>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.varianteId)}
-                      className="text-muted hover:text-red-500 hover:bg-red-500/10 rounded-md transition-fast cursor-pointer p-1.5"
-                      title="Eliminar de la orden"
-                    >
-                      <Trash size={14} weight="regular" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2.5 border-t border-subtle">
-                    {/* Control de cantidad redondeado */}
-                    <div className="flex items-center rounded-lg border border-subtle bg-surface overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.varianteId, item.cantidad - 1)}
-                        className="px-2.5 py-1 text-xs font-bold text-primary hover:bg-elevated transition-fast cursor-pointer"
-                      >
-                        −
-                      </button>
-                      <span className="px-2.5 py-1 text-xs font-mono tabular-nums font-semibold text-primary border-x border-subtle">
-                        {item.cantidad}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.varianteId, item.cantidad + 1)}
-                        disabled={item.cantidad >= item.stockFisico}
-                        className="px-2.5 py-1 text-xs font-bold text-primary hover:bg-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-fast cursor-pointer"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    {/* Subtotal del item */}
-                    <div className="text-right">
-                      <span className="text-sm font-mono tabular-nums font-bold text-primary">
-                        {formatearDinero(item.precioUnitario * item.cantidad)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             )}
           </div>
 
-          {/* Footer de Totales y Acción de Cobro (100% Semántico en Light & Dark Mode) */}
+          {/* Footer de Totales y Acción de Cobro */}
           <div className="border-t border-subtle bg-elevated/50 p-4 flex flex-col gap-3">
             <div className="flex justify-between items-center text-xs font-sans text-secondary">
               <span className="font-medium">Subtotal</span>
@@ -354,7 +395,7 @@ export const DashboardPos: React.FC = () => {
         </aside>
       </div>
 
-      {/* 4. Modal Bloqueante de Apertura de Turno (Si no hay turno activo) */}
+      {/* 4. Modal Bloqueante de Apertura de Turno */}
       <ModalAbrirTurno
         isOpen={!isLoadingTurno && !turnoActivo}
         onTurnoAbierto={() => {

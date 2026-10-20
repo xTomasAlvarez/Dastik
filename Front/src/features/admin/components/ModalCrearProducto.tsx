@@ -365,23 +365,18 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
         aria-modal="true"
         aria-labelledby={modalHeadingId}
       >
-        {/* 1. Header */}
+        {/* 1. Header limpio sin subtítulos artificiales */}
         <div className="flex items-center justify-between border-b border-subtle px-6 py-4 bg-elevated/60 shrink-0">
           <div className="flex items-center gap-3">
             <div className="border border-subtle bg-surface rounded-lg p-2 text-primary shrink-0">
-              <Package size={22} weight="duotone" />
+              <Package size={20} weight="duotone" />
             </div>
-            <div>
-              <span className="text-[10px] uppercase tracking-[0.2em] text-muted font-mono block">
-                ADMIN // INVENTARIO CENTRAL
-              </span>
-              <h2
-                id={modalHeadingId}
-                className="text-lg md:text-xl font-heading font-bold text-primary tracking-tight uppercase"
-              >
-                NUEVO PRODUCTO &amp; VARIANTES
-              </h2>
-            </div>
+            <h2
+              id={modalHeadingId}
+              className="text-base md:text-lg font-heading font-bold text-primary tracking-tight"
+            >
+              Nuevo Producto y Variantes
+            </h2>
           </div>
           <button
             type="button"

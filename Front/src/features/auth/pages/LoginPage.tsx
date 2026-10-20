@@ -15,23 +15,21 @@ export const LoginPage: React.FC = () => {
     <div className="h-screen w-screen overflow-hidden bg-canvas text-primary flex items-center justify-center p-6">
       {/* Contenedor Arquitectónico con tokens semánticos */}
       <div className="w-full max-w-[440px] border border-subtle bg-surface rounded-xl shadow-floating p-8 md:p-9">
-        {/* Brand Header */}
+        {/* Brand Header con DastikSinFondo.png a la derecha */}
         <div className="flex items-center justify-between border-b border-subtle pb-4 mb-5 gap-3">
           <div>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-muted font-mono block">
-              RETAIL POS &amp; ERP // TERMINAL
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted font-sans block">
+              Acceso Operativo
             </span>
-            <h1 className="text-xl sm:text-2xl font-heading font-bold tracking-tight mt-1 text-primary">
-              DASTIK <span className="text-muted font-normal">//</span> HIDDEN SNEAKERS
+            <h1 className="text-lg sm:text-xl font-heading font-bold tracking-tight mt-0.5 text-primary">
+              Dastik &amp; Hidden Sneakers
             </h1>
           </div>
-          <div className="border border-subtle bg-black rounded-lg px-3 py-2 flex items-center justify-center shrink-0 shadow-surface">
-            <img
-              src="/dastik-logo.png"
-              alt="Dastik"
-              className="h-6 w-auto object-contain select-none"
-            />
-          </div>
+          <img
+            src="/DastikSinFondo.png"
+            alt="Dastik"
+            className="h-7 sm:h-8 w-auto object-contain select-none brightness-50 contrast-125 dark:brightness-110 dark:contrast-100 shrink-0"
+          />
         </div>
 
         {/* Sandbox Mode Toggle Banner */}

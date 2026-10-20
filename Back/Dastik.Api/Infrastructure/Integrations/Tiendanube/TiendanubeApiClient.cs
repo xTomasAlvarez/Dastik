@@ -182,16 +182,25 @@ public class TiendanubeApiClient : ITiendanubeApiClient
             string nombre = ExtraerTexto(prodElem, "name") ?? $"Producto {id}";
             string? descripcion = ExtraerTexto(prodElem, "description");
 
-            // Imagen destacada
-            string? imagenUrl = null;
+            // Galería completa de imágenes (y primera imagen destacada)
+            var imagenes = new List<string>();
             if (prodElem.TryGetProperty("images", out var imgProp) && imgProp.ValueKind == JsonValueKind.Array)
             {
-                var primerImagen = imgProp.EnumerateArray().FirstOrDefault();
-                if (primerImagen.ValueKind == JsonValueKind.Object && primerImagen.TryGetProperty("src", out var srcProp))
+                foreach (var imgElem in imgProp.EnumerateArray())
                 {
-                    imagenUrl = srcProp.GetString();
+                    if (imgElem.ValueKind == JsonValueKind.Object &&
+                        imgElem.TryGetProperty("src", out var srcProp) &&
+                        srcProp.ValueKind == JsonValueKind.String)
+                    {
+                        var src = srcProp.GetString();
+                        if (!string.IsNullOrWhiteSpace(src))
+                        {
+                            imagenes.Add(src.Trim());
+                        }
+                    }
                 }
             }
+            string? imagenUrl = imagenes.FirstOrDefault();
 
             // Variantes
             var variantes = new List<TiendanubeProductVariantResponse>();
@@ -247,7 +256,8 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 imagenUrl,
                 precioProducto,
                 costoProducto,
-                variantes
+                variantes,
+                imagenes
             ));
         }
 
@@ -320,6 +330,11 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                     new(1002, 101, "M", "Negro", "2010100100025", 24000m, 15000m, 14),
                     new(1003, 101, "L", "Negro", "2010100100032", 24000m, 15000m, 10),
                     new(1004, 101, "XL", "Negro", "2010100100049", 24000m, 15000m, 5)
+                },
+                Imagenes: new List<string>
+                {
+                    "https://dastik.com/img/boxy-tee.jpg",
+                    "https://dastik.com/img/boxy-tee-back.jpg"
                 }
             ),
             new(
@@ -333,6 +348,10 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 {
                     new(1005, 102, "M", "Negro", "2010100200015", 45000m, 28000m, 6),
                     new(1006, 102, "L", "Negro", "2010100200022", 45000m, 28000m, 9)
+                },
+                Imagenes: new List<string>
+                {
+                    "https://dastik.com/img/hoodie-black.jpg"
                 }
             ),
             new(
@@ -346,6 +365,10 @@ public class TiendanubeApiClient : ITiendanubeApiClient
                 {
                     new(1007, 103, "40", "Gris", "2010100300012", 38000m, 24000m, 4),
                     new(1008, 103, "42", "Gris", "2010100300029", 38000m, 24000m, 7)
+                },
+                Imagenes: new List<string>
+                {
+                    "https://dastik.com/img/pant-ripstop.jpg"
                 }
             )
         };

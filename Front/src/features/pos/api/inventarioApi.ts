@@ -16,6 +16,7 @@ export interface ProductoCatalogoDto {
   categoria: string;
   unidadNegocio: string;
   imagenUrl?: string;
+  imagenes?: string[];
   precioVenta: number;
   costoBase?: number;
   markupAplicado?: number;
@@ -82,4 +83,3 @@ export const inventarioApi = {
     return response.data;
   },
 };
-

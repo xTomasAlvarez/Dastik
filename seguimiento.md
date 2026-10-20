@@ -1085,3 +1085,34 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - `npm run build`: **0 errores TypeScript**, build de producción limpio.
 
 
+---
+
+### [feat/pos-anti-ia-ux-and-gallery] Galería Completa de Imágenes (`ImagenesJson`), Identidad Visual `DastikSinFondo.png` y Rediseño UX/UI "Anti-IA" (Origin UI + Kokonut UI + Motion.dev) - COMPLETADO
+
+**Objetivo:** Elevar la experiencia operativa del mostrador y la estética del sistema eliminando patrones genéricos ("AI Slop"), persistiendo todas las imágenes de productos de Tiendanube (`ImagenesJson`), integrando `DastikSinFondo.png` y `favicon_dastik.png`, unificando el buscador y lector óptico en una Omnibar con paginación de 12 ítems, añadiendo el modal Quick-View con carrusel de fotos y código EAN-13 copiable, y enriqueciendo el ticket en vivo con miniaturas, animaciones (`motion/react`) y códigos EAN-13.
+
+- **Rama:** `feat/pos-anti-ia-ux-and-gallery` (creada a partir de `develop`).
+- **1. Backend - Galería Completa de Imágenes (`ImagenesJson`):**
+  - `Producto.cs`: nueva propiedad `public string ImagenesJson { get; set; } = "[]";`.
+  - `SqliteSchemaPatcher.cs`: registrado el parche no destructivo `new("Productos", "ImagenesJson", "TEXT NOT NULL DEFAULT '[]'")` aplicado automáticamente en `dastik_dev.db` y `dastik_sandbox_dev.db`.
+  - `ITiendanubeApiClient.cs`, `TiendanubeApiClient.cs` y `TiendanubeSyncService.cs`: extracción del array completo `images[].src` de Tiendanube y persistencia serializada en `ImagenesJson` (conservando la portada en `ImagenUrl`).
+  - `ListarProductosQuery.cs`: `ProductoCatalogoDto` expone `List<string>? Imagenes` con fallback automático a `[p.ImagenUrl]` si `ImagenesJson` está vacío.
+- **2. Identidad Visual (`DastikSinFondo.png` + `favicon_dastik.png`) y Limpieza "Anti-IA":**
+  - `Front/index.html`: configurado `<link rel="icon" type="image/png" href="/favicon_dastik.png" />` y `<link rel="apple-touch-icon" href="/favicon_dastik.png" />`.
+  - `PosHeader.tsx`, `AdminLayout.tsx` y `LoginPage.tsx`: integrado `/DastikSinFondo.png` sin cajas negras artificiales (`bg-black`), aplicando `brightness-50 contrast-125 dark:brightness-110` para contraste nítido en Modo Claro y Modo Oscuro.
+  - Eliminados textos redundantes y subtítulos artificiales (`POS v1.0`, `"Terminal de Cobro & Control de Inventario"`, `"Lector Óptico EAN-13 Online"`, `"Catálogo Retail en Tiempo Real"`, `"ADMIN // INVENTARIO CENTRAL"`).
+- **3. Omnibar Unificada y Paginación en POS (`CatalogoGrid.tsx`):**
+  - Unificados el buscador de catálogo y el lector de código de barras EAN-13 en una sola barra de comando superior con atajo `F1` y detección instantánea al presionar `Enter` (agregando la variante al carrito con miniatura y mostrando un toast inline animado).
+  - Segmented Control (`Todos | Dastik | Hidden Sneakers`) con indicador activo deslizante (`motion.div` con `layoutId="pos-unit-pill"`), filtro rápido `"Ocultar agotados"` y botón de recarga.
+  - Paginación de grilla a **12 productos por página** con pie de página estilo **Origin UI** (`Mostrando X–Y de Z`, botones `Anterior / Siguiente`).
+- **4. Tarjeta de Producto Rediseñada y Modal Quick-View (`ProductCard.tsx` & `ModalQuickViewPos.tsx`):**
+  - `ProductCard.tsx`: cabecera visual amplia (`h-36` con `object-cover` y micro-zoom), badges flotantes de marca y stock, sin repetición de marca (`DASTIK` + `Dastik`), y pills de talle táctiles con `motion.button` (`whileTap={{ scale: 0.93 }}`).
+  - `ModalQuickViewPos.tsx`: modal animado (`AnimatePresence`) con carrusel de fotos reales (`producto.imagenes`) + tira de miniaturas, selector de talle y bloque destacado con el **código numérico EAN-13 (`codigoBarras`)** en `JetBrains Mono`, botón **"Copiar EAN"** con confirmación visual, botón **"Agregar al Ticket"** y acceso directo a **"Etiquetas"**.
+- **5. Ticket `ORDEN EN CURSO` Animado y 3 Mejoras Operativas:**
+  - `useCartStore.ts` y `DashboardPos.tsx`: cada ítem del carrito se anima con `AnimatePresence` (`motion/react`) y muestra **miniatura real (`w-10 h-10 rounded-lg object-cover`)**, nombre, pill de talle y **código numérico EAN-13 (`codigoBarras`)**.
+  - `InventarioPage.tsx`: invalidación de `['catalogo-pos']` al crear productos o sincronizar Tiendanube.
+  - `ModalDetalleProducto.tsx`: visualización de la galería completa de miniaturas `producto.imagenes`.
+  - `ModalCambio.tsx`: miniatura real del producto junto al código EAN-13 en los pasos de prenda devuelta y prenda nueva.
+- **Verificación de Compilación y Tests:**
+  - `dotnet test`: **125/125 pruebas superadas en verde**.
+  - `npm run build`: **0 errores TypeScript**, build de producción limpio.

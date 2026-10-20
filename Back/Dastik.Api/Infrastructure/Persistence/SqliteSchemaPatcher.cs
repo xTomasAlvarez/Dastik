@@ -70,6 +70,7 @@ public static class SqliteSchemaPatcher
             "Nombre" TEXT NOT NULL,
             "Descripcion" TEXT NOT NULL DEFAULT '',
             "ImagenUrl" TEXT NOT NULL DEFAULT '',
+            "ImagenesJson" TEXT NOT NULL DEFAULT '[]',
             "CostoBase" TEXT NOT NULL DEFAULT '0',
             "MarkupAplicado" TEXT NOT NULL DEFAULT '0',
             "PrecioVenta" TEXT NOT NULL DEFAULT '0',
@@ -169,6 +170,7 @@ public static class SqliteSchemaPatcher
         // Productos
         new("Productos", "Descripcion", "TEXT NOT NULL DEFAULT ''"),
         new("Productos", "ImagenUrl", "TEXT NOT NULL DEFAULT ''"),
+        new("Productos", "ImagenesJson", "TEXT NOT NULL DEFAULT '[]'"),
         new("Productos", "CostoBase", "TEXT NOT NULL DEFAULT '0'"),
         new("Productos", "MarkupAplicado", "TEXT NOT NULL DEFAULT '0'"),
         new("Productos", "PrecioVenta", "TEXT NOT NULL DEFAULT '0'"),

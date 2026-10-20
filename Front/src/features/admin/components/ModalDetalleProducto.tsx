@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   Image as ImageIcon,
@@ -26,10 +26,29 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
   producto,
 }) => {
   const [isModalEtiquetasOpen, setIsModalEtiquetasOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  const galeriaImagenes = useMemo(() => {
+    if (!producto) return [];
+    if (producto.imagenes && producto.imagenes.length > 0) {
+      return producto.imagenes.filter((u) => Boolean(u && u.trim()));
+    }
+    if (producto.imagenUrl && producto.imagenUrl.trim()) {
+      return [producto.imagenUrl.trim()];
+    }
+    return [];
+  }, [producto]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveImageIndex(0);
+    }
+  }, [isOpen, producto]);
+
   // Manejo de tecla Escape para cerrar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape' && isOpen && !isModalEtiquetasOpen) {
         onClose();
       }
     };
@@ -43,7 +62,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, isModalEtiquetasOpen, onClose]);
 
   if (!isOpen || !producto) return null;
 
@@ -66,6 +85,8 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
     ? Math.round(((producto.precioVenta - costoBase) / producto.precioVenta) * 100)
     : 33;
 
+  const imagenActivaUrl = galeriaImagenes[activeImageIndex] || producto.imagenUrl || '';
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop con Blur */}
@@ -76,17 +97,15 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
 
       {/* Slide-Over Drawer Lateral */}
       <div className="relative w-full max-w-xl bg-surface border-l border-subtle shadow-floating flex flex-col h-full z-10">
-        {/* 1. Header del Drawer */}
-        <div className="p-5 border-b border-subtle bg-elevated/60 flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] uppercase font-mono tracking-widest text-amber-600 dark:text-amber-400 font-bold">
-              FICHA TÉCNICA DE PRODUCTO
+        {/* 1. Header Limpio del Drawer */}
+        <div className="px-5 py-4 border-b border-subtle bg-elevated/60 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded border border-subtle bg-surface text-secondary">
+              #{producto.id}
             </span>
-            <div className="flex items-center gap-2">
-              <h3 className="font-heading font-bold text-primary text-base uppercase tracking-wider">
-                ID #{producto.id} — {producto.marca}
-              </h3>
-            </div>
+            <h3 className="font-heading font-bold text-primary text-base tracking-tight">
+              {producto.marca}
+            </h3>
           </div>
           <button
             onClick={onClose}
@@ -99,31 +118,55 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
 
         {/* 2. Cuerpo Desplazable del Drawer */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Imagen Grande con Fallback */}
-          <div className="w-full aspect-[4/3] border border-subtle rounded-xl bg-elevated overflow-hidden flex items-center justify-center relative">
-            {producto.imagenUrl ? (
-              <img
-                src={producto.imagenUrl}
-                alt={producto.nombre}
-                className="w-full h-full object-contain p-2 bg-elevated"
-                loading="eager"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const fb = e.currentTarget.parentElement?.querySelector('.drawer-img-fb');
-                  if (fb) fb.classList.remove('hidden');
-                }}
-              />
-            ) : null}
-            <div
-              className={`flex flex-col items-center justify-center gap-2 text-muted ${
-                producto.imagenUrl ? 'hidden drawer-img-fb' : ''
-              }`}
-            >
-              <ImageIcon size={48} weight="duotone" />
-              <span className="text-[10px] uppercase font-mono tracking-widest text-muted">
-                FOTO NO DISPONIBLE
-              </span>
+          {/* Galería de Imágenes con Miniaturas */}
+          <div className="space-y-2.5">
+            <div className="w-full aspect-[4/3] border border-subtle rounded-xl bg-elevated overflow-hidden flex items-center justify-center relative">
+              {imagenActivaUrl ? (
+                <img
+                  src={imagenActivaUrl}
+                  alt={producto.nombre}
+                  className="w-full h-full object-contain p-2 bg-elevated"
+                  loading="eager"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 text-muted">
+                  <ImageIcon size={48} weight="duotone" />
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-muted">
+                    FOTO NO DISPONIBLE
+                  </span>
+                </div>
+              )}
+
+              {galeriaImagenes.length > 1 && (
+                <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-surface/90 border border-subtle text-[10px] font-mono font-semibold text-secondary">
+                  {activeImageIndex + 1} / {galeriaImagenes.length} fotos
+                </span>
+              )}
             </div>
+
+            {/* Miniaturas de la Galería */}
+            {galeriaImagenes.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {galeriaImagenes.map((url, idx) => (
+                  <button
+                    key={`${url}-${idx}`}
+                    type="button"
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`w-14 h-14 rounded-lg border overflow-hidden shrink-0 transition-fast cursor-pointer bg-elevated ${
+                      activeImageIndex === idx
+                        ? 'border-amber-500 ring-2 ring-amber-500/25'
+                        : 'border-subtle opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={url}
+                      alt={`${producto.nombre} miniatura ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Información de Identificación y Tags */}
@@ -137,11 +180,11 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
                     : 'border-subtle bg-surface text-secondary'
                 }`}
               >
-                UNIDAD: {producto.unidadNegocio}
+                {producto.unidadNegocio}
               </span>
 
               <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-subtle bg-surface text-secondary">
-                CATEGORÍA: {producto.categoria}
+                {producto.categoria}
               </span>
 
               <span
@@ -157,12 +200,9 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
               </span>
             </div>
 
-            {/* Nombre y Marca */}
+            {/* Nombre */}
             <div>
-              <div className="text-xs font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold mb-1">
-                {producto.marca}
-              </div>
-              <h2 className="text-xl md:text-2xl font-heading font-bold text-primary uppercase tracking-tight">
+              <h2 className="text-xl md:text-2xl font-heading font-bold text-primary tracking-tight">
                 {producto.nombre}
               </h2>
             </div>
@@ -260,7 +300,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
                           <span className="text-xs font-heading font-semibold text-primary">
                             Color: {v.color}
                           </span>
-                          <span className="text-[10px] font-mono text-muted flex items-center gap-1 mt-0.5">
+                          <span className="text-[10px] font-mono text-muted flex items-center gap-1 mt-0.5 select-all">
                             <Barcode size={12} weight="bold" />
                             {v.codigoBarras || 'SIN EAN'}
                           </span>
