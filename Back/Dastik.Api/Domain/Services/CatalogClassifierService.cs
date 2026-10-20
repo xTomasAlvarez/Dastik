@@ -14,7 +14,8 @@ public record CatalogClassificationSummary(
     int ProductosReclasificadosMarca,
     int ProductosImagenesOptimizadas,
     Dictionary<string, int> ConteoPorCategoria,
-    Dictionary<string, int> ConteoPorMarca
+    Dictionary<string, int> ConteoPorMarca,
+    int VariantesEanDeterministaNormalizadas = 0
 );
 
 public static class CatalogClassifierService
@@ -135,8 +136,6 @@ public static class CatalogClassifierService
     {
         if (string.IsNullOrWhiteSpace(texto)) return null;
 
-        // 1. Calzado explícito primero si dice zapatilla/sneaker/calzado/dunk/yeezy/air force/samba/campus/adi2000/forum
-        //    (Siempre que no empiece con una prenda explícita como "remera", "buzo", "gorra", "medias", "pantalon")
         bool tienePrendaExplicita = ContieneAlguno(texto,
             "remera", "remeron", "tee", "t-shirt", "musculosa", "tank",
             "polo", "chomba", "rugby",
@@ -278,13 +277,16 @@ public static class CatalogClassifierService
 
     /// <summary>
     /// Limpia los proveedores erróneos ("Proveedor Textil Dastik" y "Proveedor Sneakerheads"),
-    /// asegura que existan "Sample" (55%) y "Proveedor General" (50%), y reclasifica todos los productos
-    /// existentes en la base de datos en sus categorías y marcas reales.
+    /// asegura que existan "Sample" (55%) y "Proveedor General" (50%), reclasifica todos los productos
+    /// existentes en la base de datos en sus categorías y marcas reales, y normaliza de forma determinista
+    /// los códigos EAN-13 internos generados para variantes de Tiendanube.
     /// </summary>
     public static async Task<CatalogClassificationSummary> ClasificarCatalogoExistenteAsync(
         AppDbContext context,
         CancellationToken ct = default)
     {
+        var generadorEan = new GeneradorEan13();
+
         // 1. Limpieza y normalización de Proveedores
         var proveedores = await context.Proveedores.ToListAsync(ct);
 
@@ -375,7 +377,7 @@ public static class CatalogClassifierService
             }
         }
 
-        // 3. Asegurar Marcasbase ("Dastik")
+        // 3. Asegurar Marcas base ("Dastik")
         var marcasDb = await context.Marcas.ToListAsync(ct);
         var mapaMarcas = new Dictionary<string, Marca>(StringComparer.OrdinalIgnoreCase);
         foreach (var m in marcasDb)
@@ -392,15 +394,17 @@ public static class CatalogClassifierService
 
         await context.SaveChangesAsync(ct);
 
-        // 4. Reclasificar Productos y optimizar URLs de imágenes
+        // 4. Reclasificar Productos, optimizar URLs de imágenes y asegurar EAN-13 determinista en variantes generadas de Tiendanube
         var productos = await context.Productos
             .Include(p => p.Categoria)
             .Include(p => p.Marca)
+            .Include(p => p.Variantes)
             .ToListAsync(ct);
 
         int reclasificadosCategoria = 0;
         int reclasificadosMarca = 0;
         int imagenesOptimizadas = 0;
+        int variantesEanNormalizadas = 0;
 
         foreach (var prod in productos)
         {
@@ -419,7 +423,6 @@ public static class CatalogClassifierService
                 mapaCategorias[nombreCatInferida] = catDestino;
             }
 
-            // Reclasificar si estaba en "Indumentaria", "Calzado" genérico o categoría distinta a la inferida
             if (prod.CategoriaId != catDestino.Id)
             {
                 prod.CategoriaId = catDestino.Id;
@@ -479,6 +482,22 @@ public static class CatalogClassifierService
             {
                 imagenesOptimizadas++;
             }
+
+            // Migración suave a EAN-13 Determinista para variantes con código interno generado desde Tiendanube
+            foreach (var v in prod.Variantes)
+            {
+                if (!string.IsNullOrWhiteSpace(v.TiendanubeVariantId) &&
+                    (v.EsCodigoGenerado || string.IsNullOrWhiteSpace(v.CodigoBarras)))
+                {
+                    var eanDeterminista = generadorEan.GenerarDeterminista(v.TiendanubeVariantId, prod.Nombre, v.Talle);
+                    if (v.CodigoBarras != eanDeterminista)
+                    {
+                        v.CodigoBarras = eanDeterminista;
+                        v.EsCodigoGenerado = true;
+                        variantesEanNormalizadas++;
+                    }
+                }
+            }
         }
 
         await context.SaveChangesAsync(ct);
@@ -512,7 +531,8 @@ public static class CatalogClassifierService
             ProductosReclasificadosMarca: reclasificadosMarca,
             ProductosImagenesOptimizadas: imagenesOptimizadas,
             ConteoPorCategoria: conteoPorCategoria,
-            ConteoPorMarca: conteoPorMarca
+            ConteoPorMarca: conteoPorMarca,
+            VariantesEanDeterministaNormalizadas: variantesEanNormalizadas
         );
     }
 

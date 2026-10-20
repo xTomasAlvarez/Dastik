@@ -1,5 +1,7 @@
 using System.Net.Http;
+using Dastik.Api.Common;
 using Dastik.Api.Domain.Entities;
+using Dastik.Api.Domain.Integrations.Tiendanube;
 using Dastik.Api.Domain.Services;
 using Dastik.Api.Features.Inventario.ListarProductos;
 using Dastik.Api.Features.Inventario.SincronizarTiendanube;
@@ -83,6 +85,121 @@ public class CatalogIntelligenceTests
     {
         var res = CatalogClassifierService.NormalizarUrlImagenAltaRes(entrada);
         res.Should().Be(esperado);
+    }
+
+    [Fact]
+    public void GenerarDeterminista_MismoTiendanubeVariantIdOHashNombreTalle_DebeProducirSiempreElMismoEan13()
+    {
+        var gen = new GeneradorEan13();
+
+        // 1. Por TiendanubeVariantId ("987654321") -> "20" + "0987654321" + dígito verificador
+        var ean1 = gen.GenerarDeterminista("987654321", "Remera Boxy", "L");
+        var ean2 = gen.GenerarDeterminista("987654321", "Otro Nombre Distinto", "XL");
+
+        ean1.Should().HaveLength(13);
+        ean1.Should().StartWith("200987654321");
+        ean1.Should().Be(ean2, "El EAN-13 determinista basado en TiendanubeVariantId jamás debe variar");
+
+        int dvEsperado = gen.CalcularDigitoVerificador(ean1[..12]);
+        (ean1[12] - '0').Should().Be(dvEsperado);
+
+        // 2. Fallback por hash estable de ProductoNombre + Talle cuando no hay TiendanubeVariantId
+        var eanHash1 = gen.GenerarDeterminista(null, "ZIP HOODIE SIGNATURE", "M");
+        var eanHash2 = gen.GenerarDeterminista("", "zip hoodie signature", "m");
+        eanHash1.Should().HaveLength(13);
+        eanHash1.Should().StartWith("20");
+        eanHash1.Should().Be(eanHash2);
+    }
+
+    private sealed class StubTiendanubeClient : ITiendanubeApiClient
+    {
+        public List<TiendanubeProductResponse> Catalogo { get; set; } = new();
+
+        public Task<Result<TiendanubeVariantResponse>> ActualizarStockVarianteAsync(
+            string storeId, string accessToken, string productId, string variantId, int nuevoStock, CancellationToken ct = default)
+            => Task.FromResult(Result<TiendanubeVariantResponse>.Success(new TiendanubeVariantResponse(1, 1, nuevoStock)));
+
+        public Task<Result<List<TiendanubeProductResponse>>> ObtenerProductosAsync(
+            string storeId, string accessToken, CancellationToken ct = default)
+            => Task.FromResult(Result<List<TiendanubeProductResponse>>.Success(Catalogo));
+    }
+
+    [Fact]
+    public async Task SincronizarCatalogoAsync_DobleSincronizacionYReconstruccionDesdeCero_DebeMantenerEan13InmutableAlDigito()
+    {
+        var productoNubeSinBarcode = new TiendanubeProductResponse(
+            Id: 30500,
+            Nombre: "ZIP HOODIE SIGNATURE BLACK",
+            Descripcion: "Buzo canguro pesado",
+            ImagenUrl: "https://acdn-us.mitiendanube.com/stores/1/products/hoodie-480-0.webp",
+            Precio: 55000m,
+            Costo: 30000m,
+            Variantes: new List<TiendanubeProductVariantResponse>
+            {
+                new(Id: 1122334455, ProductId: 30500, Talle: "M", Color: "Negro", Barcode: null, Precio: 55000m, Costo: 30000m, Stock: 10),
+                new(Id: 1122334456, ProductId: 30500, Talle: "L", Color: "Negro", Barcode: "", Precio: 55000m, Costo: 30000m, Stock: 7)
+            }
+        );
+
+        var stubClient = new StubTiendanubeClient { Catalogo = new List<TiendanubeProductResponse> { productoNubeSinBarcode } };
+        var gen = new GeneradorEan13();
+
+        // --- BASE DE DATOS 1: Primera sincronización + Segunda re-sincronización (con cambio de stock y barcode externo distinto) ---
+        using var conn1 = new SqliteConnection("DataSource=:memory:");
+        conn1.Open();
+        using var db1 = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(conn1).Options);
+        db1.Database.EnsureCreated();
+        db1.UnidadesNegocio.Add(new UnidadNegocio { Nombre = "Dastik", TieneTiendaNube = true, TiendanubeStoreId = "1", TiendanubeAccessToken = "tok" });
+        await db1.SaveChangesAsync();
+
+        var sync1 = new TiendanubeSyncService(db1, stubClient, gen, NullLogger<TiendanubeSyncService>.Instance);
+        await sync1.SincronizarCatalogoAsync();
+
+        var variantesPrimeraSync = await db1.Variantes.OrderBy(v => v.TiendanubeVariantId).ToListAsync();
+        variantesPrimeraSync.Should().HaveCount(2);
+        string eanTalleM_Db1 = variantesPrimeraSync[0].CodigoBarras;
+        string eanTalleL_Db1 = variantesPrimeraSync[1].CodigoBarras;
+
+        // Simulamos una 2da sincronización donde Tiendanube envía otro barcode o cambia el stock: el CodigoBarras existente NO debe sobrescribirse
+        stubClient.Catalogo = new List<TiendanubeProductResponse>
+        {
+            new(
+                Id: 30500,
+                Nombre: "ZIP HOODIE SIGNATURE BLACK",
+                Descripcion: "Buzo canguro pesado",
+                ImagenUrl: "https://acdn-us.mitiendanube.com/stores/1/products/hoodie-480-0.webp",
+                Precio: 59000m,
+                Costo: 32000m,
+                Variantes: new List<TiendanubeProductVariantResponse>
+                {
+                    new(Id: 1122334455, ProductId: 30500, Talle: "M", Color: "Negro", Barcode: "7799999999999", Precio: 59000m, Costo: 32000m, Stock: 4),
+                    new(Id: 1122334456, ProductId: 30500, Talle: "L", Color: "Negro", Barcode: null, Precio: 59000m, Costo: 32000m, Stock: 2)
+                }
+            )
+        };
+
+        await sync1.SincronizarCatalogoAsync();
+
+        var variantesSegundaSync = await db1.Variantes.OrderBy(v => v.TiendanubeVariantId).ToListAsync();
+        variantesSegundaSync[0].CodigoBarras.Should().Be(eanTalleM_Db1, "Un CodigoBarras ya asignado jamás debe sobrescribirse al re-sincronizar");
+        variantesSegundaSync[1].CodigoBarras.Should().Be(eanTalleL_Db1);
+        variantesSegundaSync[0].StockFisico.Should().Be(4);
+
+        // --- BASE DE DATOS 2 (Reconstruida desde cero): Debe generar exactamente los mismos EAN-13 al dígito ---
+        stubClient.Catalogo = new List<TiendanubeProductResponse> { productoNubeSinBarcode };
+        using var conn2 = new SqliteConnection("DataSource=:memory:");
+        conn2.Open();
+        using var db2 = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(conn2).Options);
+        db2.Database.EnsureCreated();
+        db2.UnidadesNegocio.Add(new UnidadNegocio { Nombre = "Dastik", TieneTiendaNube = true, TiendanubeStoreId = "1", TiendanubeAccessToken = "tok" });
+        await db2.SaveChangesAsync();
+
+        var sync2 = new TiendanubeSyncService(db2, stubClient, gen, NullLogger<TiendanubeSyncService>.Instance);
+        await sync2.SincronizarCatalogoAsync();
+
+        var variantesReconstruidas = await db2.Variantes.OrderBy(v => v.TiendanubeVariantId).ToListAsync();
+        variantesReconstruidas[0].CodigoBarras.Should().Be(eanTalleM_Db1, "Reconstruir la BD desde cero debe producir exactamente el mismo EAN-13 para las etiquetas ya impresas");
+        variantesReconstruidas[1].CodigoBarras.Should().Be(eanTalleL_Db1);
     }
 
     [Fact]
@@ -177,7 +294,6 @@ public class CatalogIntelligenceTests
             using var prodDb = new AppDbContext(prodOptions);
             await SqliteSchemaPatcher.EnsureSchemaUpdatedAsync(prodDb);
 
-            // Verificar si hay productos de Tiendanube con galería de fotos vacía ("[]") y credenciales reales configuradas para lectura GET
             var unidadDastik = await prodDb.UnidadesNegocio
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Nombre == "Dastik" && u.TieneTiendaNube);
@@ -202,7 +318,6 @@ public class CatalogIntelligenceTests
                 var apiClient = new TiendanubeApiClient(httpClient, NullLogger<TiendanubeApiClient>.Instance);
                 var syncService = new TiendanubeSyncService(prodDb, apiClient, new GeneradorEan13(), NullLogger<TiendanubeSyncService>.Instance);
 
-                // Petición exclusivamente GET a Tiendanube para poblar ImagenesJson de alta resolución y categorías
                 var syncResult = await syncService.SincronizarCatalogoAsync();
                 _output.WriteLine($"[BACKFILL GALERIA TIENDANUBE GET] Éxito={syncResult.IsSuccess} | Mensaje={syncResult.Value?.Mensaje ?? syncResult.Error}");
             }
@@ -214,22 +329,7 @@ public class CatalogIntelligenceTests
             _output.WriteLine($"Reclasificados en Categoría: {summary.ProductosReclasificadosCategoria}");
             _output.WriteLine($"Reclasificados en Marca: {summary.ProductosReclasificadosMarca}");
             _output.WriteLine($"Imágenes optimizadas a 1024px: {summary.ProductosImagenesOptimizadas}");
-
-            foreach (var kv in summary.ConteoPorCategoria)
-            {
-                _output.WriteLine($"  Categoría [{kv.Key}]: {kv.Value} productos");
-            }
-
-            foreach (var kv in summary.ConteoPorMarca)
-            {
-                _output.WriteLine($"  Marca [{kv.Key}]: {kv.Value} productos");
-            }
-
-            var proveedoresFinales = await prodDb.Proveedores.Select(p => $"{p.Nombre} ({p.MarkupPorDefecto}%)").ToListAsync();
-            _output.WriteLine($"  Proveedores activos: {string.Join(", ", proveedoresFinales)}");
-
-            var conMultiplesFotos = await prodDb.Productos.CountAsync(p => p.ImagenesJson.Contains("\",\""));
-            _output.WriteLine($"  Productos con galería multi-foto (ImagenesJson > 1 foto): {conMultiplesFotos}");
+            _output.WriteLine($"Variantes con EAN-13 Determinista Normalizadas: {summary.VariantesEanDeterministaNormalizadas}");
 
             summary.TotalProductosAnalizados.Should().BeGreaterThan(0);
         }

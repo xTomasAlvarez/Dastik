@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 namespace Dastik.Api.Domain.Services;
 
 public class GeneradorEan13
@@ -24,6 +27,69 @@ public class GeneradorEan13
         int digitoVerificador = CalcularDigitoVerificador(prefijo12);
 
         return $"{prefijo12}{digitoVerificador}";
+    }
+
+    /// <summary>
+    /// Genera un código EAN-13 100% determinista e inmutable para variantes sincronizadas.
+    /// Toma los últimos 10 dígitos numéricos de TiendanubeVariantId con PadLeft(10, '0')
+    /// (o un hash numérico estable de ProductoNombre + Talle si no posee TiendanubeVariantId),
+    /// antepone el prefijo "20" y calcula el 13º dígito verificador oficial EAN-13.
+    /// </summary>
+    public string GenerarDeterminista(
+        string? tiendanubeVariantId,
+        string? productoNombre = null,
+        string? talle = null)
+    {
+        string diezDigitos;
+
+        var soloDigitos = ExtraerSoloDigitos(tiendanubeVariantId);
+        if (soloDigitos.Length > 0)
+        {
+            diezDigitos = soloDigitos.Length > 10
+                ? soloDigitos[^10..]
+                : soloDigitos.PadLeft(10, '0');
+        }
+        else
+        {
+            var semilla = $"{(productoNombre ?? string.Empty).Trim().ToUpperInvariant()}|{(talle ?? string.Empty).Trim().ToUpperInvariant()}";
+            var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(semilla));
+            ulong valorNumerico = BitConverter.ToUInt64(hashBytes, 0) % 10_000_000_000UL;
+            diezDigitos = valorNumerico.ToString("D10");
+        }
+
+        string prefijo12 = $"20{diezDigitos}";
+        int digitoVerificador = CalcularDigitoVerificador(prefijo12);
+
+        return $"{prefijo12}{digitoVerificador}";
+    }
+
+    /// <summary>
+    /// Verifica si una cadena es un código de barras numérico de 13 dígitos válido.
+    /// </summary>
+    public static bool TieneBarcode13DigitosValido(string? barcode)
+    {
+        if (string.IsNullOrWhiteSpace(barcode)) return false;
+        var limpio = barcode.Trim();
+        if (limpio.Length != 13) return false;
+        foreach (var c in limpio)
+        {
+            if (!char.IsDigit(c)) return false;
+        }
+        return true;
+    }
+
+    private static string ExtraerSoloDigitos(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        var sb = new StringBuilder(input.Length);
+        foreach (var c in input)
+        {
+            if (char.IsDigit(c))
+            {
+                sb.Append(c);
+            }
+        }
+        return sb.ToString();
     }
 
     /// <summary>

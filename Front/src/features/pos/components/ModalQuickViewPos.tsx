@@ -10,6 +10,7 @@ import {
   Image as ImageIcon,
   CaretLeft,
   CaretRight,
+  Lightning,
 } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import {
@@ -24,12 +25,14 @@ interface ModalQuickViewPosProps {
   isOpen: boolean;
   onClose: () => void;
   producto: ProductoCatalogoDto | null;
+  onSimulateLaserScan?: (codigoBarras: string) => void;
 }
 
 export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
   isOpen,
   onClose,
   producto,
+  onSimulateLaserScan,
 }) => {
   const addItem = useCartStore((state) => state.addItem);
 
@@ -110,6 +113,28 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
       setTimeout(() => setCopiedEan(false), 1800);
     } catch {
       // Fallback silencioso
+    }
+  };
+
+  const handleSimulateLaser = () => {
+    if (!varianteSeleccionada?.codigoBarras) return;
+    const code = varianteSeleccionada.codigoBarras;
+    onClose();
+    if (onSimulateLaserScan) {
+      onSimulateLaserScan(code);
+    } else if (varianteSeleccionada.stockFisico > 0) {
+      addItem({
+        varianteId: varianteSeleccionada.id,
+        productoId: producto.id,
+        nombreProducto: producto.nombre,
+        marca: producto.marca,
+        talle: varianteSeleccionada.talle,
+        color: varianteSeleccionada.color,
+        codigoBarras: varianteSeleccionada.codigoBarras,
+        precioUnitario: producto.precioVenta,
+        stockFisico: varianteSeleccionada.stockFisico,
+        imagenUrl: galeriaImagenes[0] || normalizarUrlImagenAltaRes(producto.imagenUrl),
+      });
     }
   };
 
@@ -348,9 +373,9 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                     </div>
                   </div>
 
-                  {/* Bloque Destacado: Código EAN-13 del Talle Seleccionado */}
+                  {/* Bloque Destacado: Código EAN-13 del Talle Seleccionado + Simulador de Escaneo 1-Clic */}
                   {varianteSeleccionada && (
-                    <div className="rounded-xl border border-subtle bg-elevated p-3.5 flex items-center justify-between gap-3">
+                    <div className="rounded-xl border border-subtle bg-elevated p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="p-2 rounded-lg bg-surface border border-subtle text-amber-500 shrink-0">
                           <Barcode size={20} weight="bold" />
@@ -366,26 +391,38 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                       </div>
 
                       {varianteSeleccionada.codigoBarras && (
-                        <button
-                          type="button"
-                          onClick={handleCopyEan}
-                          className="px-2.5 py-1.5 rounded-lg border border-subtle bg-surface hover:border-strong text-xs font-mono font-semibold text-primary flex items-center gap-1.5 transition-fast cursor-pointer shrink-0"
-                          title="Copiar código EAN-13 al portapapeles"
-                        >
-                          {copiedEan ? (
-                            <>
-                              <Check size={14} weight="bold" className="text-emerald-500" />
-                              <span className="text-emerald-600 dark:text-emerald-400">
-                                Copiado
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy size={14} weight="regular" />
-                              <span>Copiar EAN</span>
-                            </>
-                          )}
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleCopyEan}
+                            className="px-2.5 py-1.5 rounded-lg border border-subtle bg-surface hover:border-strong text-xs font-mono font-semibold text-primary flex items-center gap-1.5 transition-fast cursor-pointer shrink-0"
+                            title="Copiar código EAN-13 al portapapeles"
+                          >
+                            {copiedEan ? (
+                              <>
+                                <Check size={14} weight="bold" className="text-emerald-500" />
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  Copiado
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={14} weight="regular" />
+                                <span>Copiar EAN</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleSimulateLaser}
+                            className="px-2.5 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-xs font-mono font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 transition-fast cursor-pointer shrink-0 active:scale-[0.97]"
+                            title="Simular disparo de pistola lectora láser USB con este código EAN-13"
+                          >
+                            <Lightning size={14} weight="fill" />
+                            <span>Disparar Láser</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}
