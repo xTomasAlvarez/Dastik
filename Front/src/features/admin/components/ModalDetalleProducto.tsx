@@ -9,10 +9,15 @@ import {
   CurrencyDollar,
   Percent,
   Printer,
+  CaretLeft,
+  CaretRight,
 } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { ModalImprimirEtiquetas } from './ModalImprimirEtiquetas';
-import type { ProductoCatalogoDto } from '../../pos/api/inventarioApi';
+import {
+  normalizarUrlImagenAltaRes,
+  type ProductoCatalogoDto,
+} from '../../pos/api/inventarioApi';
 
 interface ModalDetalleProductoProps {
   isOpen: boolean;
@@ -30,13 +35,23 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
 
   const galeriaImagenes = useMemo(() => {
     if (!producto) return [];
+    const urls: string[] = [];
+
     if (producto.imagenes && producto.imagenes.length > 0) {
-      return producto.imagenes.filter((u) => Boolean(u && u.trim()));
+      for (const u of producto.imagenes) {
+        const norm = normalizarUrlImagenAltaRes(u);
+        if (norm && !urls.includes(norm)) {
+          urls.push(norm);
+        }
+      }
     }
-    if (producto.imagenUrl && producto.imagenUrl.trim()) {
-      return [producto.imagenUrl.trim()];
+
+    if (urls.length === 0 && producto.imagenUrl) {
+      const norm = normalizarUrlImagenAltaRes(producto.imagenUrl);
+      if (norm) urls.push(norm);
     }
-    return [];
+
+    return urls;
   }, [producto]);
 
   useEffect(() => {
@@ -85,7 +100,10 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
     ? Math.round(((producto.precioVenta - costoBase) / producto.precioVenta) * 100)
     : 33;
 
-  const imagenActivaUrl = galeriaImagenes[activeImageIndex] || producto.imagenUrl || '';
+  const imagenActivaUrl =
+    galeriaImagenes[activeImageIndex] ||
+    normalizarUrlImagenAltaRes(producto.imagenUrl) ||
+    '';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -118,13 +136,14 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
 
         {/* 2. Cuerpo Desplazable del Drawer */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Galería de Imágenes con Miniaturas */}
+          {/* Galería de Imágenes con Miniaturas en Alta Resolución */}
           <div className="space-y-2.5">
-            <div className="w-full aspect-[4/3] border border-subtle rounded-xl bg-elevated overflow-hidden flex items-center justify-center relative">
+            <div className="w-full aspect-[4/5] max-h-96 border border-subtle rounded-xl bg-elevated overflow-hidden flex items-center justify-center relative">
               {imagenActivaUrl ? (
                 <img
                   src={imagenActivaUrl}
                   alt={producto.nombre}
+                  decoding="async"
                   className="w-full h-full object-contain p-2 bg-elevated"
                   loading="eager"
                 />
@@ -138,6 +157,35 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
               )}
 
               {galeriaImagenes.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveImageIndex((prev) =>
+                        prev === 0 ? galeriaImagenes.length - 1 : prev - 1
+                      )
+                    }
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-surface/90 border border-subtle text-primary flex items-center justify-center shadow-surface hover:border-strong cursor-pointer"
+                    title="Foto anterior"
+                  >
+                    <CaretLeft size={15} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveImageIndex((prev) =>
+                        prev === galeriaImagenes.length - 1 ? 0 : prev + 1
+                      )
+                    }
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-surface/90 border border-subtle text-primary flex items-center justify-center shadow-surface hover:border-strong cursor-pointer"
+                    title="Siguiente foto"
+                  >
+                    <CaretRight size={15} weight="bold" />
+                  </button>
+                </>
+              )}
+
+              {galeriaImagenes.length > 0 && (
                 <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-surface/90 border border-subtle text-[10px] font-mono font-semibold text-secondary">
                   {activeImageIndex + 1} / {galeriaImagenes.length} fotos
                 </span>
@@ -145,7 +193,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
             </div>
 
             {/* Miniaturas de la Galería */}
-            {galeriaImagenes.length > 1 && (
+            {galeriaImagenes.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {galeriaImagenes.map((url, idx) => (
                   <button
@@ -157,10 +205,12 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
                         ? 'border-amber-500 ring-2 ring-amber-500/25'
                         : 'border-subtle opacity-70 hover:opacity-100'
                     }`}
+                    title={`Ver foto ${idx + 1}`}
                   >
                     <img
                       src={url}
                       alt={`${producto.nombre} miniatura ${idx + 1}`}
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -293,7 +343,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
                     >
                       {/* Talle y Color */}
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-sm text-primary">
+                        <div className="min-w-[2.5rem] w-auto px-2.5 h-10 rounded-lg border border-subtle bg-elevated flex items-center justify-center font-mono font-bold text-xs text-primary whitespace-nowrap">
                           {v.talle}
                         </div>
                         <div className="flex flex-col">
@@ -353,7 +403,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
             size="md"
             onClick={() => setIsModalEtiquetasOpen(true)}
             className="gap-2 text-xs font-heading font-bold tracking-wider px-4 border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer"
-            title="Generar etiquetas de código de barras o QR para imprimir"
+            title="Generar etiquetas térmicas EAN-13 (38x21mm) para imprimir"
           >
             <Printer size={16} weight="bold" />
             <span>IMPRIMIR ETIQUETAS</span>
@@ -370,7 +420,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
         </div>
       </div>
 
-      {/* Modal de Impresión de Etiquetas de Código de Barras / QR */}
+      {/* Modal de Impresión de Etiquetas de Código de Barras EAN-13 */}
       <ModalImprimirEtiquetas
         isOpen={isModalEtiquetasOpen}
         onClose={() => setIsModalEtiquetasOpen(false)}

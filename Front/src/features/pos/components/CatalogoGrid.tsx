@@ -11,8 +11,16 @@ import {
   CaretLeft,
   CaretRight,
   EyeSlash,
+  SortAscending,
 } from '@phosphor-icons/react';
-import { inventarioApi, type ProductoCatalogoDto } from '../api/inventarioApi';
+import {
+  inventarioApi,
+  calcularStockTotalProducto,
+  compararProductosMasNuevosConStock,
+  ORDEN_CATEGORIAS_OFICIALES,
+  normalizarUrlImagenAltaRes,
+  type ProductoCatalogoDto,
+} from '../api/inventarioApi';
 import { useCartStore } from '../stores/useCartStore';
 import { ProductCard } from './ProductCard';
 import { ModalQuickViewPos } from './ModalQuickViewPos';
@@ -21,11 +29,19 @@ interface CatalogoGridProps {
   onProductosLoaded?: (productos: ProductoCatalogoDto[]) => void;
 }
 
+type OrdenCatalogoPos =
+  | 'NUEVOS_CON_STOCK'
+  | 'MENOR_PRECIO'
+  | 'MAYOR_PRECIO'
+  | 'MAYOR_STOCK';
+
 const PAGE_SIZE = 12;
 
 export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded }) => {
   const [omnibarInput, setOmnibarInput] = useState('');
   const [filtroUnidad, setFiltroUnidad] = useState<'TODOS' | 'DASTIK' | 'HIDDEN'>('TODOS');
+  const [categoriaActiva, setCategoriaActiva] = useState<string>('TODAS');
+  const [ordenActivo, setOrdenActivo] = useState<OrdenCatalogoPos>('NUEVOS_CON_STOCK');
   const [ocultarAgotados, setOcultarAgotados] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [quickViewProducto, setQuickViewProducto] = useState<ProductoCatalogoDto | null>(null);
@@ -105,7 +121,7 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
           return;
         }
 
-        const imagenPrincipal =
+        const rawImagen =
           (prod.imagenes && prod.imagenes.length > 0
             ? prod.imagenes[0]
             : prod.imagenUrl) || '';
@@ -120,7 +136,7 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
           codigoBarras: variante.codigoBarras,
           precioUnitario: prod.precioVenta,
           stockFisico: variante.stockFisico,
-          imagenUrl: imagenPrincipal,
+          imagenUrl: normalizarUrlImagenAltaRes(rawImagen),
         });
 
         showScanFeedback(
@@ -132,15 +148,14 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
       }
     }
 
-    // Si parece un código numérico EAN pero no existe, avisar
     if (/^\d{8,14}$/.test(code)) {
       showScanFeedback('error', `EAN no encontrado: ${code}`);
       setOmnibarInput('');
     }
   };
 
-  // Filtrado reactivo en memoria
-  const productosFiltrados = useMemo(() => {
+  // Productos filtrados por Unidad y Ocultar Agotados (base para conteo de pills de categorías)
+  const productosBaseParaCategorias = useMemo(() => {
     return productos.filter((p) => {
       if (
         filtroUnidad === 'DASTIK' &&
@@ -154,10 +169,43 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
       ) {
         return false;
       }
-
       if (ocultarAgotados) {
-        const stockTotal = p.variantes.reduce((acc, v) => acc + v.stockFisico, 0);
-        if (stockTotal <= 0) return false;
+        if (calcularStockTotalProducto(p) <= 0) return false;
+      }
+      return true;
+    });
+  }, [productos, filtroUnidad, ocultarAgotados]);
+
+  // Calcular categorías con conteos reales (ordenadas según taxonomía de tienda)
+  const categoriasConConteo = useMemo(() => {
+    const mapa = new Map<string, number>();
+    for (const p of productosBaseParaCategorias) {
+      const cat = p.categoria || 'General';
+      mapa.set(cat, (mapa.get(cat) || 0) + 1);
+    }
+
+    const lista = Array.from(mapa.entries()).map(([nombre, cantidad]) => ({
+      nombre,
+      cantidad,
+    }));
+
+    lista.sort((a, b) => {
+      const idxA = ORDEN_CATEGORIAS_OFICIALES.indexOf(a.nombre);
+      const idxB = ORDEN_CATEGORIAS_OFICIALES.indexOf(b.nombre);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return b.cantidad - a.cantidad;
+    });
+
+    return lista;
+  }, [productosBaseParaCategorias]);
+
+  // Filtrado y Ordenamiento reactivo en memoria
+  const productosFiltrados = useMemo(() => {
+    const filtrados = productosBaseParaCategorias.filter((p) => {
+      if (categoriaActiva !== 'TODAS' && p.categoria !== categoriaActiva) {
+        return false;
       }
 
       if (!omnibarInput.trim()) return true;
@@ -179,12 +227,34 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
         coincideVariante
       );
     });
-  }, [productos, omnibarInput, filtroUnidad, ocultarAgotados]);
 
-  // Resetear a la página 1 cuando cambian los filtros
+    return [...filtrados].sort((a, b) => {
+      const stockA = calcularStockTotalProducto(a);
+      const stockB = calcularStockTotalProducto(b);
+
+      // Siempre priorizar productos con stock disponible por encima de los agotados
+      const tieneStockA = stockA > 0 ? 1 : 0;
+      const tieneStockB = stockB > 0 ? 1 : 0;
+      if (tieneStockA !== tieneStockB) {
+        return tieneStockB - tieneStockA;
+      }
+
+      if (ordenActivo === 'MENOR_PRECIO') {
+        if (a.precioVenta !== b.precioVenta) return a.precioVenta - b.precioVenta;
+      } else if (ordenActivo === 'MAYOR_PRECIO') {
+        if (a.precioVenta !== b.precioVenta) return b.precioVenta - a.precioVenta;
+      } else if (ordenActivo === 'MAYOR_STOCK') {
+        if (stockA !== stockB) return stockB - stockA;
+      }
+
+      return compararProductosMasNuevosConStock(a, b);
+    });
+  }, [productosBaseParaCategorias, categoriaActiva, omnibarInput, ordenActivo]);
+
+  // Resetear a la página 1 cuando cambian los filtros u orden
   useEffect(() => {
     setPaginaActual(1);
-  }, [omnibarInput, filtroUnidad, ocultarAgotados]);
+  }, [omnibarInput, filtroUnidad, categoriaActiva, ordenActivo, ocultarAgotados]);
 
   const totalPaginas = Math.max(1, Math.ceil(productosFiltrados.length / PAGE_SIZE));
   const indiceInicio = (paginaActual - 1) * PAGE_SIZE;
@@ -193,8 +263,8 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
   }, [productosFiltrados, indiceInicio]);
 
   return (
-    <div className="flex-1 flex flex-col gap-4">
-      {/* 1. Omnibar Unificada (Búsqueda + Lector EAN-13 + Segmented Control con Motion) */}
+    <div className="flex-1 flex flex-col gap-3.5">
+      {/* 1. Omnibar Unificada + Filtros + Barra Horizontal de Categorías */}
       <div className="rounded-xl border border-subtle bg-surface p-3 shadow-surface flex flex-col gap-2.5">
         <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2.5">
           {/* Input Híbrido (Buscador + Escáner EAN-13 en Enter) */}
@@ -233,7 +303,7 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
             </div>
           </form>
 
-          {/* Controles de Filtro en la misma barra */}
+          {/* Controles de Filtro y Ordenamiento en la misma barra */}
           <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
             {/* Segmented Control con Indicador Deslizante (Motion layoutId) */}
             <div className="flex items-center bg-elevated p-1 rounded-lg border border-subtle">
@@ -267,6 +337,26 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
               })}
             </div>
 
+            {/* Selector de Ordenamiento */}
+            <div className="relative flex items-center">
+              <SortAscending
+                size={14}
+                weight="bold"
+                className="absolute left-2.5 text-amber-500 pointer-events-none"
+              />
+              <select
+                value={ordenActivo}
+                onChange={(e) => setOrdenActivo(e.target.value as OrdenCatalogoPos)}
+                className="pl-8 pr-3 py-1.5 rounded-lg border border-subtle bg-elevated hover:border-strong text-xs font-sans font-medium text-primary focus:outline-none focus:border-amber-500/80 transition-fast cursor-pointer"
+                title="Ordenar catálogo"
+              >
+                <option value="NUEVOS_CON_STOCK">Más nuevos (Con stock)</option>
+                <option value="MENOR_PRECIO">Menor precio</option>
+                <option value="MAYOR_PRECIO">Mayor precio</option>
+                <option value="MAYOR_STOCK">Mayor stock</option>
+              </select>
+            </div>
+
             {/* Toggle Ocultar Agotados */}
             <button
               type="button"
@@ -298,6 +388,51 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
             </button>
           </div>
         </div>
+
+        {/* Barra Horizontal de Categorías Estilo Tiendanube */}
+        {categoriasConConteo.length > 0 && (
+          <div className="pt-2 border-t border-subtle flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setCategoriaActiva('TODAS')}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                categoriaActiva === 'TODAS'
+                  ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                  : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
+              }`}
+            >
+              <span>Todas</span>
+              <span className="font-mono text-[10px] opacity-80">
+                ({productosBaseParaCategorias.length})
+              </span>
+            </button>
+
+            {categoriasConConteo.map((cat) => {
+              const activa = categoriaActiva === cat.nombre;
+              return (
+                <button
+                  key={cat.nombre}
+                  type="button"
+                  onClick={() =>
+                    setCategoriaActiva((prev) =>
+                      prev === cat.nombre ? 'TODAS' : cat.nombre
+                    )
+                  }
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                    activa
+                      ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                      : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
+                  }`}
+                >
+                  <span>{cat.nombre}</span>
+                  <span className="font-mono text-[10px] opacity-80">
+                    ({cat.cantidad})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Toast Inline de Escaneo EAN-13 */}
         <AnimatePresence>
@@ -340,15 +475,15 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
             {Array.from({ length: 8 }).map((_, idx) => (
               <div
                 key={idx}
-                className="rounded-xl border border-subtle bg-surface overflow-hidden animate-pulse flex flex-col h-64"
+                className="rounded-xl border border-subtle bg-surface overflow-hidden animate-pulse flex flex-col"
               >
-                <div className="h-36 bg-elevated" />
+                <div className="aspect-[4/5] bg-elevated" />
                 <div className="p-3.5 space-y-2.5 flex-1">
                   <div className="h-4 w-3/4 rounded bg-elevated" />
                   <div className="h-4 w-1/3 rounded bg-elevated" />
-                  <div className="grid grid-cols-5 gap-1.5 pt-2">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <div key={s} className="h-7 rounded-lg bg-elevated" />
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {[1, 2, 3, 4].map((s) => (
+                      <div key={s} className="h-7 w-10 rounded-lg bg-elevated" />
                     ))}
                   </div>
                 </div>
@@ -387,7 +522,7 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({ onProductosLoaded })
               Sin coincidencias en catálogo
             </span>
             <p className="text-xs font-sans text-secondary max-w-sm mt-1">
-              No encontramos artículos para &quot;{omnibarInput}&quot;. Prueba otro término o limpia los filtros activos.
+              No encontramos artículos con los filtros actuales. Prueba limpiar la búsqueda o seleccionar &quot;Todas&quot; las categorías.
             </p>
           </div>
         )}

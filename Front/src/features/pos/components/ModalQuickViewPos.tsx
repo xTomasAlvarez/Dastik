@@ -12,7 +12,11 @@ import {
   CaretRight,
 } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
-import type { ProductoCatalogoDto, VarianteDto } from '../api/inventarioApi';
+import {
+  normalizarUrlImagenAltaRes,
+  type ProductoCatalogoDto,
+  type VarianteDto,
+} from '../api/inventarioApi';
 import { useCartStore } from '../stores/useCartStore';
 import { ModalImprimirEtiquetas } from '../../admin/components/ModalImprimirEtiquetas';
 
@@ -35,16 +39,26 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
   const [justAdded, setJustAdded] = useState(false);
   const [isModalEtiquetasOpen, setIsModalEtiquetasOpen] = useState(false);
 
-  // Construir galería de fotos reales
+  // Construir galería de fotos reales en alta resolución (-1024-1024)
   const galeriaImagenes = useMemo(() => {
     if (!producto) return [];
+    const urls: string[] = [];
+
     if (producto.imagenes && producto.imagenes.length > 0) {
-      return producto.imagenes.filter((u) => Boolean(u && u.trim()));
+      for (const u of producto.imagenes) {
+        const norm = normalizarUrlImagenAltaRes(u);
+        if (norm && !urls.includes(norm)) {
+          urls.push(norm);
+        }
+      }
     }
-    if (producto.imagenUrl && producto.imagenUrl.trim()) {
-      return [producto.imagenUrl.trim()];
+
+    if (urls.length === 0 && producto.imagenUrl) {
+      const norm = normalizarUrlImagenAltaRes(producto.imagenUrl);
+      if (norm) urls.push(norm);
     }
-    return [];
+
+    return urls;
   }, [producto]);
 
   // Inicializar variante e imagen activa al abrir el producto
@@ -112,7 +126,7 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
       codigoBarras: varianteSeleccionada.codigoBarras,
       precioUnitario: producto.precioVenta,
       stockFisico: varianteSeleccionada.stockFisico,
-      imagenUrl: galeriaImagenes[0] || producto.imagenUrl,
+      imagenUrl: galeriaImagenes[0] || normalizarUrlImagenAltaRes(producto.imagenUrl),
     });
 
     setJustAdded(true);
@@ -148,12 +162,13 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
             >
               {/* Columna Izquierda: Galería / Carrusel de Imágenes */}
               <div className="w-full md:w-[46%] bg-elevated/60 border-b md:border-b-0 md:border-r border-subtle p-4 flex flex-col justify-between gap-3">
-                {/* Visor Principal */}
-                <div className="relative w-full aspect-square rounded-xl border border-subtle bg-surface overflow-hidden flex items-center justify-center">
+                {/* Visor Principal con proporción vertical (4:5) */}
+                <div className="relative w-full aspect-[4/5] rounded-xl border border-subtle bg-surface overflow-hidden flex items-center justify-center">
                   {imagenActivaUrl ? (
                     <img
                       src={imagenActivaUrl}
                       alt={`${producto.nombre} - Foto ${activeImageIndex + 1}`}
+                      decoding="async"
                       className="w-full h-full object-contain p-2 select-none"
                     />
                   ) : (
@@ -196,15 +211,15 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                   )}
 
                   {/* Contador de fotos */}
-                  {galeriaImagenes.length > 1 && (
+                  {galeriaImagenes.length > 0 && (
                     <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-surface/90 border border-subtle text-[10px] font-mono font-semibold text-secondary">
                       {activeImageIndex + 1} / {galeriaImagenes.length}
                     </span>
                   )}
                 </div>
 
-                {/* Tira de Miniaturas */}
-                {galeriaImagenes.length > 1 && (
+                {/* Tira de Miniaturas seleccionables */}
+                {galeriaImagenes.length > 0 && (
                   <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     {galeriaImagenes.map((url, idx) => (
                       <button
@@ -216,10 +231,12 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                             ? 'border-amber-500 ring-2 ring-amber-500/25'
                             : 'border-subtle opacity-70 hover:opacity-100'
                         }`}
+                        title={`Ver foto ${idx + 1}`}
                       >
                         <img
                           src={url}
                           alt={`Miniatura ${idx + 1}`}
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       </button>
@@ -243,7 +260,7 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                           {producto.categoria}
                         </span>
                         <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border border-subtle bg-elevated text-secondary">
-                          { stockTotal > 0 ? `${stockTotal} u. totales` : 'Agotado' }
+                          {stockTotal > 0 ? `${stockTotal} u. totales` : 'Agotado'}
                         </span>
                       </div>
                       <h2 className="text-lg sm:text-xl font-heading font-bold text-primary tracking-tight mt-1">
@@ -278,7 +295,7 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                     </p>
                   )}
 
-                  {/* Selector de Variante (Talles) */}
+                  {/* Selector de Variante (Talles con flex-wrap para soportar talles largos como '7 3/8 (58.7 CM)') */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-primary">
@@ -300,7 +317,7 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                       )}
                     </div>
 
-                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {producto.variantes.map((v) => {
                         const isSelected = varianteSeleccionada?.id === v.id;
                         const agotado = v.stockFisico <= 0;
@@ -311,7 +328,7 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                             type="button"
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setSelectedVariantId(v.id)}
-                            className={`rounded-lg border py-2 px-2 flex flex-col items-center justify-center transition-fast cursor-pointer ${
+                            className={`rounded-lg border min-w-[2.5rem] w-auto px-2.5 py-1.5 whitespace-nowrap flex flex-col items-center justify-center transition-fast cursor-pointer ${
                               isSelected
                                 ? 'border-amber-500 bg-amber-500/15 text-primary ring-2 ring-amber-500/20'
                                 : agotado
@@ -319,10 +336,10 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                                 : 'border-subtle bg-elevated hover:border-strong text-primary'
                             }`}
                           >
-                            <span className="font-mono text-xs font-bold leading-none">
+                            <span className="font-mono text-xs font-bold leading-none whitespace-nowrap">
                               {v.talle}
                             </span>
-                            <span className="text-[10px] font-mono text-muted mt-1 leading-none">
+                            <span className="text-[10px] font-mono text-muted mt-1 leading-none whitespace-nowrap">
                               {v.stockFisico}u
                             </span>
                           </motion.button>

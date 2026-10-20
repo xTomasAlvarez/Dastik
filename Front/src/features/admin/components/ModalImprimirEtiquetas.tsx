@@ -3,7 +3,6 @@ import {
   X,
   Printer,
   Barcode as BarcodeIcon,
-  QrCode as QrCodeIcon,
   ArrowsClockwise,
   ListNumbers,
   DownloadSimple,
@@ -12,7 +11,6 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Button } from '../../../components/ui/Button';
 import { BarcodeEan13Svg } from './BarcodeEan13Svg';
-import { QrCodeSvg } from './QrCodeSvg';
 import type { ProductoCatalogoDto } from '../../pos/api/inventarioApi';
 
 interface ModalImprimirEtiquetasProps {
@@ -20,8 +18,6 @@ interface ModalImprimirEtiquetasProps {
   onClose: () => void;
   producto: ProductoCatalogoDto | null;
 }
-
-type FormatoEtiqueta = 'ean13' | 'qr';
 
 interface EtiquetaItem {
   varianteId: number;
@@ -41,7 +37,6 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
   producto,
 }) => {
   // 1. TODOS LOS HOOKS SE DECLARAN INCONDICIONALMENTE AL INICIO
-  const [formato, setFormato] = useState<FormatoEtiqueta>('ean13');
   const [cantidades, setCantidades] = useState<Record<number, number>>({});
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const printSheetRef = useRef<HTMLDivElement>(null);
@@ -72,7 +67,6 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
         init[v.id] = 1;
       });
       setCantidades(init);
-      setFormato('ean13');
       setIsExportingPdf(false);
     }
   }, [isOpen, producto]);
@@ -287,7 +281,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
           </span>
         </div>
 
-        {/* 2. CENTRO: Código de barras compacto con números EAN-13 encajados */}
+        {/* 2. CENTRO: Código de barras compacto con números EAN-13 encajados (exclusivo EAN-13) */}
         <div
           style={{
             display: 'flex',
@@ -299,32 +293,11 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
             marginBottom: '1px',
           }}
         >
-          {formato === 'ean13' ? (
-            <BarcodeEan13Svg
-              code={codigoBarrasSeguro}
-              height={26}
-              style={{ height: '26px', width: '100%', maxWidth: '130px' }}
-            />
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <QrCodeSvg
-                value={codigoBarrasSeguro}
-                size={22}
-                style={{ width: '22px', height: '22px' }}
-              />
-              <span
-                style={{
-                  fontSize: '6px',
-                  fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-                  fontWeight: 'bold',
-                  color: '#000000',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {codigoBarrasSeguro}
-              </span>
-            </div>
-          )}
+          <BarcodeEan13Svg
+            code={codigoBarrasSeguro}
+            height={26}
+            style={{ height: '26px', width: '100%', maxWidth: '130px' }}
+          />
         </div>
 
         {/* 3. PIE: Precios apilados a la derecha con margen inferior protegido */}
@@ -396,7 +369,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
             </div>
             <div>
               <span className="text-[10px] uppercase font-mono tracking-widest text-amber-600 dark:text-amber-400 font-bold block">
-                CONTROL DE STOCK // ETIQUETAS TÉRMICAS & A4 (38x21 MM)
+                CONTROL DE STOCK // ETIQUETAS TÉRMICAS & A4 (38x21 MM · EAN-13)
               </span>
               <h2 className="font-heading font-bold text-base sm:text-lg text-primary tracking-tight uppercase">
                 ETIQUETAS: {producto.nombre}
@@ -416,36 +389,12 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
         {/* Controles de Configuración */}
         <div className="p-4 sm:p-5 border-b border-subtle bg-surface space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Formato Visual (EAN-13 vs QR) */}
+            {/* Indicador fijo de estándar EAN-13 (QR eliminado) */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted mr-1">
-                FORMATO:
-              </span>
-              <button
-                type="button"
-                onClick={() => setFormato('ean13')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-heading font-semibold transition-colors cursor-pointer ${
-                  formato === 'ean13'
-                    ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                    : 'border-subtle bg-elevated text-secondary hover:text-primary'
-                }`}
-              >
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-heading font-semibold">
                 <BarcodeIcon size={16} weight="bold" />
                 <span>CÓDIGO DE BARRAS (EAN-13)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setFormato('qr')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-heading font-semibold transition-colors cursor-pointer ${
-                  formato === 'qr'
-                    ? 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                    : 'border-subtle bg-elevated text-secondary hover:text-primary'
-                }`}
-              >
-                <QrCodeIcon size={16} weight="bold" />
-                <span>CÓDIGO QR</span>
-              </button>
+              </div>
             </div>
 
             {/* Acciones rápidas de carga */}
@@ -494,7 +443,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
                     className="border border-subtle bg-surface rounded-lg p-2 flex flex-col items-center gap-1.5"
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="font-heading font-bold text-sm text-primary">
+                      <span className="font-heading font-bold text-xs text-primary whitespace-nowrap">
                         {v.talle || 'U'}
                       </span>
                       <span className="text-[10px] font-mono text-muted">

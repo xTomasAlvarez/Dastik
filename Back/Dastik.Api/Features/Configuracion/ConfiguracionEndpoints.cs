@@ -1,269 +1,437 @@
 using Dastik.Api.Domain.Entities;
 using Dastik.Api.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dastik.Api.Features.Configuracion;
 
-public static class ConfiguracionEndpoints
-{
-    public static void MapConfiguracionEndpoints(this IEndpointRouteBuilder app)
-    {
-        var invGroup = app.MapGroup("/api/inventario")
-            .WithTags("Configuración y Catálogos Base")
-            .RequireAuthorization();
+public record ProveedorDto(int Id, string Nombre, decimal MarkupPorDefecto);
+public record ProveedorResponse(int Id, string Nombre, decimal MarkupPorDefecto, int CantidadProductos = 0);
+public record CrearProveedorRequest(string Nombre, decimal MarkupPorDefecto);
+public record ActualizarProveedorRequest(string Nombre, decimal MarkupPorDefecto);
 
-        var cfgGroup = app.MapGroup("/api/configuracion")
-            .WithTags("Configuración y Catálogos Base")
-            .RequireAuthorization();
+public record MarcaDto(int Id, string Nombre);
+public record MarcaResponse(int Id, string Nombre, int CantidadProductos = 0);
+public record CrearMarcaRequest(string Nombre);
+public record ActualizarMarcaRequest(string Nombre);
 
-        // ==========================================
-        // 1. PROVEEDORES
-        // ==========================================
-        var listarProveedoresHandler = async (AppDbContext context, CancellationToken ct) =>
-        {
-            var proveedores = await context.Proveedores
-                .AsNoTracking()
-                .OrderBy(p => p.Nombre)
-                .Select(p => new ProveedorResponse(
-                    p.Id,
-                    p.Nombre,
-                    p.MarkupPorDefecto,
-                    p.Productos.Count(prod => prod.Activo)
-                ))
-                .ToListAsync(ct);
-
-            return Results.Ok(proveedores);
-        };
-
-        var crearProveedorHandler = async (
-            CrearProveedorRequest request,
-            AppDbContext context,
-            CancellationToken ct) =>
-        {
-            if (string.IsNullOrWhiteSpace(request.Nombre))
-            {
-                return Results.BadRequest(new { error = "El nombre del proveedor es obligatorio." });
-            }
-
-            if (request.MarkupPorDefecto < 0)
-            {
-                return Results.BadRequest(new { error = "El markup por defecto no puede ser negativo." });
-            }
-
-            var nombreLimpio = request.Nombre.Trim();
-            var existe = await context.Proveedores
-                .AnyAsync(p => p.Nombre.ToLower() == nombreLimpio.ToLower(), ct);
-
-            if (existe)
-            {
-                return Results.Conflict(new { error = $"Ya existe un proveedor con el nombre '{nombreLimpio}'." });
-            }
-
-            var nuevo = new Proveedor
-            {
-                Nombre = nombreLimpio,
-                MarkupPorDefecto = Math.Round(request.MarkupPorDefecto, 2)
-            };
-
-            context.Proveedores.Add(nuevo);
-            await context.SaveChangesAsync(ct);
-
-            var response = new ProveedorResponse(nuevo.Id, nuevo.Nombre, nuevo.MarkupPorDefecto, 0);
-            return Results.Created($"/api/inventario/proveedores/{nuevo.Id}", response);
-        };
-
-        invGroup.MapGet("/proveedores", listarProveedoresHandler)
-            .WithName("ListarProveedores")
-            .WithSummary("Lista todos los proveedores registrados con su markup por defecto.")
-            .WithOpenApi();
-
-        invGroup.MapPost("/proveedores", crearProveedorHandler)
-            .RequireAuthorization("AdminOnly")
-            .WithName("CrearProveedor")
-            .WithSummary("Crea un nuevo proveedor con su markup por defecto.")
-            .WithOpenApi();
-
-        cfgGroup.MapGet("/proveedores", listarProveedoresHandler).ExcludeFromDescription();
-        cfgGroup.MapPost("/proveedores", crearProveedorHandler).RequireAuthorization("AdminOnly").ExcludeFromDescription();
-
-        // ==========================================
-        // 2. MARCAS
-        // ==========================================
-        var listarMarcasHandler = async (AppDbContext context, CancellationToken ct) =>
-        {
-            var marcas = await context.Marcas
-                .AsNoTracking()
-                .OrderBy(m => m.Nombre)
-                .Select(m => new MarcaResponse(
-                    m.Id,
-                    m.Nombre,
-                    m.Productos.Count(prod => prod.Activo)
-                ))
-                .ToListAsync(ct);
-
-            return Results.Ok(marcas);
-        };
-
-        var crearMarcaHandler = async (
-            CrearMarcaRequest request,
-            AppDbContext context,
-            CancellationToken ct) =>
-        {
-            if (string.IsNullOrWhiteSpace(request.Nombre))
-            {
-                return Results.BadRequest(new { error = "El nombre de la marca es obligatorio." });
-            }
-
-            var nombreLimpio = request.Nombre.Trim();
-            var existe = await context.Marcas
-                .AnyAsync(m => m.Nombre.ToLower() == nombreLimpio.ToLower(), ct);
-
-            if (existe)
-            {
-                return Results.Conflict(new { error = $"Ya existe una marca con el nombre '{nombreLimpio}'." });
-            }
-
-            var nueva = new Marca
-            {
-                Nombre = nombreLimpio
-            };
-
-            context.Marcas.Add(nueva);
-            await context.SaveChangesAsync(ct);
-
-            var response = new MarcaResponse(nueva.Id, nueva.Nombre, 0);
-            return Results.Created($"/api/inventario/marcas/{nueva.Id}", response);
-        };
-
-        invGroup.MapGet("/marcas", listarMarcasHandler)
-            .WithName("ListarMarcas")
-            .WithSummary("Lista todas las marcas registradas en el catálogo.")
-            .WithOpenApi();
-
-        invGroup.MapPost("/marcas", crearMarcaHandler)
-            .RequireAuthorization("AdminOnly")
-            .WithName("CrearMarca")
-            .WithSummary("Registra una nueva marca comercial.")
-            .WithOpenApi();
-
-        cfgGroup.MapGet("/marcas", listarMarcasHandler).ExcludeFromDescription();
-        cfgGroup.MapPost("/marcas", crearMarcaHandler).RequireAuthorization("AdminOnly").ExcludeFromDescription();
-
-        // ==========================================
-        // 3. CATEGORÍAS
-        // ==========================================
-        var listarCategoriasHandler = async (AppDbContext context, CancellationToken ct) =>
-        {
-            var categorias = await context.Categorias
-                .AsNoTracking()
-                .OrderBy(c => c.Nombre)
-                .Select(c => new CategoriaResponse(
-                    c.Id,
-                    c.Nombre,
-                    string.IsNullOrWhiteSpace(c.Temporada) ? "Todo el año" : c.Temporada,
-                    string.IsNullOrWhiteSpace(c.EsquemaTalles) ? "XS-XL" : c.EsquemaTalles,
-                    c.CategoriaPadreId,
-                    c.Productos.Count(prod => prod.Activo)
-                ))
-                .ToListAsync(ct);
-
-            return Results.Ok(categorias);
-        };
-
-        var crearCategoriaHandler = async (
-            CrearCategoriaRequest request,
-            AppDbContext context,
-            CancellationToken ct) =>
-        {
-            if (string.IsNullOrWhiteSpace(request.Nombre))
-            {
-                return Results.BadRequest(new { error = "El nombre de la categoría es obligatorio." });
-            }
-
-            var nombreLimpio = request.Nombre.Trim();
-            var existe = await context.Categorias
-                .AnyAsync(c => c.Nombre.ToLower() == nombreLimpio.ToLower(), ct);
-
-            if (existe)
-            {
-                return Results.Conflict(new { error = $"Ya existe una categoría con el nombre '{nombreLimpio}'." });
-            }
-
-            var temporada = string.IsNullOrWhiteSpace(request.Temporada) ? "Todo el año" : request.Temporada.Trim();
-            var esquemaTalles = string.IsNullOrWhiteSpace(request.EsquemaTalles) ? "XS-XL" : request.EsquemaTalles.Trim();
-
-            var nueva = new Categoria
-            {
-                Nombre = nombreLimpio,
-                Temporada = temporada,
-                EsquemaTalles = esquemaTalles,
-                CategoriaPadreId = request.CategoriaPadreId
-            };
-
-            context.Categorias.Add(nueva);
-            await context.SaveChangesAsync(ct);
-
-            var response = new CategoriaResponse(
-                nueva.Id,
-                nueva.Nombre,
-                nueva.Temporada,
-                nueva.EsquemaTalles,
-                nueva.CategoriaPadreId,
-                0
-            );
-            return Results.Created($"/api/inventario/categorias/{nueva.Id}", response);
-        };
-
-        invGroup.MapGet("/categorias", listarCategoriasHandler)
-            .WithName("ListarCategorias")
-            .WithSummary("Lista todas las categorías con su temporada y esquema de talles.")
-            .WithOpenApi();
-
-        invGroup.MapPost("/categorias", crearCategoriaHandler)
-            .RequireAuthorization("AdminOnly")
-            .WithName("CrearCategoria")
-            .WithSummary("Crea una nueva categoría con su temporada y esquema de talles.")
-            .WithOpenApi();
-
-        cfgGroup.MapGet("/categorias", listarCategoriasHandler).ExcludeFromDescription();
-        cfgGroup.MapPost("/categorias", crearCategoriaHandler).RequireAuthorization("AdminOnly").ExcludeFromDescription();
-    }
-}
-
-public record ProveedorResponse(
-    int Id,
-    string Nombre,
-    decimal MarkupPorDefecto,
-    int CantidadProductos = 0
-);
-
-public record CrearProveedorRequest(
-    string Nombre,
-    decimal MarkupPorDefecto
-);
-
-public record MarcaResponse(
-    int Id,
-    string Nombre,
-    int CantidadProductos = 0
-);
-
-public record CrearMarcaRequest(
-    string Nombre
-);
-
+public record CategoriaDto(int Id, string Nombre, string Temporada, string EsquemaTalles);
 public record CategoriaResponse(
     int Id,
     string Nombre,
     string Temporada,
     string EsquemaTalles,
     int? CategoriaPadreId = null,
-    int CantidadProductos = 0
-);
+    int CantidadProductos = 0);
+public record CrearCategoriaRequest(string Nombre, string? Temporada = "Todo el año", string? EsquemaTalles = "S,M,L,XL", int? CategoriaPadreId = null);
+public record ActualizarCategoriaRequest(string Nombre, string? Temporada = "Todo el año", string? EsquemaTalles = "S,M,L,XL", int? CategoriaPadreId = null);
 
-public record CrearCategoriaRequest(
-    string Nombre,
-    string? Temporada = "Todo el año",
-    string? EsquemaTalles = "XS-XL",
-    int? CategoriaPadreId = null
-);
+public static class ConfiguracionEndpoints
+{
+    public static void MapConfiguracionEndpoints(this IEndpointRouteBuilder app)
+    {
+        var invGroup = app.MapGroup("/api/inventario").WithTags("Configuracion");
+        var cfgGroup = app.MapGroup("/api/configuracion").WithTags("Configuracion");
+
+        RegistrarRutasCatalogosBase(invGroup);
+        RegistrarRutasCatalogosBase(cfgGroup);
+    }
+
+    private static void RegistrarRutasCatalogosBase(RouteGroupBuilder group)
+    {
+        // ==========================================
+        // 1. PROVEEDORES (GET, POST, PUT, DELETE)
+        // ==========================================
+        group.MapGet("/proveedores", async (AppDbContext db, CancellationToken ct) =>
+        {
+            var proveedores = await db.Proveedores
+                .AsNoTracking()
+                .OrderBy(p => p.Nombre)
+                .Select(p => new ProveedorResponse(
+                    p.Id,
+                    p.Nombre,
+                    p.MarkupPorDefecto,
+                    p.Productos.Count(prod => prod.Activo)))
+                .ToListAsync(ct);
+
+            return Results.Ok(proveedores);
+        }).RequireAuthorization("AdminOnly");
+
+        group.MapPost("/proveedores", async (CrearProveedorRequest req, AppDbContext db, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+            {
+                return Results.BadRequest(new { error = "El nombre del proveedor es obligatorio." });
+            }
+
+            if (req.MarkupPorDefecto < 0)
+            {
+                return Results.BadRequest(new { error = "El markup por defecto no puede ser negativo." });
+            }
+
+            var nombreLimpio = req.Nombre.Trim();
+            var existe = await db.Proveedores
+                .AnyAsync(p => p.Nombre.ToLower() == nombreLimpio.ToLower(), ct);
+
+            if (existe)
+            {
+                return Results.BadRequest(new { error = $"Ya existe un proveedor con el nombre '{nombreLimpio}'." });
+            }
+
+            var proveedor = new Proveedor
+            {
+                Nombre = nombreLimpio,
+                MarkupPorDefecto = req.MarkupPorDefecto
+            };
+
+            db.Proveedores.Add(proveedor);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Created(
+                $"/api/inventario/proveedores/{proveedor.Id}",
+                new ProveedorResponse(proveedor.Id, proveedor.Nombre, proveedor.MarkupPorDefecto, 0));
+        }).RequireAuthorization("AdminOnly");
+
+        group.MapPut("/proveedores/{id:int}", async (int id, ActualizarProveedorRequest req, AppDbContext db, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+            {
+                return Results.BadRequest(new { error = "El nombre del proveedor es obligatorio." });
+            }
+
+            if (req.MarkupPorDefecto < 0)
+            {
+                return Results.BadRequest(new { error = "El markup por defecto no puede ser negativo." });
+            }
+
+            var proveedor = await db.Proveedores.FirstOrDefaultAsync(p => p.Id == id, ct);
+            if (proveedor is null)
+            {
+                return Results.NotFound(new { error = "Proveedor no encontrado." });
+            }
+
+            var nombreLimpio = req.Nombre.Trim();
+            var duplicado = await db.Proveedores
+                .AnyAsync(p => p.Id != id && p.Nombre.ToLower() == nombreLimpio.ToLower(), ct);
+
+            if (duplicado)
+            {
+                return Results.BadRequest(new { error = $"Ya existe otro proveedor con el nombre '{nombreLimpio}'." });
+            }
+
+            proveedor.Nombre = nombreLimpio;
+            proveedor.MarkupPorDefecto = req.MarkupPorDefecto;
+            await db.SaveChangesAsync(ct);
+
+            var cantProds = await db.Productos.CountAsync(prod => prod.ProveedorId == id && prod.Activo, ct);
+            return Results.Ok(new ProveedorResponse(proveedor.Id, proveedor.Nombre, proveedor.MarkupPorDefecto, cantProds));
+        }).RequireAuthorization("AdminOnly");
+
+        group.MapDelete("/proveedores/{id:int}", async (int id, AppDbContext db, CancellationToken ct) =>
+        {
+            var proveedor = await db.Proveedores.FirstOrDefaultAsync(p => p.Id == id, ct);
+            if (proveedor is null)
+            {
+                return Results.NotFound(new { error = "Proveedor no encontrado." });
+            }
+
+            var productosAsociados = await db.Productos
+                .Where(p => p.ProveedorId == id)
+                .ToListAsync(ct);
+
+            if (productosAsociados.Count > 0)
+            {
+                var fallback = await db.Proveedores
+                    .FirstOrDefaultAsync(p => p.Id != id && p.Nombre.ToLower() == "sample", ct)
+                    ?? await db.Proveedores.FirstOrDefaultAsync(p => p.Id != id, ct);
+
+                if (fallback is null)
+                {
+                    var nombreFallback = proveedor.Nombre.Equals("Sample", StringComparison.OrdinalIgnoreCase)
+                        ? "Proveedor General"
+                        : "Sample";
+                    fallback = new Proveedor { Nombre = nombreFallback, MarkupPorDefecto = 50m };
+                    db.Proveedores.Add(fallback);
+                    await db.SaveChangesAsync(ct);
+                }
+
+                foreach (var prod in productosAsociados)
+                {
+                    prod.ProveedorId = fallback.Id;
+                }
+            }
+
+            db.Proveedores.Remove(proveedor);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new
+            {
+                mensaje = $"Proveedor '{proveedor.Nombre}' eliminado correctamente.",
+                productosReasignados = productosAsociados.Count
+            });
+        }).RequireAuthorization("AdminOnly");
+
+        // ==========================================
+        // 2. MARCAS (GET, POST, PUT, DELETE)
+        // ==========================================
+        group.MapGet("/marcas", async (AppDbContext db, CancellationToken ct) =>
+        {
+            var marcas = await db.Marcas
+                .AsNoTracking()
+                .OrderBy(m => m.Nombre)
+                .Select(m => new MarcaResponse(
+                    m.Id,
+                    m.Nombre,
+                    m.Productos.Count(prod => prod.Activo)))
+                .ToListAsync(ct);
+
+            return Results.Ok(marcas);
+        }).RequireAuthorization("AdminOnly");
+
+        group.MapPost("/marcas", async (CrearMarcaRequest req, AppDbContext db, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+            {
+                return Results.BadRequest(new { error = "El nombre de la marca es obligatorio." });
+            }
+
+            var nombreLimpio = req.Nombre.Trim();
+            var existe = await db.Marcas
+                .AnyAsync(m => m.Nombre.ToLower() == nombreLimpio.ToLower(), ct);
+
+            if (existe)
+            {
+                return Results.BadRequest(new { error = $"Ya existe la marca '{nombreLimpio}'." });
+            }
+
+            var marca = new Marca { Nombre = nombreLimpio };
+            db.Marcas.Add(marca);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Created(
+                $"/api/inventario/marcas/{marca.Id}",
+                new MarcaResponse(marca.Id, marca.Nombre, 0));
+        }).RequireAuthorization("AdminOnly");
+
+        group.MapPut("/marcas/{id:int}", async (int id, ActualizarMarcaRequest req, AppDbContext db, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+            {
+                return Results.BadRequest(new { error = "El nombre de la marca es obligatorio." });
+            }
+
+            var marca = await db.Marcas.FirstOrDefaultAsync(m => m.Id == id, ct);
+            if (marca is null)
+            {
+                return Results.NotFound(new { error = "Marca no encontrada." });
+            }
+
+            var nombreLimpio = req.Nombre.Trim();
+            var duplicado = await db.Marcas
+                .AnyAsync(m => m.Id != id && m.Nombre.ToLower() == nombreLimpio.ToLower(), ct);
+
+            if (duplicado)
+            {
+                return Results.BadRequest(new { error = $"Ya existe otra marca con el nombre '{nombreLimpio}'." });
+            }
+
+            marca.Nombre = nombreLimpio;
+            await db.SaveChangesAsync(ct);
+
+            var cantProds = await db.Productos.CountAsync(prod => prod.MarcaId == id && prod.Activo, ct);
+            return Results.Ok(new MarcaResponse(marca.Id, marca.Nombre, cantProds));
+        }).RequireAuthorization("AdminOnly");
+
+        group.MapDelete("/marcas/{id:int}", async (int id, AppDbContext db, CancellationToken ct) =>
+        {
+            var marca = await db.Marcas.FirstOrDefaultAsync(m => m.Id == id, ct);
+            if (marca is null)
+            {
+                return Results.NotFound(new { error = "Marca no encontrada." });
+            }
+
+            var productosAsociados = await db.Productos
+                .Where(p => p.MarcaId == id)
+                .ToListAsync(ct);
+
+            if (productosAsociados.Count > 0)
+            {
+                var fallback = await db.Marcas
+                    .FirstOrDefaultAsync(m => m.Id != id && m.Nombre.ToLower() == "dastik", ct)
+                    ?? await db.Marcas.FirstOrDefaultAsync(m => m.Id != id, ct);
+
+                if (fallback is null)
+                {
+                    var nombreFallback = marca.Nombre.Equals("Dastik", StringComparison.OrdinalIgnoreCase)
+                        ? "General"
+                        : "Dastik";
+                    fallback = new Marca { Nombre = nombreFallback };
+                    db.Marcas.Add(fallback);
+                    await db.SaveChangesAsync(ct);
+                }
+
+                foreach (var prod in productosAsociados)
+                {
+                    prod.MarcaId = fallback.Id;
+                }
+            }
+
+            db.Marcas.Remove(marca);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new
+            {
+                mensaje = $"Marca '{marca.Nombre}' eliminada correctamente.",
+                productosReasignados = productosAsociados.Count
+            });
+        }).RequireAuthorization("AdminOnly");
+
+        // ==========================================
+        // 3. CATEGORÍAS (GET, POST, PUT, DELETE)
+        // ==========================================
+        group.MapGet("/categorias", async (AppDbContext db, CancellationToken ct) =>
+        {
+            var categorias = await db.Categorias
+                .AsNoTracking()
+                .OrderBy(c => c.Nombre)
+                .Select(c => new CategoriaResponse(
+                    c.Id,
+                    c.Nombre,
+                    c.Temporada,
+                    c.EsquemaTalles,
+                    c.CategoriaPadreId,
+                    c.Productos.Count(prod => prod.Activo)))
+                .ToListAsync(ct);
+
+            return Results.Ok(categorias);
+        }).RequireAuthorization("AdminOnly");
+
+        group.MapPost("/categorias", async (CrearCategoriaRequest req, AppDbContext db, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+            {
+                return Results.BadRequest(new { error = "El nombre de la categoría es obligatorio." });
+            }
+
+            var nombreLimpio = req.Nombre.Trim();
+            var existe = await db.Categorias
+                .AnyAsync(c => c.Nombre.ToLower() == nombreLimpio.ToLower(), ct);
+
+            if (existe)
+            {
+                return Results.BadRequest(new { error = $"Ya existe la categoría '{nombreLimpio}'." });
+            }
+
+            var categoria = new Categoria
+            {
+                Nombre = nombreLimpio,
+                Temporada = string.IsNullOrWhiteSpace(req.Temporada) ? "Todo el año" : req.Temporada.Trim(),
+                EsquemaTalles = string.IsNullOrWhiteSpace(req.EsquemaTalles) ? "S,M,L,XL" : req.EsquemaTalles.Trim(),
+                CategoriaPadreId = req.CategoriaPadreId
+            };
+
+            db.Categorias.Add(categoria);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Created(
+                $"/api/inventario/categorias/{categoria.Id}",
+                new CategoriaResponse(categoria.Id, categoria.Nombre, categoria.Temporada, categoria.EsquemaTalles, categoria.CategoriaPadreId, 0));
+        }).RequireAuthorization("AdminOnly");
+
+        group.MapPut("/categorias/{id:int}", async (int id, ActualizarCategoriaRequest req, AppDbContext db, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+            {
+                return Results.BadRequest(new { error = "El nombre de la categoría es obligatorio." });
+            }
+
+            var categoria = await db.Categorias.FirstOrDefaultAsync(c => c.Id == id, ct);
+            if (categoria is null)
+            {
+                return Results.NotFound(new { error = "Categoría no encontrada." });
+            }
+
+            var nombreLimpio = req.Nombre.Trim();
+            var duplicado = await db.Categorias
+                .AnyAsync(c => c.Id != id && c.Nombre.ToLower() == nombreLimpio.ToLower(), ct);
+
+            if (duplicado)
+            {
+                return Results.BadRequest(new { error = $"Ya existe otra categoría con el nombre '{nombreLimpio}'." });
+            }
+
+            categoria.Nombre = nombreLimpio;
+            if (!string.IsNullOrWhiteSpace(req.Temporada))
+            {
+                categoria.Temporada = req.Temporada.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(req.EsquemaTalles))
+            {
+                categoria.EsquemaTalles = req.EsquemaTalles.Trim();
+            }
+            categoria.CategoriaPadreId = req.CategoriaPadreId;
+
+            await db.SaveChangesAsync(ct);
+
+            var cantProds = await db.Productos.CountAsync(prod => prod.CategoriaId == id && prod.Activo, ct);
+            return Results.Ok(new CategoriaResponse(
+                categoria.Id,
+                categoria.Nombre,
+                categoria.Temporada,
+                categoria.EsquemaTalles,
+                categoria.CategoriaPadreId,
+                cantProds));
+        }).RequireAuthorization("AdminOnly");
+
+        group.MapDelete("/categorias/{id:int}", async (int id, AppDbContext db, CancellationToken ct) =>
+        {
+            var categoria = await db.Categorias.FirstOrDefaultAsync(c => c.Id == id, ct);
+            if (categoria is null)
+            {
+                return Results.NotFound(new { error = "Categoría no encontrada." });
+            }
+
+            var productosAsociados = await db.Productos
+                .Where(p => p.CategoriaId == id)
+                .ToListAsync(ct);
+
+            if (productosAsociados.Count > 0)
+            {
+                var fallback = await db.Categorias
+                    .FirstOrDefaultAsync(c => c.Id != id && c.Nombre.ToLower() == "remeras", ct)
+                    ?? await db.Categorias.FirstOrDefaultAsync(c => c.Id != id, ct);
+
+                if (fallback is null)
+                {
+                    var nombreFallback = categoria.Nombre.Equals("Remeras", StringComparison.OrdinalIgnoreCase)
+                        ? "General"
+                        : "Remeras";
+                    fallback = new Categoria
+                    {
+                        Nombre = nombreFallback,
+                        Temporada = "Todo el año",
+                        EsquemaTalles = "S-XXL"
+                    };
+                    db.Categorias.Add(fallback);
+                    await db.SaveChangesAsync(ct);
+                }
+
+                foreach (var prod in productosAsociados)
+                {
+                    prod.CategoriaId = fallback.Id;
+                }
+            }
+
+            db.Categorias.Remove(categoria);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new
+            {
+                mensaje = $"Categoría '{categoria.Nombre}' eliminada correctamente.",
+                productosReasignados = productosAsociados.Count
+            });
+        }).RequireAuthorization("AdminOnly");
+    }
+}

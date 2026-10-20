@@ -31,7 +31,8 @@ public record TiendanubeProductResponse(
     decimal? Precio,
     decimal? Costo,
     List<TiendanubeProductVariantResponse> Variantes,
-    List<string>? Imagenes = null
+    List<string>? Imagenes = null,
+    List<string>? Categorias = null
 );
 
 public interface ITiendanubeApiClient
