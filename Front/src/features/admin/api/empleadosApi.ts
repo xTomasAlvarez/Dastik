@@ -46,4 +46,12 @@ export const empleadosApi = {
     );
     return response.data;
   },
+
+  resetPassword: async (empleadoId: number, nuevaPassword: string, debeCambiarPassword = false): Promise<{ message: string }> => {
+    const response = await apiClient.put<{ message: string }>(
+      `/api/usuarios/empleados/${empleadoId}/reset-password`,
+      { nuevaPassword, debeCambiarPassword }
+    );
+    return response.data;
+  },
 };

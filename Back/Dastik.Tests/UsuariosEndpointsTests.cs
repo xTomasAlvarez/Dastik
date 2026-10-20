@@ -101,13 +101,13 @@ public class UsuariosEndpointsTests : IDisposable
         var request = new CrearEmpleadoRequest(
             Nombre: "Martín Palermo",
             Email: "martin@dastik.com",
-            Password: "Password123!",
-            Turno: "Completo",
-            TarifaPorHora: 4500.00m
+            Password: "PasswordSegura123!",
+            Turno: "Mañana",
+            TarifaPorHora: 3800.00m
         );
 
         // Act
-        var nuevoUsuario = new Usuario
+        var nuevo = new Usuario
         {
             Nombre = request.Nombre.Trim(),
             Email = request.Email.Trim().ToLowerInvariant(),
@@ -119,22 +119,24 @@ public class UsuariosEndpointsTests : IDisposable
             TarifaPorHora = request.TarifaPorHora,
             FechaCreacion = DateTime.UtcNow
         };
-
-        _context.Usuarios.Add(nuevoUsuario);
+        _context.Usuarios.Add(nuevo);
         await _context.SaveChangesAsync();
 
         // Assert
-        var usuarioEnBd = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == "martin@dastik.com");
-        usuarioEnBd.Should().NotBeNull();
-        usuarioEnBd!.Nombre.Should().Be("Martín Palermo");
-        usuarioEnBd.TurnoAsignado.Should().Be("Completo");
-        usuarioEnBd.TarifaPorHora.Should().Be(4500.00m);
-        usuarioEnBd.DebeCambiarPassword.Should().BeTrue();
-        _passwordHasher.Verify("Password123!", usuarioEnBd.PasswordHash).Should().BeTrue();
+        var guardado = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == "martin@dastik.com");
+        guardado.Should().NotBeNull();
+        guardado!.Nombre.Should().Be("Martín Palermo");
+        guardado.Rol.Should().Be(RolUsuario.Empleado);
+        guardado.DebeCambiarPassword.Should().BeTrue();
+        guardado.TarifaPorHora.Should().Be(3800.00m);
+
+        // Verificar que la contraseña no está en texto plano
+        guardado.PasswordHash.Should().NotBe("PasswordSegura123!");
+        _passwordHasher.Verify("PasswordSegura123!", guardado.PasswordHash).Should().BeTrue();
     }
 
     [Fact]
-    public async Task CalcularPago_ConHorasTrabajadas_DeberiaCalcularTotalExacto()
+    public async Task CalcularPago_ConTarifaPersonalizada_DeberiaCalcularTotalExacto()
     {
         // Arrange
         var empleado = new Usuario
@@ -159,5 +161,33 @@ public class UsuariosEndpointsTests : IDisposable
         // Assert
         total1.Should().Be(27_200.00m);
         total2.Should().Be(38_400.00m);
+    }
+
+    [Fact]
+    public async Task ResetPasswordEmpleado_DebeActualizarHashYEstadoDebeCambiarPassword()
+    {
+        // Arrange
+        var empleado = new Usuario
+        {
+            Nombre = "Franco Romero",
+            Email = "franco@dastik.com",
+            PasswordHash = _passwordHasher.Hash("1234"),
+            Rol = RolUsuario.Empleado,
+            DebeCambiarPassword = true,
+            Activo = true
+        };
+        _context.Usuarios.Add(empleado);
+        await _context.SaveChangesAsync();
+
+        // Act: Simular acción del handler del endpoint
+        var request = new ResetPasswordEmpleadoRequest("NuevaClave2026!", DebeCambiarPassword: false);
+        empleado.PasswordHash = _passwordHasher.Hash(request.NuevaPassword);
+        empleado.DebeCambiarPassword = request.DebeCambiarPassword;
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var actualizado = await _context.Usuarios.FirstAsync(u => u.Id == empleado.Id);
+        _passwordHasher.Verify("NuevaClave2026!", actualizado.PasswordHash).Should().BeTrue();
+        actualizado.DebeCambiarPassword.Should().BeFalse();
     }
 }

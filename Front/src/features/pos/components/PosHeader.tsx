@@ -18,6 +18,7 @@ import {
   CreditCard,
   Check,
   CaretDown,
+  Storefront,
 } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { useAuthStore, SANDBOX_ACCOUNTS } from '../../../stores/useAuthStore';
@@ -118,25 +119,15 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
 
       {/* Controles Operativos Inmediatos de Caja + Menú Hamburguesa */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Badge Operativo Estilizado con Popover de Resumen del Turno */}
+        {/* Badge Operativo Estilizado y Neutro con Popover de Resumen del Turno */}
         <div className="relative" ref={turnoPopoverRef}>
           <button
             type="button"
             onClick={() => setIsTurnoPopoverOpen((prev) => !prev)}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-sans border transition-all cursor-pointer shadow-xs active:scale-[0.98] ${
-              turnoActivo
-                ? 'border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15 text-primary'
-                : 'border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/15 text-amber-600 dark:text-amber-300'
-            }`}
+            className="px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-sans border border-subtle bg-surface hover:bg-elevated text-primary transition-all cursor-pointer shadow-xs active:scale-[0.98]"
             title="Ver resumen en curso del turno actual de caja"
           >
-            <span
-              className={`inline-block w-2 h-2 rounded-full ${
-                turnoActivo
-                  ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse'
-                  : 'bg-amber-500'
-              }`}
-            />
+            <Storefront size={15} weight="duotone" className="text-secondary shrink-0" />
             <span className="font-semibold text-primary truncate max-w-[170px] sm:max-w-none">
               {turnoActivo ? (
                 <>
@@ -157,11 +148,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
               <div className="flex items-start justify-between border-b border-subtle pb-2.5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-block w-2 h-2 rounded-full ${
-                        turnoActivo ? 'bg-emerald-500' : 'bg-amber-500'
-                      }`}
-                    />
+                    <Storefront size={16} weight="duotone" className="text-secondary shrink-0" />
                     <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-primary">
                       {turnoActivo ? 'Resumen de Turno en Curso' : 'Caja Sin Turno Activo'}
                     </h4>
@@ -193,7 +180,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
                       <span className="font-bold text-primary block truncate">
                         {nombreCajero}
                       </span>
-                      <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 block">
+                      <span className="text-[10px] font-mono text-muted block">
                         Rol: {rolCajero}
                       </span>
                     </div>
@@ -361,7 +348,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
                   <ShieldCheck
                     size={18}
                     weight="duotone"
-                    className="text-emerald-500 shrink-0"
+                    className="text-secondary shrink-0"
                   />
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-primary truncate">
@@ -372,7 +359,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md border border-subtle bg-surface text-secondary shrink-0">
                   {usuario?.rol === 'Admin' ? 'Dueño' : 'Staff'}
                 </span>
               </div>

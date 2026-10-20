@@ -8,6 +8,7 @@ using Dastik.Api.Features.Configuracion;
 using Dastik.Api.Features.Inventario.CrearProducto;
 using Dastik.Api.Features.Inventario.SincronizarTiendanube;
 using Dastik.Api.Features.Metricas;
+using Dastik.Api.Features.Sandbox;
 using Dastik.Api.Features.Usuarios;
 using Dastik.Api.Infrastructure.BackgroundServices;
 using Dastik.Api.Infrastructure.Integrations.Tiendanube;
@@ -176,6 +177,7 @@ app.MapCajaEndpoints();
 app.MapMetricasEndpoints();
 app.MapUsuariosEndpoints();
 app.MapConfiguracionEndpoints();
+app.MapSandboxEndpoints();
 
 // Sincronización no destructiva de esquema y Seeder de datos iniciales (Producción)
 try

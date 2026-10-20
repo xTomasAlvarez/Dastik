@@ -11,7 +11,7 @@ namespace Dastik.Api.Infrastructure.Persistence;
 
 /// <summary>
 /// Seeder de catálogo de prueba exclusivo para la base de datos del Modo Sandbox.
-/// Diseñado para que los cajeros y empleados cuenten con productos ficticios para practicar.
+/// Diseñado para que los cajeros y empleados cuenten con productos ficticios y muestras reales para practicar.
 /// Cuenta con una guardia estricta para NUNCA insertar datos en la base de datos de producción.
 /// </summary>
 public static class SandboxDataSeeder
@@ -282,107 +282,248 @@ public static class SandboxDataSeeder
 
         await context.SaveChangesAsync();
 
-        // Si ya existen productos en la base de datos Sandbox, reclasificar/limpiar proveedores y no duplicar
-        if (await context.Productos.AnyAsync())
+        // 6. Si ya existen más de 10 productos en la base de datos Sandbox, solo reclasificamos
+        var cantProductosExistentes = await context.Productos.CountAsync();
+        if (cantProductosExistentes >= 10)
         {
             await CatalogClassifierService.ClasificarCatalogoExistenteAsync(context);
             return;
         }
 
-        // 6. Productos y Variantes - Unidad "Dastik"
-        var remera = new Producto
-        {
-            Nombre = "Remera Oversize Básica",
-            Descripcion = "Remera de algodón premium corte oversize para entrenamiento y pruebas de POS.",
-            UnidadNegocioId = unidadDastik.Id,
-            CategoriaId = catRemeras.Id,
-            MarcaId = marcaDastik.Id,
-            ProveedorId = provSample.Id,
-            CostoBase = 15000.00m,
-            MarkupAplicado = 1.50m,
-            PrecioVenta = 22500.00m,
-            Activo = true,
-            Variantes = new List<Variante>
-            {
-                new() { Talle = "XS", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 10 },
-                new() { Talle = "S", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 10 },
-                new() { Talle = "M", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 15 },
-                new() { Talle = "L", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 15 },
-                new() { Talle = "XL", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 10 }
-            }
-        };
+        // Intentar clonar muestra de hasta 32 productos reales con fotos desde dastik_dev.db si existe
+        await ClonarMuestraDeProduccionSiExisteAsync(context, unidadDastik, catRemeras, marcaDastik, provSample, eanGenerator, logger);
 
-        var pantalon = new Producto
+        // Si después de intentar clonar aún no hay productos, sembrar los 4 modelos de demostración básicos
+        if (!await context.Productos.AnyAsync())
         {
-            Nombre = "Pantalón Cargo",
-            Descripcion = "Pantalón cargo ripstop con bolsillos funcionales para pruebas de caja.",
-            UnidadNegocioId = unidadDastik.Id,
-            CategoriaId = catPantalones.Id,
-            MarcaId = marcaDastik.Id,
-            ProveedorId = provSample.Id,
-            CostoBase = 28000.00m,
-            MarkupAplicado = 1.50m,
-            PrecioVenta = 42000.00m,
-            Activo = true,
-            Variantes = new List<Variante>
+            var remera = new Producto
             {
-                new() { Talle = "XS", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 },
-                new() { Talle = "S", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 },
-                new() { Talle = "M", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 12 },
-                new() { Talle = "L", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 12 },
-                new() { Talle = "XL", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 }
-            }
-        };
+                Nombre = "Remera Oversize Básica",
+                Descripcion = "Remera de algodón premium corte oversize para entrenamiento y pruebas de POS.",
+                UnidadNegocioId = unidadDastik.Id,
+                CategoriaId = catRemeras.Id,
+                MarcaId = marcaDastik.Id,
+                ProveedorId = provSample.Id,
+                CostoBase = 15000.00m,
+                MarkupAplicado = 1.50m,
+                PrecioVenta = 22500.00m,
+                Activo = true,
+                Variantes = new List<Variante>
+                {
+                    new() { Talle = "XS", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 10 },
+                    new() { Talle = "S", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 10 },
+                    new() { Talle = "M", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 15 },
+                    new() { Talle = "L", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 15 },
+                    new() { Talle = "XL", Color = "Negro", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 10 }
+                }
+            };
 
-        // 7. Productos y Variantes - Unidad "Hidden Sneakers"
-        var dunk = new Producto
-        {
-            Nombre = "Nike Dunk Low Panda",
-            Descripcion = "Sneaker clásica colorway White/Black para pruebas de venta y caja en Hidden Sneakers.",
-            UnidadNegocioId = unidadHidden.Id,
-            CategoriaId = catCalzado.Id,
-            MarcaId = marcaNike.Id,
-            ProveedorId = provGeneral.Id,
-            CostoBase = 90000.00m,
-            MarkupAplicado = 1.60m,
-            PrecioVenta = 144000.00m,
-            Activo = true,
-            Variantes = new List<Variante>
+            var pantalon = new Producto
             {
-                new() { Talle = "US 8", Color = "White/Black", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 5 },
-                new() { Talle = "US 9", Color = "White/Black", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 6 },
-                new() { Talle = "US 10", Color = "White/Black", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 6 },
-                new() { Talle = "US 11", Color = "White/Black", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 4 }
-            }
-        };
+                Nombre = "Pantalón Cargo",
+                Descripcion = "Pantalón cargo ripstop con bolsillos funcionales para pruebas de caja.",
+                UnidadNegocioId = unidadDastik.Id,
+                CategoriaId = catPantalones.Id,
+                MarcaId = marcaDastik.Id,
+                ProveedorId = provSample.Id,
+                CostoBase = 28000.00m,
+                MarkupAplicado = 1.50m,
+                PrecioVenta = 42000.00m,
+                Activo = true,
+                Variantes = new List<Variante>
+                {
+                    new() { Talle = "XS", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 },
+                    new() { Talle = "S", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 },
+                    new() { Talle = "M", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 12 },
+                    new() { Talle = "L", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 12 },
+                    new() { Talle = "XL", Color = "Beige", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 }
+                }
+            };
 
-        var yeezy = new Producto
-        {
-            Nombre = "Adidas Yeezy Slide",
-            Descripcion = "Sandalia slide monocromática de espuma EVA de alta resistencia.",
-            UnidadNegocioId = unidadHidden.Id,
-            CategoriaId = catCalzado.Id,
-            MarcaId = marcaAdidas.Id,
-            ProveedorId = provGeneral.Id,
-            CostoBase = 60000.00m,
-            MarkupAplicado = 1.50m,
-            PrecioVenta = 90000.00m,
-            Activo = true,
-            Variantes = new List<Variante>
+            var dunk = new Producto
             {
-                new() { Talle = "US 8", Color = "Onyx", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 6 },
-                new() { Talle = "US 9", Color = "Onyx", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 },
-                new() { Talle = "US 10", Color = "Onyx", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 },
-                new() { Talle = "US 11", Color = "Onyx", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 5 }
-            }
-        };
+                Nombre = "Nike Dunk Low Panda",
+                Descripcion = "Sneaker clásica colorway White/Black para pruebas de venta y caja en Hidden Sneakers.",
+                UnidadNegocioId = unidadHidden.Id,
+                CategoriaId = catCalzado.Id,
+                MarcaId = marcaNike.Id,
+                ProveedorId = provGeneral.Id,
+                CostoBase = 90000.00m,
+                MarkupAplicado = 1.60m,
+                PrecioVenta = 144000.00m,
+                Activo = true,
+                Variantes = new List<Variante>
+                {
+                    new() { Talle = "US 8", Color = "White/Black", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 5 },
+                    new() { Talle = "US 9", Color = "White/Black", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 6 },
+                    new() { Talle = "US 10", Color = "White/Black", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 6 },
+                    new() { Talle = "US 11", Color = "White/Black", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 4 }
+                }
+            };
 
-        context.Productos.AddRange(remera, pantalon, dunk, yeezy);
-        await context.SaveChangesAsync();
+            var yeezy = new Producto
+            {
+                Nombre = "Adidas Yeezy Slide",
+                Descripcion = "Sandalia slide monocromática de espuma EVA de alta resistencia.",
+                UnidadNegocioId = unidadHidden.Id,
+                CategoriaId = catCalzado.Id,
+                MarcaId = marcaAdidas.Id,
+                ProveedorId = provGeneral.Id,
+                CostoBase = 60000.00m,
+                MarkupAplicado = 1.50m,
+                PrecioVenta = 90000.00m,
+                Activo = true,
+                Variantes = new List<Variante>
+                {
+                    new() { Talle = "US 8", Color = "Onyx", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 6 },
+                    new() { Talle = "US 9", Color = "Onyx", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 },
+                    new() { Talle = "US 10", Color = "Onyx", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 8 },
+                    new() { Talle = "US 11", Color = "Onyx", CodigoBarras = eanGenerator.Generar(), EsCodigoGenerado = true, StockFisico = 5 }
+                }
+            };
+
+            context.Productos.AddRange(remera, pantalon, dunk, yeezy);
+            await context.SaveChangesAsync();
+        }
 
         await CatalogClassifierService.ClasificarCatalogoExistenteAsync(context);
 
-        logger?.LogInformation("SandboxDataSeeder completado: 4 productos y sus variantes fueron sembrados en la base de datos Sandbox.");
+        logger?.LogInformation("SandboxDataSeeder completado: catálogo preparado en la base de datos Sandbox.");
+    }
+
+    /// <summary>
+    /// Restablece el entorno de práctica en Sandbox: limpia transacciones de prueba (ventas, arqueos, turnos)
+    /// y restablece el stock a 10 unidades para que el cajero vuelva a iniciar sus misiones desde cero.
+    /// </summary>
+    public static async Task ResetSandboxAsync(
+        AppDbContext context,
+        GeneradorEan13? eanGenerator = null,
+        IPasswordHasher? passwordHasher = null,
+        ILogger? logger = null)
+    {
+        if (!EsBaseDeDatosSandbox(context))
+        {
+            throw new InvalidOperationException("Guardia de seguridad: No se permite reiniciar una base de datos que no sea de Sandbox.");
+        }
+
+        // 1. Eliminar datos operativos de prueba
+        context.Pagos.RemoveRange(context.Pagos);
+        context.DetallesOrden.RemoveRange(context.DetallesOrden);
+        context.Ordenes.RemoveRange(context.Ordenes);
+        context.Turnos.RemoveRange(context.Turnos);
+        context.OutboxMessages.RemoveRange(context.OutboxMessages);
+        await context.SaveChangesAsync();
+
+        // 2. Restablecer stock de todas las variantes a 10 unidades
+        var variantes = await context.Variantes.ToListAsync();
+        foreach (var v in variantes)
+        {
+            v.StockFisico = 10;
+        }
+        await context.SaveChangesAsync();
+
+        // 3. Re-sembrar usuarios y catálogo base si hiciera falta
+        await SeedAsync(context, eanGenerator, passwordHasher, logger);
+        logger?.LogInformation("ResetSandboxAsync completado: entorno Sandbox restaurado para práctica.");
+    }
+
+    private static async Task ClonarMuestraDeProduccionSiExisteAsync(
+        AppDbContext sandboxContext,
+        UnidadNegocio unidadDastik,
+        Categoria catRemeras,
+        Marca marcaDastik,
+        Proveedor provSample,
+        GeneradorEan13 eanGenerator,
+        ILogger? logger)
+    {
+        var prodDbPath = EncontrarRutaDastikDevDb();
+        if (string.IsNullOrEmpty(prodDbPath))
+        {
+            return;
+        }
+
+        try
+        {
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlite($"Data Source={prodDbPath}")
+                .Options;
+
+            using var prodContext = new AppDbContext(options);
+            if (!await prodContext.Productos.AnyAsync())
+            {
+                return;
+            }
+
+            // Seleccionar hasta 32 productos con imagen válida y variantes
+            var muestra = await prodContext.Productos
+                .AsNoTracking()
+                .Include(p => p.Variantes)
+                .Where(p => p.Activo && !string.IsNullOrEmpty(p.ImagenUrl))
+                .OrderBy(p => p.Id)
+                .Take(32)
+                .ToListAsync();
+
+            if (muestra.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var p in muestra)
+            {
+                if (await sandboxContext.Productos.AnyAsync(x => x.Nombre == p.Nombre))
+                {
+                    continue;
+                }
+
+                var prodClonado = new Producto
+                {
+                    Nombre = p.Nombre,
+                    Descripcion = p.Descripcion,
+                    UnidadNegocioId = unidadDastik.Id,
+                    CategoriaId = catRemeras.Id,
+                    MarcaId = marcaDastik.Id,
+                    ProveedorId = provSample.Id,
+                    CostoBase = p.CostoBase > 0 ? p.CostoBase : 15000m,
+                    MarkupAplicado = p.MarkupAplicado > 0 ? p.MarkupAplicado : 1.5m,
+                    PrecioVenta = p.PrecioVenta > 0 ? p.PrecioVenta : 22500m,
+                    ImagenUrl = p.ImagenUrl,
+                    ImagenesJson = p.ImagenesJson ?? "[]",
+                    Activo = true,
+                    Variantes = p.Variantes.Select(v => new Variante
+                    {
+                        Talle = v.Talle,
+                        Color = v.Color,
+                        CodigoBarras = !string.IsNullOrWhiteSpace(v.CodigoBarras) ? v.CodigoBarras : eanGenerator.Generar(),
+                        EsCodigoGenerado = v.EsCodigoGenerado,
+                        StockFisico = Math.Max(v.StockFisico, 10)
+                    }).ToList()
+                };
+
+                sandboxContext.Productos.Add(prodClonado);
+            }
+
+            await sandboxContext.SaveChangesAsync();
+            logger?.LogInformation("SandboxDataSeeder: {Cantidad} productos reales con fotos clonados a Sandbox.", muestra.Count);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "SandboxDataSeeder: No se pudo clonar la muestra desde dastik_dev.db. Se usarán productos base.");
+        }
+    }
+
+    private static string? EncontrarRutaDastikDevDb()
+    {
+        var candidatas = new[]
+        {
+            "dastik_dev.db",
+            Path.Combine(Directory.GetCurrentDirectory(), "dastik_dev.db"),
+            Path.Combine(Directory.GetCurrentDirectory(), "Back", "Dastik.Api", "dastik_dev.db"),
+            Path.Combine(AppContext.BaseDirectory, "dastik_dev.db"),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "dastik_dev.db"),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Back", "Dastik.Api", "dastik_dev.db")
+        };
+
+        return candidatas.FirstOrDefault(File.Exists);
     }
 
     public static bool EsBaseDeDatosSandbox(AppDbContext context)

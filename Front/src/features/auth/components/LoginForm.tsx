@@ -3,6 +3,7 @@ import { ArrowRight, LockKey, WarningCircle, X } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { authApi } from '../api/authApi';
+import { ModalRecuperarPassword } from './ModalRecuperarPassword';
 import { useAuthStore } from '../../../stores/useAuthStore';
 import { useTenantStore } from '../../../stores/useTenantStore';
 import type { AxiosError } from 'axios';
@@ -17,6 +18,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, fillCredentials
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isRecuperarOpen, setIsRecuperarOpen] = useState(false);
 
   React.useEffect(() => {
     if (fillCredentials) {
@@ -40,6 +42,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, fillCredentials
     const isSandboxMode = useTenantStore.getState().isSandboxMode;
 
     try {
+      setIsLoading(true);
       const response = await authApi.login({
         email: email.trim(),
         password,
@@ -61,67 +64,85 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, fillCredentials
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 w-full text-left">
-      {errorMessage && (
-        <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-2.5 text-red-600 dark:text-red-400 text-xs font-sans flex items-start justify-between gap-2.5">
-          <div className="flex items-start gap-2">
-            <WarningCircle size={16} weight="bold" className="shrink-0 mt-0.5" />
-            <span className="leading-snug">{errorMessage}</span>
+    <>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 w-full text-left">
+        {errorMessage && (
+          <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-2.5 text-red-600 dark:text-red-400 text-xs font-sans flex items-start justify-between gap-2.5">
+            <div className="flex items-start gap-2">
+              <WarningCircle size={16} weight="bold" className="shrink-0 mt-0.5" />
+              <span className="leading-snug">{errorMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setErrorMessage(null)}
+              className="hover:opacity-75 p-0.5 transition-opacity cursor-pointer shrink-0 focus:outline-none"
+              aria-label="Cerrar advertencia"
+              title="Cerrar mensaje"
+            >
+              <X size={15} weight="bold" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setErrorMessage(null)}
-            className="hover:opacity-75 p-0.5 transition-opacity cursor-pointer shrink-0 focus:outline-none"
-            aria-label="Cerrar advertencia"
-            title="Cerrar mensaje"
-          >
-            <X size={15} weight="bold" />
-          </button>
+        )}
+
+        <div className="flex flex-col gap-3">
+          <Input
+            id="email"
+            label="CORREO ELECTRÓNICO"
+            type="email"
+            placeholder="tomidev@dastik.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
+            autoComplete="email"
+            autoFocus
+            required
+          />
+
+          <Input
+            id="password"
+            label="CONTRASEÑA"
+            type="password"
+            placeholder="••••••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoading}
+            autoComplete="current-password"
+            required
+          />
+
+          <div className="flex justify-end -mt-1">
+            <button
+              type="button"
+              onClick={() => setIsRecuperarOpen(true)}
+              className="text-[11px] font-sans text-secondary hover:text-amber-500 transition-colors cursor-pointer"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
         </div>
-      )}
 
-      <div className="flex flex-col gap-3">
-        <Input
-          id="email"
-          label="CORREO ELECTRÓNICO"
-          type="email"
-          placeholder="tomidev@dastik.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={isLoading}
-          autoComplete="email"
-          autoFocus
-          required
-        />
+        <div className="pt-1">
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            className="w-full justify-between py-2.5"
+            disabled={isLoading}
+          >
+            <span className="flex items-center gap-2">
+              <LockKey size={17} weight="bold" />
+              {isLoading ? 'VERIFICANDO CREDENCIALES...' : 'INGRESAR AL SISTEMA'}
+            </span>
+            <ArrowRight size={17} weight="bold" />
+          </Button>
+        </div>
+      </form>
 
-        <Input
-          id="password"
-          label="CONTRASEÑA"
-          type="password"
-          placeholder="••••••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={isLoading}
-          autoComplete="current-password"
-          required
-        />
-      </div>
-
-      <div className="pt-1">
-        <Button
-          type="submit"
-          variant="primary"
-          size="md"
-          className="w-full justify-between py-2.5"
-          disabled={isLoading}
-        >
-          <span className="flex items-center gap-2">
-            <LockKey size={17} weight="bold" />
-            {isLoading ? 'VERIFICANDO CREDENCIALES...' : 'INGRESAR AL SISTEMA'}
-          </span>
-          <ArrowRight size={17} weight="bold" />
-        </Button>
-      </div>
-    </form>
+      {/* Modal de Recuperación de Contraseña */}
+      <ModalRecuperarPassword
+        isOpen={isRecuperarOpen}
+        onClose={() => setIsRecuperarOpen(false)}
+      />
+    </>
   );
 };

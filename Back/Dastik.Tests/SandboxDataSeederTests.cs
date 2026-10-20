@@ -141,4 +141,36 @@ public class SandboxDataSeederTests : IDisposable
         totalInicial.Should().Be(4);
         totalFinal.Should().Be(4);
     }
+
+    [Fact]
+    public async Task ResetSandboxAsync_DebeEliminarOrdenesYTurnos_YRestablecerStockVariantesA10()
+    {
+        // Arrange: sembrar sandbox y crear órdenes y turnos ficticios
+        await SandboxDataSeeder.SeedAsync(_context, _eanGenerator, _passwordHasher);
+
+        var usuario = await _context.Usuarios.FirstAsync();
+        var turno = new Turno
+        {
+            EmpleadoId = usuario.Id,
+            SaldoInicial = 5000m,
+            FechaApertura = DateTime.UtcNow,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turno);
+        await _context.SaveChangesAsync();
+
+        var variante = await _context.Variantes.FirstAsync();
+        variante.StockFisico = 1;
+        await _context.SaveChangesAsync();
+
+        // Act
+        await SandboxDataSeeder.ResetSandboxAsync(_context, _eanGenerator, _passwordHasher);
+
+        // Assert
+        var turnos = await _context.Turnos.ToListAsync();
+        turnos.Should().BeEmpty();
+
+        var varianteActualizada = await _context.Variantes.FirstAsync(v => v.Id == variante.Id);
+        varianteActualizada.StockFisico.Should().Be(10);
+    }
 }

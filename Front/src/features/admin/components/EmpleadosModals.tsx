@@ -1,5 +1,5 @@
-import React from 'react';
-import { UserPlus, Calculator, X } from '@phosphor-icons/react';
+import React, { useState, useEffect } from 'react';
+import { UserPlus, Calculator, X, Key, LockKey, WarningCircle } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import type { EmpleadoDto, CrearEmpleadoRequest } from '../api/empleadosApi';
@@ -270,6 +270,144 @@ export const ModalLiquidarJornada: React.FC<ModalLiquidarJornadaProps> = ({
             Cerrar [ESC]
           </Button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+interface ModalResetPasswordEmpleadoProps {
+  empleado: EmpleadoDto | null;
+  onClose: () => void;
+  onSubmit: (empleadoId: number, nuevaPassword: string, debeCambiarPassword: boolean) => Promise<void>;
+  isPending: boolean;
+}
+
+export const ModalResetPasswordEmpleado: React.FC<ModalResetPasswordEmpleadoProps> = ({
+  empleado,
+  onClose,
+  onSubmit,
+  isPending,
+}) => {
+  const [password, setPassword] = useState('');
+  const [confirmarPassword, setConfirmarPassword] = useState('');
+  const [debeCambiarPassword, setDebeCambiarPassword] = useState(false);
+  const [errorLocal, setErrorLocal] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPassword('');
+    setConfirmarPassword('');
+    setDebeCambiarPassword(false);
+    setErrorLocal(null);
+  }, [empleado]);
+
+  if (!empleado) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorLocal(null);
+
+    if (password.length < 6) {
+      setErrorLocal('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    if (password !== confirmarPassword) {
+      setErrorLocal('Las contraseñas no coinciden.');
+      return;
+    }
+
+    await onSubmit(empleado.id, password, debeCambiarPassword);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="rounded-xl border border-subtle bg-surface w-full max-w-md p-6 space-y-5 shadow-floating">
+        <div className="flex items-center justify-between pb-3 border-b border-subtle">
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-lg border border-subtle bg-elevated p-2 text-amber-500">
+              <Key size={18} weight="duotone" />
+            </div>
+            <div>
+              <span className="text-[11px] font-medium text-muted block uppercase tracking-wider font-mono">
+                Credenciales de Empleado
+              </span>
+              <h2 className="font-heading font-bold text-lg text-primary">
+                Cambiar Contraseña
+              </h2>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-muted hover:text-primary transition-fast p-1 rounded-md cursor-pointer"
+            title="Cerrar modal [ESC]"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="rounded-lg border border-subtle bg-elevated/50 p-3.5 flex items-center justify-between">
+          <div>
+            <span className="font-heading font-bold text-sm text-primary block">
+              {empleado.nombre}
+            </span>
+            <span className="text-xs text-muted font-mono">{empleado.email}</span>
+          </div>
+          <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded border border-subtle bg-surface text-secondary">
+            {empleado.turnoAsignado}
+          </span>
+        </div>
+
+        {errorLocal && (
+          <div className="border border-red-500/30 bg-red-500/10 rounded-lg p-3 text-red-600 dark:text-red-400 text-xs font-sans flex items-start gap-2.5">
+            <WarningCircle size={16} weight="bold" className="shrink-0 mt-0.5" />
+            <span className="leading-snug">{errorLocal}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            id="admin-reset-nueva-password"
+            label="NUEVA CONTRASEÑA * (mínimo 6 caracteres)"
+            type="password"
+            required
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isPending}
+            autoFocus
+          />
+
+          <Input
+            id="admin-reset-confirmar-password"
+            label="CONFIRMAR NUEVA CONTRASEÑA *"
+            type="password"
+            required
+            placeholder="••••••••"
+            value={confirmarPassword}
+            onChange={(e) => setConfirmarPassword(e.target.value)}
+            disabled={isPending}
+          />
+
+          <label className="flex items-center gap-2.5 text-xs text-secondary cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={debeCambiarPassword}
+              onChange={(e) => setDebeCambiarPassword(e.target.checked)}
+              className="rounded border-subtle text-amber-500 focus:ring-amber-500 cursor-pointer"
+            />
+            <span>Exigir que el empleado cree su propia clave al iniciar sesión</span>
+          </label>
+
+          <div className="pt-3 flex items-center justify-end gap-3 border-t border-subtle">
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="primary" disabled={isPending}>
+              <LockKey size={16} weight="bold" />
+              <span>{isPending ? 'Guardando...' : 'Asignar Contraseña'}</span>
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );
