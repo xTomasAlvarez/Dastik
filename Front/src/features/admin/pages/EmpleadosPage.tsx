@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'motion/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Users,
@@ -22,6 +23,29 @@ import {
   ModalResetPasswordEmpleado,
 } from '../components/EmpleadosModals';
 import type { AxiosError } from 'axios';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 28,
+    },
+  },
+};
 
 export const EmpleadosPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -251,8 +275,8 @@ export const EmpleadosPage: React.FC = () => {
       </div>
 
       {/* Tarjetas KPI de Staff */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
           <div className="flex items-center justify-between text-secondary mb-3">
             <span className="text-xs font-semibold">Personal Total</span>
             <Users size={18} weight="duotone" className="text-sky-500" />
@@ -263,9 +287,9 @@ export const EmpleadosPage: React.FC = () => {
           <p className="text-xs text-muted mt-1 font-sans">
             Usuarios con acceso de caja al POS
           </p>
-        </div>
+        </motion.div>
 
-        <div className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
           <div className="flex items-center justify-between text-secondary mb-3">
             <span className="text-xs font-semibold text-amber-500">Turno Mañana</span>
             <Sun size={18} weight="duotone" className="text-amber-500" />
@@ -276,9 +300,9 @@ export const EmpleadosPage: React.FC = () => {
           <p className="text-xs text-muted mt-1 font-sans">
             Horario apertura (10:00 a 16:00 aprox.)
           </p>
-        </div>
+        </motion.div>
 
-        <div className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
           <div className="flex items-center justify-between text-secondary mb-3">
             <span className="text-xs font-semibold text-indigo-500">Turno Tarde</span>
             <Moon size={18} weight="duotone" className="text-indigo-500" />
@@ -289,9 +313,9 @@ export const EmpleadosPage: React.FC = () => {
           <p className="text-xs text-muted mt-1 font-sans">
             Horario cierre (16:00 a 22:00 aprox.)
           </p>
-        </div>
+        </motion.div>
 
-        <div className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
           <div className="flex items-center justify-between text-secondary mb-3">
             <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               Tarifa Media / Hora
@@ -304,8 +328,8 @@ export const EmpleadosPage: React.FC = () => {
           <p className="text-xs text-muted mt-1 font-sans">
             Base salarial horaria promedio
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Filtros y Búsqueda */}
       <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-surface">
@@ -324,21 +348,33 @@ export const EmpleadosPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-          {(['TODOS', 'Mañana', 'Tarde', 'Completo'] as const).map((turno) => (
-            <button
-              key={turno}
-              type="button"
-              onClick={() => setFiltroTurno(turno)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-fast cursor-pointer ${
-                filtroTurno === turno
-                  ? 'border border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                  : 'border border-subtle bg-elevated text-secondary hover:text-primary'
-              }`}
-            >
-              {turno === 'TODOS' ? 'Todos los Turnos' : `Turno ${turno}`}
-            </button>
-          ))}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 relative">
+          {(['TODOS', 'Mañana', 'Tarde', 'Completo'] as const).map((turno) => {
+            const activo = filtroTurno === turno;
+            return (
+              <button
+                key={turno}
+                type="button"
+                onClick={() => setFiltroTurno(turno)}
+                className={`relative px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                  activo
+                    ? 'text-amber-600 dark:text-amber-400 font-bold'
+                    : 'border border-subtle bg-elevated text-secondary hover:text-primary'
+                }`}
+              >
+                {activo && (
+                  <motion.div
+                    layoutId="empleados-filtro-turno-pill"
+                    className="absolute inset-0 bg-amber-500/10 border border-amber-500 rounded-lg shadow-xs"
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <span className="relative z-10">
+                  {turno === 'TODOS' ? 'Todos los Turnos' : `Turno ${turno}`}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

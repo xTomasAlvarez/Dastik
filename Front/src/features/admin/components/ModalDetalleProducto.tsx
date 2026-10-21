@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
   Image as ImageIcon,
@@ -82,42 +83,53 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
     };
   }, [isOpen, isModalEtiquetasOpen, onClose]);
 
-  if (!isOpen || !producto) return null;
 
   // Cálculos de Stock y Métricas Financieras
-  const stockTotal = producto.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
+  const stockTotal = producto?.variantes?.reduce((acc, v) => acc + (v.stockFisico || 0), 0) ?? 0;
   const sinStockGlobal = stockTotal === 0;
 
   // Costo y Markup con fallbacks consistentes con la regla de negocio
-  const costoBase = producto.costoBase && producto.costoBase > 0
+  const costoBase = producto?.costoBase && producto.costoBase > 0
     ? producto.costoBase
-    : Math.round((producto.precioVenta / 1.5) * 100) / 100;
+    : producto ? Math.round((producto.precioVenta / 1.5) * 100) / 100 : 0;
 
-  const markupCalculado = producto.markupAplicado && producto.markupAplicado > 0
+  const markupCalculado = producto?.markupAplicado && producto.markupAplicado > 0
     ? producto.markupAplicado
-    : costoBase > 0
+    : costoBase > 0 && producto
     ? Math.round((producto.precioVenta / costoBase) * 100) / 100
     : 1.5;
 
-  const margenPorcentaje = costoBase > 0
+  const margenPorcentaje = costoBase > 0 && producto
     ? Math.round(((producto.precioVenta - costoBase) / producto.precioVenta) * 100)
     : 33;
 
   const imagenActivaUrl =
     galeriaImagenes[activeImageIndex] ||
-    normalizarUrlImagenAltaRes(producto.imagenUrl) ||
+    (producto ? normalizarUrlImagenAltaRes(producto.imagenUrl) : '') ||
     '';
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop con Blur */}
-      <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-150"
-        onClick={onClose}
-      />
+    <AnimatePresence>
+      {isOpen && producto && (
+        <div className="fixed inset-0 z-50 flex justify-end overflow-hidden">
+          {/* Backdrop con Blur */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+          />
 
-      {/* Slide-Over Drawer Lateral */}
-      <div className="relative w-full max-w-xl bg-surface border-l border-subtle shadow-floating flex flex-col h-full z-10">
+          {/* Slide-Over Drawer Lateral */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+            className="relative w-full max-w-xl bg-surface border-l border-subtle shadow-floating flex flex-col h-full z-10"
+          >
         {/* 1. Header Limpio del Drawer */}
         <div className="px-5 py-4 border-b border-subtle bg-elevated/60 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -438,14 +450,17 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* Modal de Impresión de Etiquetas de Código de Barras EAN-13 */}
-      <ModalImprimirEtiquetas
-        isOpen={isModalEtiquetasOpen}
-        onClose={() => setIsModalEtiquetasOpen(false)}
-        producto={producto}
-      />
-    </div>
+          </motion.div>
+
+          {/* Modal de Impresión de Etiquetas de Código de Barras EAN-13 */}
+          <ModalImprimirEtiquetas
+            isOpen={isModalEtiquetasOpen}
+            onClose={() => setIsModalEtiquetasOpen(false)}
+            producto={producto}
+          />
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

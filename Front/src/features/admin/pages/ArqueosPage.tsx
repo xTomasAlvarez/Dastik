@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { motion } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Receipt,
@@ -11,6 +12,29 @@ import {
 import { arqueosApi } from '../api/arqueosApi';
 import { Button } from '../../../components/ui/Button';
 import { ArqueoAccordionItem } from '../components/ArqueoAccordionItem';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 28,
+    },
+  },
+};
 
 export const ArqueosPage: React.FC = () => {
   const [busqueda, setBusqueda] = useState('');
@@ -133,8 +157,8 @@ export const ArqueosPage: React.FC = () => {
       </div>
 
       {/* Tarjetas KPI de Auditoría */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
           <div className="flex items-center justify-between text-secondary mb-3">
             <span className="text-xs font-semibold">Turnos Auditados</span>
             <Receipt size={18} weight="duotone" className="text-amber-500" />
@@ -145,9 +169,9 @@ export const ArqueosPage: React.FC = () => {
           <p className="text-xs text-muted mt-1 font-sans">
             Historial completo de turnos cerrados
           </p>
-        </div>
+        </motion.div>
 
-        <div className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
           <div className="flex items-center justify-between text-secondary mb-3">
             <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               Cajas Cuadradas
@@ -162,9 +186,9 @@ export const ArqueosPage: React.FC = () => {
               ? `${Math.round((metrics.cuadradas / metrics.total) * 100)}% de efectividad`
               : 'Sin registros'}
           </p>
-        </div>
+        </motion.div>
 
-        <div className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
           <div className="flex items-center justify-between text-secondary mb-3">
             <span className="text-xs font-semibold text-red-500">Desvíos / Faltantes</span>
             <Warning size={18} weight="duotone" className="text-red-500" />
@@ -175,9 +199,9 @@ export const ArqueosPage: React.FC = () => {
           <p className="text-xs text-muted mt-1 font-mono tabular-nums">
             Acumulado: −{formatearDinero(metrics.totalDiferenciaFaltante)}
           </p>
-        </div>
+        </motion.div>
 
-        <div className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
           <div className="flex items-center justify-between text-secondary mb-3">
             <span className="text-xs font-semibold text-amber-500">Gastos de Turno</span>
             <TrendDown size={18} weight="duotone" className="text-amber-500" />
@@ -188,8 +212,8 @@ export const ArqueosPage: React.FC = () => {
           <p className="text-xs text-muted mt-1 font-sans">
             Retiros de efectivo (Uber, almuerzos, insumos)
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Barra de Filtros y Búsqueda */}
       <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-surface">
@@ -210,45 +234,69 @@ export const ArqueosPage: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Segmented Control Estado */}
-          <div className="flex items-center gap-1 rounded-lg border border-subtle bg-elevated p-1">
-            {(['TODOS', 'CUADRADA', 'FALTANTE', 'SOBRANTE'] as const).map((estado) => (
-              <button
-                key={estado}
-                type="button"
-                onClick={() => setFiltroEstado(estado)}
-                className={`px-2.5 py-1 text-xs font-sans font-semibold rounded-md transition-fast cursor-pointer ${
-                  filtroEstado === estado
-                    ? 'bg-surface text-primary shadow-sm'
-                    : 'text-secondary hover:text-primary'
-                }`}
-              >
-                {estado === 'TODOS'
-                  ? 'Todos'
-                  : estado === 'CUADRADA'
-                  ? 'Cuadrada'
-                  : estado === 'FALTANTE'
-                  ? 'Faltante'
-                  : 'Sobrante'}
-              </button>
-            ))}
+          <div className="flex items-center gap-1 rounded-lg border border-subtle bg-elevated p-1 relative">
+            {(['TODOS', 'CUADRADA', 'FALTANTE', 'SOBRANTE'] as const).map((estado) => {
+              const activo = filtroEstado === estado;
+              return (
+                <button
+                  key={estado}
+                  type="button"
+                  onClick={() => setFiltroEstado(estado)}
+                  className={`relative px-2.5 py-1 text-xs font-sans font-semibold rounded-md transition-colors cursor-pointer ${
+                    activo
+                      ? 'text-primary'
+                      : 'text-secondary hover:text-primary'
+                  }`}
+                >
+                  {activo && (
+                    <motion.div
+                      layoutId="arqueos-filtro-estado-pill"
+                      className="absolute inset-0 bg-surface rounded-md shadow-xs border border-subtle"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">
+                    {estado === 'TODOS'
+                      ? 'Todos'
+                      : estado === 'CUADRADA'
+                      ? 'Cuadrada'
+                      : estado === 'FALTANTE'
+                      ? 'Faltante'
+                      : 'Sobrante'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Segmented Control Horario */}
-          <div className="flex items-center gap-1 rounded-lg border border-subtle bg-elevated p-1">
-            {(['TODOS', 'Turno Mañana', 'Turno Tarde'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setFiltroTurno(t)}
-                className={`px-2.5 py-1 text-xs font-sans font-semibold rounded-md transition-fast cursor-pointer ${
-                  filtroTurno === t
-                    ? 'bg-surface text-primary shadow-sm'
-                    : 'text-secondary hover:text-primary'
-                }`}
-              >
-                {t === 'TODOS' ? 'Todos' : t === 'Turno Mañana' ? 'Mañana' : 'Tarde'}
-              </button>
-            ))}
+          <div className="flex items-center gap-1 rounded-lg border border-subtle bg-elevated p-1 relative">
+            {(['TODOS', 'Turno Mañana', 'Turno Tarde'] as const).map((t) => {
+              const activo = filtroTurno === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setFiltroTurno(t)}
+                  className={`relative px-2.5 py-1 text-xs font-sans font-semibold rounded-md transition-colors cursor-pointer ${
+                    activo
+                      ? 'text-primary'
+                      : 'text-secondary hover:text-primary'
+                  }`}
+                >
+                  {activo && (
+                    <motion.div
+                      layoutId="arqueos-filtro-turno-pill"
+                      className="absolute inset-0 bg-surface rounded-md shadow-xs border border-subtle"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">
+                    {t === 'TODOS' ? 'Todos' : t === 'Turno Mañana' ? 'Mañana' : 'Tarde'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

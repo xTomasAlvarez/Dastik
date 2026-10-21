@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import {
   X,
@@ -265,18 +266,29 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
     }
   };
 
-  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-150"
-        onClick={() => !isSubmitting && onClose()}
-      />
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+            onClick={() => !isSubmitting && onClose()}
+          />
 
-      {/* Modal Dialog Box con tokens semánticos */}
-      <div className="relative w-full max-w-3xl bg-surface border border-subtle rounded-xl shadow-floating text-primary flex flex-col max-h-[92vh] z-10 overflow-hidden">
+          {/* Modal Dialog Box con tokens semánticos */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30, mass: 0.8 }}
+            className="relative w-full max-w-3xl bg-surface border border-subtle rounded-xl shadow-floating text-primary flex flex-col max-h-[92vh] z-10 overflow-hidden"
+          >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-subtle bg-elevated/60 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -301,71 +313,99 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
         </div>
 
         {/* Stepper Tabs */}
-        <div className="grid grid-cols-4 border-b border-subtle bg-surface text-[11px] font-mono uppercase tracking-wider">
+        <div className="grid grid-cols-4 border-b border-subtle bg-surface text-[11px] font-mono uppercase tracking-wider relative">
           <button
             type="button"
             onClick={() => setPasoActual(1)}
-            className={`py-2.5 px-2 border-r border-subtle flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+            className={`relative py-2.5 px-2 border-r border-subtle flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
               pasoActual === 1
-                ? 'bg-elevated text-primary font-bold border-b-2 border-b-amber-500'
+                ? 'text-primary font-bold'
                 : varianteDevuelta
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-emerald-600 dark:text-emerald-400 hover:text-primary'
                 : 'text-muted hover:text-primary'
             }`}
           >
-            <span>1. DEVUELVE</span>
-            {varianteDevuelta && <CheckCircle size={12} weight="bold" className="text-emerald-600 dark:text-emerald-400" />}
+            {pasoActual === 1 && (
+              <motion.div
+                layoutId="modal-cambio-active-step"
+                className="absolute inset-0 bg-elevated border-b-2 border-b-amber-500"
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative z-10">1. DEVUELVE</span>
+            {varianteDevuelta && <CheckCircle size={12} weight="bold" className="relative z-10 text-emerald-600 dark:text-emerald-400" />}
           </button>
 
           <button
             type="button"
             onClick={() => varianteDevuelta && setPasoActual(2)}
             disabled={!varianteDevuelta}
-            className={`py-2.5 px-2 border-r border-subtle flex items-center justify-center gap-1.5 transition-colors ${
+            className={`relative py-2.5 px-2 border-r border-subtle flex items-center justify-center gap-1.5 transition-colors ${
               !varianteDevuelta
                 ? 'opacity-40 cursor-not-allowed text-muted'
                 : pasoActual === 2
-                ? 'bg-elevated text-primary font-bold border-b-2 border-b-amber-500 cursor-pointer'
+                ? 'text-primary font-bold cursor-pointer'
                 : varianteNueva
                 ? 'text-emerald-600 dark:text-emerald-400 cursor-pointer'
                 : 'text-muted hover:text-primary cursor-pointer'
             }`}
           >
-            <span>2. LLEVA</span>
-            {varianteNueva && <CheckCircle size={12} weight="bold" className="text-emerald-600 dark:text-emerald-400" />}
+            {pasoActual === 2 && (
+              <motion.div
+                layoutId="modal-cambio-active-step"
+                className="absolute inset-0 bg-elevated border-b-2 border-b-amber-500"
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative z-10">2. LLEVA</span>
+            {varianteNueva && <CheckCircle size={12} weight="bold" className="relative z-10 text-emerald-600 dark:text-emerald-400" />}
           </button>
 
           <button
             type="button"
             onClick={() => varianteDevuelta && varianteNueva && setPasoActual(3)}
             disabled={!varianteDevuelta || !varianteNueva}
-            className={`py-2.5 px-2 border-r border-subtle flex items-center justify-center gap-1.5 transition-colors ${
+            className={`relative py-2.5 px-2 border-r border-subtle flex items-center justify-center gap-1.5 transition-colors ${
               !varianteDevuelta || !varianteNueva
                 ? 'opacity-40 cursor-not-allowed text-muted'
                 : pasoActual === 3
-                ? 'bg-elevated text-primary font-bold border-b-2 border-b-amber-500 cursor-pointer'
+                ? 'text-primary font-bold cursor-pointer'
                 : motivoCambio.trim()
                 ? 'text-emerald-600 dark:text-emerald-400 cursor-pointer'
                 : 'text-muted hover:text-primary cursor-pointer'
             }`}
           >
-            <span>3. MOTIVO</span>
-            {motivoCambio.trim() && <CheckCircle size={12} weight="bold" className="text-emerald-600 dark:text-emerald-400" />}
+            {pasoActual === 3 && (
+              <motion.div
+                layoutId="modal-cambio-active-step"
+                className="absolute inset-0 bg-elevated border-b-2 border-b-amber-500"
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative z-10">3. MOTIVO</span>
+            {motivoCambio.trim() && <CheckCircle size={12} weight="bold" className="relative z-10 text-emerald-600 dark:text-emerald-400" />}
           </button>
 
           <button
             type="button"
             onClick={() => varianteDevuelta && varianteNueva && motivoCambio.trim() && setPasoActual(4)}
             disabled={!varianteDevuelta || !varianteNueva || !motivoCambio.trim()}
-            className={`py-2.5 px-2 flex items-center justify-center gap-1.5 transition-colors ${
+            className={`relative py-2.5 px-2 flex items-center justify-center gap-1.5 transition-colors ${
               !varianteDevuelta || !varianteNueva || !motivoCambio.trim()
                 ? 'opacity-40 cursor-not-allowed text-muted'
                 : pasoActual === 4
-                ? 'bg-elevated text-primary font-bold border-b-2 border-b-amber-500 cursor-pointer'
+                ? 'text-primary font-bold cursor-pointer'
                 : 'text-muted hover:text-primary cursor-pointer'
             }`}
           >
-            <span>4. LIQUIDACIÓN</span>
+            {pasoActual === 4 && (
+              <motion.div
+                layoutId="modal-cambio-active-step"
+                className="absolute inset-0 bg-elevated border-b-2 border-b-amber-500"
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative z-10">4. LIQUIDACIÓN</span>
           </button>
         </div>
 
@@ -1099,7 +1139,9 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
             )}
           </div>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

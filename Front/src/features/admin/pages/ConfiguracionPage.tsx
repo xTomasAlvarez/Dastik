@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Gear,
@@ -22,6 +23,29 @@ import {
   type CategoriaDto,
 } from '../api/configuracionApi';
 import { Button } from '../../../components/ui/Button';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 28,
+    },
+  },
+};
 
 export const ConfiguracionPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -368,9 +392,9 @@ export const ConfiguracionPage: React.FC = () => {
       </div>
 
       {/* Grid Principal: Proveedores (Izquierda) + Marcas & Categorías (Derecha) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* SECCIÓN 1: PROVEEDORES (7 columnas) */}
-        <section className="lg:col-span-7 rounded-xl border border-subtle bg-surface flex flex-col overflow-hidden shadow-surface">
+        <motion.section variants={itemVariants} className="lg:col-span-7 rounded-xl border border-subtle bg-surface flex flex-col overflow-hidden shadow-surface">
           <div className="p-5 border-b border-subtle bg-elevated/40 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <Truck size={18} weight="duotone" className="text-amber-500" />
@@ -594,10 +618,10 @@ export const ConfiguracionPage: React.FC = () => {
               </div>
             )}
           </div>
-        </section>
+        </motion.section>
 
         {/* SECCIÓN 2: MARCAS & CATEGORÍAS (5 columnas) */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <motion.div variants={itemVariants} className="lg:col-span-5 flex flex-col gap-6">
           {/* Bloque Marcas */}
           <section className="rounded-xl border border-subtle bg-surface flex flex-col overflow-hidden shadow-surface">
             <div className="p-4 border-b border-subtle bg-elevated/40 flex items-center justify-between">
@@ -892,8 +916,8 @@ export const ConfiguracionPage: React.FC = () => {
               )}
             </div>
           </section>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
