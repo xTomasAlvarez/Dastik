@@ -69,19 +69,24 @@ export const DashboardPage: React.FC = () => {
 
   const isRefreshing = isRefetchingDashboard || isRefetchingAlertas;
 
-  const ingresosHoy = dashboardData?.ingresosHoy ?? 0;
-  const gananciaNetaHoy = dashboardData?.gananciaNetaHoy ?? 0;
-  const cantidadVentasHoy = dashboardData?.cantidadVentasHoy ?? 0;
-  const margenPorcentaje = dashboardData?.margenPorcentajeHoy ?? 0;
-  const ventas7Dias = dashboardData?.ventasUltimos7Dias ?? [];
+  const ingresosHoy = Number(dashboardData?.ingresosHoy) || 0;
+  const gananciaNetaHoy = Number(dashboardData?.gananciaNetaHoy) || 0;
+  const cantidadVentasHoy = Number(dashboardData?.cantidadVentasHoy) || 0;
+  const margenPorcentaje = Number(dashboardData?.margenPorcentajeHoy) || 0;
+  const rawVentas7Dias = dashboardData?.ventasUltimos7Dias;
+  const ventas7Dias = Array.isArray(rawVentas7Dias) ? rawVentas7Dias : [];
 
   const ticketPromedio =
     cantidadVentasHoy > 0 ? Math.round(ingresosHoy / cantidadVentasHoy) : 0;
 
   const maxVenta7Dias =
-    ventas7Dias.length > 0 ? Math.max(...ventas7Dias.map((v) => v.total), 1) : 1;
+    ventas7Dias.length > 0
+      ? Math.max(...ventas7Dias.map((v) => Number(v?.total ?? 0)), 1)
+      : 1;
 
-  const totalSemanal = ventas7Dias.reduce((acc, v) => acc + v.total, 0);
+  const totalSemanal = ventas7Dias.reduce((acc, v) => acc + (Number(v?.total) || 0), 0);
+
+  const listaAlertas = Array.isArray(alertasStock) ? alertasStock : [];
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
@@ -252,20 +257,24 @@ export const DashboardPage: React.FC = () => {
             ) : (
               <div className="grid grid-cols-7 gap-2 sm:gap-4 items-end h-56 pt-8">
                 {ventas7Dias.map((v, idx) => {
+                  const valorTotal = Number(v?.total ?? 0);
                   const alturaPorcentaje =
                     maxVenta7Dias > 0
-                      ? Math.max(Math.round((v.total / maxVenta7Dias) * 100), 6)
+                      ? Math.max(Math.round((valorTotal / maxVenta7Dias) * 100), 6)
                       : 6;
                   const esHoy = idx === ventas7Dias.length - 1;
+                  const fechaStr = String(v?.fecha ?? '');
+                  const diaSemanaStr = String(v?.diaSemana ?? '-');
+                  const fechaEtiqueta = fechaStr.length >= 5 ? fechaStr.slice(5) : fechaStr;
 
                   return (
                     <div
-                      key={v.fecha}
+                      key={v?.fecha || `dia-${idx}`}
                       className="flex flex-col items-center h-full justify-end group"
                     >
                       {/* Tooltip con valor al hacer hover */}
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-mono tabular-nums font-semibold text-primary bg-elevated border border-subtle px-2 py-0.5 rounded-md mb-1.5 pointer-events-none whitespace-nowrap shadow-sm">
-                        $ {v.total.toLocaleString('es-AR')}
+                        $ {valorTotal.toLocaleString('es-AR')}
                       </div>
 
                       {/* Barra con bordes redondeados */}
@@ -287,10 +296,10 @@ export const DashboardPage: React.FC = () => {
                             esHoy ? 'text-amber-500 font-bold' : 'text-primary'
                           }`}
                         >
-                          {v.diaSemana}
+                          {diaSemanaStr}
                         </span>
                         <span className="text-[11px] font-mono tabular-nums text-muted block">
-                          {v.fecha.slice(5)}
+                          {fechaEtiqueta}
                         </span>
                       </div>
                     </div>
@@ -321,12 +330,12 @@ export const DashboardPage: React.FC = () => {
               </div>
               <span
                 className={`text-[11px] font-mono tabular-nums font-semibold px-2 py-0.5 rounded-md border ${
-                  alertasStock.length > 0
+                  listaAlertas.length > 0
                     ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                     : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                 }`}
               >
-                {alertasStock.length} críticos
+                {listaAlertas.length} críticos
               </span>
             </div>
 
@@ -340,7 +349,7 @@ export const DashboardPage: React.FC = () => {
                 <div className="py-8 text-center text-xs text-muted">
                   Consultando niveles de stock...
                 </div>
-              ) : alertasStock.length === 0 ? (
+              ) : listaAlertas.length === 0 ? (
                 <div className="py-12 text-center flex flex-col items-center justify-center gap-2">
                   <CheckCircle size={32} weight="duotone" className="text-emerald-500" />
                   <span className="text-xs font-medium text-secondary">
@@ -348,21 +357,27 @@ export const DashboardPage: React.FC = () => {
                   </span>
                 </div>
               ) : (
-                alertasStock.map((alerta) => {
-                  const sinStock = alerta.stockFisico === 0;
+                listaAlertas.map((alerta, idx) => {
+                  const stockFisico = Number(alerta?.stockFisico ?? 0);
+                  const sinStock = stockFisico <= 0;
+                  const key = alerta?.varianteId ? String(alerta.varianteId) : `alerta-${idx}`;
+                  const nombre = alerta?.nombreProducto || 'Producto';
+                  const talle = alerta?.talle || '-';
+                  const color = alerta?.color || '-';
+                  const imagenUrl = alerta?.imagenUrl || '';
 
                   return (
                     <div
-                      key={alerta.varianteId}
+                      key={key}
                       className="rounded-lg border border-subtle bg-elevated/50 hover:bg-elevated p-2.5 flex items-center justify-between gap-3 transition-fast"
                     >
                       {/* Miniatura y Detalle del Producto */}
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-9 h-9 rounded-lg border border-subtle bg-surface shrink-0 overflow-hidden flex items-center justify-center relative">
-                          {alerta.imagenUrl ? (
+                          {imagenUrl ? (
                             <img
-                              src={alerta.imagenUrl}
-                              alt={alerta.nombreProducto}
+                              src={imagenUrl}
+                              alt={nombre}
                               className="w-full h-full object-cover"
                               loading="lazy"
                               onError={(e) => {
@@ -375,7 +390,7 @@ export const DashboardPage: React.FC = () => {
                           ) : null}
                           <div
                             className={`w-full h-full flex items-center justify-center text-muted bg-elevated ${
-                              alerta.imagenUrl ? 'hidden alt-fb' : ''
+                              imagenUrl ? 'hidden alt-fb' : ''
                             }`}
                           >
                             <ImageIcon size={15} weight="regular" />
@@ -384,14 +399,14 @@ export const DashboardPage: React.FC = () => {
 
                         <div className="truncate">
                           <span className="text-xs font-semibold text-primary block truncate">
-                            {alerta.nombreProducto}
+                            {nombre}
                           </span>
                           <div className="flex items-center gap-1.5 mt-0.5 text-[11px]">
                             <span className="font-mono tabular-nums text-amber-600 dark:text-amber-400 font-semibold">
-                              Talle {alerta.talle}
+                              Talle {talle}
                             </span>
                             <span className="text-muted">·</span>
-                            <span className="text-secondary truncate">{alerta.color}</span>
+                            <span className="text-secondary truncate">{color}</span>
                           </div>
                         </div>
                       </div>
@@ -405,7 +420,7 @@ export const DashboardPage: React.FC = () => {
                               : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                           }`}
                         >
-                          {sinStock ? 'Agotado' : `${alerta.stockFisico} u.`}
+                          {sinStock ? 'Agotado' : `${stockFisico} u.`}
                         </span>
                       </div>
                     </div>

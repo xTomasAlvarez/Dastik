@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -13,6 +13,8 @@ import {
   Image,
   CaretLeft,
   CaretRight,
+  CaretUp,
+  SquaresFour,
   X,
   SortAscending,
   PencilSimple,
@@ -74,6 +76,26 @@ export const InventarioPage: React.FC = () => {
   const [productoAEditar, setProductoAEditar] = useState<ProductoCatalogoDto | null>(null);
   const [isModalDetalleOpen, setIsModalDetalleOpen] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoCatalogoDto | null>(null);
+  const [expandirCategorias, setExpandirCategorias] = useState(false);
+  const categoriesRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategorias = (direccion: 'izq' | 'der') => {
+    if (categoriesRef.current) {
+      const delta = direccion === 'izq' ? -260 : 260;
+      categoriesRef.current.scrollBy({ left: delta, behavior: 'smooth' });
+    }
+  };
+
+  const handleCategoriesWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (categoriesRef.current && !expandirCategorias) {
+      if (categoriesRef.current.scrollWidth > categoriesRef.current.clientWidth) {
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+          categoriesRef.current.scrollLeft += e.deltaY;
+        }
+      }
+    }
+  };
+
   const [mensajeNotificacion, setMensajeNotificacion] = useState<{
     tipo: 'exito' | 'error';
     texto: string;
@@ -455,48 +477,150 @@ export const InventarioPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Barra Horizontal de Categorías Estilo Tiendanube */}
+        {/* Barra de Categorías con Navegación y Scroll Horizontal */}
         {categoriasConConteo.length > 0 && (
-          <div className="pt-2.5 border-t border-subtle flex items-center gap-1.5 overflow-x-auto pb-0.5">
-            <button
-              type="button"
-              onClick={() => setCategoriaFiltro('TODAS')}
-              className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                categoriaFiltro === 'TODAS'
-                  ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
-                  : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
-              }`}
-            >
-              <span>Todas</span>
-              <span className="font-mono text-[10px] opacity-80">
-                ({productosPorUnidad.length})
-              </span>
-            </button>
-
-            {categoriasConConteo.map((cat) => {
-              const activa = categoriaFiltro === cat.nombre;
-              return (
-                <button
-                  key={cat.nombre}
-                  type="button"
-                  onClick={() =>
-                    setCategoriaFiltro((prev) =>
-                      prev === cat.nombre ? 'TODAS' : cat.nombre
-                    )
-                  }
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                    activa
-                      ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
-                      : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
-                  }`}
-                >
-                  <span>{cat.nombre}</span>
-                  <span className="font-mono text-[10px] opacity-80">
-                    ({cat.cantidad})
+          <div className="pt-2.5 border-t border-subtle flex flex-col gap-1.5">
+            {expandirCategorias ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-muted uppercase tracking-wider">
+                    Todas las Categorías ({categoriasConConteo.length + 1})
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setExpandirCategorias(false)}
+                    className="h-7 px-2.5 rounded-lg border border-subtle bg-elevated hover:bg-surface text-secondary hover:text-primary flex items-center gap-1 text-xs font-sans font-medium transition-fast cursor-pointer active:scale-95 shadow-2xs"
+                    title="Colapsar a fila desplazable"
+                  >
+                    <CaretUp size={13} weight="bold" />
+                    <span>Colapsar carrusel</span>
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 max-h-[190px] overflow-y-auto pr-1">
+                  <button
+                    type="button"
+                    onClick={() => setCategoriaFiltro('TODAS')}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      categoriaFiltro === 'TODAS'
+                        ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                        : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
+                    }`}
+                  >
+                    <span>Todas</span>
+                    <span className="font-mono text-[10px] opacity-80">
+                      ({productosPorUnidad.length})
+                    </span>
+                  </button>
+
+                  {categoriasConConteo.map((cat) => {
+                    const activa = categoriaFiltro === cat.nombre;
+                    return (
+                      <button
+                        key={cat.nombre}
+                        type="button"
+                        onClick={() =>
+                          setCategoriaFiltro((prev) =>
+                            prev === cat.nombre ? 'TODAS' : cat.nombre
+                          )
+                        }
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                          activa
+                            ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                            : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
+                        }`}
+                      >
+                        <span>{cat.nombre}</span>
+                        <span className="font-mono text-[10px] opacity-80">
+                          ({cat.cantidad})
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                {/* Botón Scroll Izquierda */}
+                <button
+                  type="button"
+                  onClick={() => scrollCategorias('izq')}
+                  className="h-8 w-8 rounded-lg border border-subtle bg-elevated hover:bg-surface hover:border-strong text-secondary hover:text-primary flex items-center justify-center shrink-0 transition-fast cursor-pointer active:scale-95 shadow-2xs"
+                  title="Desplazar categorías hacia la izquierda"
+                  aria-label="Desplazar izquierda"
+                >
+                  <CaretLeft size={14} weight="bold" />
                 </button>
-              );
-            })}
+
+                {/* Contenedor Carrusel Horizontal con onWheel y scrollbar estilizada */}
+                <div
+                  ref={categoriesRef}
+                  onWheel={handleCategoriesWheel}
+                  className="flex-1 flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 custom-scrollbar-h select-none"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setCategoriaFiltro('TODAS')}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      categoriaFiltro === 'TODAS'
+                        ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                        : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
+                    }`}
+                  >
+                    <span>Todas</span>
+                    <span className="font-mono text-[10px] opacity-80">
+                      ({productosPorUnidad.length})
+                    </span>
+                  </button>
+
+                  {categoriasConConteo.map((cat) => {
+                    const activa = categoriaFiltro === cat.nombre;
+                    return (
+                      <button
+                        key={cat.nombre}
+                        type="button"
+                        onClick={() =>
+                          setCategoriaFiltro((prev) =>
+                            prev === cat.nombre ? 'TODAS' : cat.nombre
+                          )
+                        }
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold whitespace-nowrap transition-fast cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                          activa
+                            ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                            : 'border-subtle bg-elevated/70 hover:bg-elevated text-secondary hover:text-primary'
+                        }`}
+                      >
+                        <span>{cat.nombre}</span>
+                        <span className="font-mono text-[10px] opacity-80">
+                          ({cat.cantidad})
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Botón Scroll Derecha */}
+                <button
+                  type="button"
+                  onClick={() => scrollCategorias('der')}
+                  className="h-8 w-8 rounded-lg border border-subtle bg-elevated hover:bg-surface hover:border-strong text-secondary hover:text-primary flex items-center justify-center shrink-0 transition-fast cursor-pointer active:scale-95 shadow-2xs"
+                  title="Desplazar categorías hacia la derecha"
+                  aria-label="Desplazar derecha"
+                >
+                  <CaretRight size={14} weight="bold" />
+                </button>
+
+                {/* Botón Ver Todas / Expandir */}
+                <button
+                  type="button"
+                  onClick={() => setExpandirCategorias(true)}
+                  className="h-8 px-2.5 rounded-lg border border-subtle bg-elevated hover:bg-surface hover:border-strong text-secondary hover:text-primary flex items-center gap-1 shrink-0 text-xs font-sans font-medium transition-fast cursor-pointer active:scale-95 shadow-2xs"
+                  title="Ver todas las categorías en cuadrícula"
+                >
+                  <SquaresFour size={14} weight="bold" />
+                  <span className="hidden sm:inline">Ver todas</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
