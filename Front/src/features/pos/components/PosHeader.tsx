@@ -519,12 +519,9 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
                     transition={{ duration: 0.18 }}
                     className="space-y-1.5 pt-1"
                   >
-                    <div className="flex items-center justify-between px-1">
+                    <div className="px-1">
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted">
                         Módulos de Gestión (Admin)
-                      </span>
-                      <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                        1-CLIC
                       </span>
                     </div>
 
