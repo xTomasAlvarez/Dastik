@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -14,6 +15,29 @@ import {
 } from '@phosphor-icons/react';
 import { metricasApi } from '../api/metricasApi';
 import { Button } from '../../../components/ui/Button';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.07,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 28,
+    },
+  },
+};
 
 export const DashboardPage: React.FC = () => {
   const {
@@ -100,9 +124,9 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Fila 1: Tarjetas de Resumen Financiero y Operativo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Tarjeta 1: Ingresos Hoy */}
-        <div className="rounded-xl border border-subtle bg-surface p-5 flex flex-col justify-between shadow-surface hover:border-strong transition-fast">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 flex flex-col justify-between shadow-surface hover:border-strong transition-fast">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-secondary flex items-center gap-1.5">
               <CurrencyDollar size={17} weight="duotone" className="text-emerald-500" />
@@ -128,10 +152,10 @@ export const DashboardPage: React.FC = () => {
               $ {ticketPromedio.toLocaleString('es-AR')}
             </span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Tarjeta 2: Ganancia Neta Hoy */}
-        <div className="rounded-xl border border-subtle bg-surface p-5 flex flex-col justify-between shadow-surface hover:border-strong transition-fast">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 flex flex-col justify-between shadow-surface hover:border-strong transition-fast">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-secondary flex items-center gap-1.5">
               <TrendUp size={17} weight="duotone" className="text-amber-500" />
@@ -157,10 +181,10 @@ export const DashboardPage: React.FC = () => {
               {margenPorcentaje > 0 ? `+${margenPorcentaje}% sobre venta` : '0%'}
             </span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Tarjeta 3: Ventas Realizadas */}
-        <div className="rounded-xl border border-subtle bg-surface p-5 flex flex-col justify-between shadow-surface hover:border-strong transition-fast">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 flex flex-col justify-between shadow-surface hover:border-strong transition-fast">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-secondary flex items-center gap-1.5">
               <Receipt size={17} weight="duotone" className="text-sky-500" />
@@ -188,8 +212,8 @@ export const DashboardPage: React.FC = () => {
               {cantidadVentasHoy > 0 ? 'Activo en curso' : 'Sin ventas hoy'}
             </span>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Fila 2: Panel Dividido (70% Gráfico Volumen | 30% Alertas de Stock) */}
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useId, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import {
   X,
@@ -538,16 +539,32 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     }
   };
 
-  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 overflow-y-auto">
-      <div
-        className="w-full max-w-5xl bg-surface border border-subtle rounded-xl shadow-floating max-h-[94vh] flex flex-col text-left relative my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={modalHeadingId}
-      >
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={!isLoading ? onClose : undefined}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+          />
+
+          {/* Dialog Container */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 10 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30, mass: 0.8 }}
+            className="w-full max-w-5xl bg-surface border border-subtle rounded-xl shadow-floating max-h-[94vh] flex flex-col text-left relative my-auto overflow-hidden z-10"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={modalHeadingId}
+          >
         {/* Header Modal */}
         <div className="flex items-center justify-between border-b border-subtle px-6 py-4 bg-elevated/70 shrink-0">
           <div className="flex items-center gap-3">
@@ -1394,7 +1411,9 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
             </div>
           </div>
         </form>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

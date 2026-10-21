@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { UserPlus, Calculator, X, Key, LockKey, WarningCircle } from '@phosphor-icons/react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
@@ -21,11 +22,25 @@ export const ModalCrearEmpleado: React.FC<ModalCrearEmpleadoProps> = ({
   onSubmit,
   isPending,
 }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="rounded-xl border border-subtle bg-surface w-full max-w-lg p-6 space-y-5 shadow-floating">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30, mass: 0.8 }}
+            className="rounded-xl border border-subtle bg-surface w-full max-w-lg p-6 space-y-5 shadow-floating relative my-auto z-10"
+          >
         <div className="flex items-center justify-between pb-3 border-b border-subtle">
           <div className="flex items-center gap-2.5">
             <div className="rounded-lg border border-subtle bg-elevated p-2 text-amber-500">
@@ -135,8 +150,10 @@ export const ModalCrearEmpleado: React.FC<ModalCrearEmpleadoProps> = ({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -155,15 +172,29 @@ export const ModalLiquidarJornada: React.FC<ModalLiquidarJornadaProps> = ({
   onChangeHorasTrabajadas,
   formatearDinero,
 }) => {
-  if (!empleado) return null;
-
   const horasNum = parseFloat(horasTrabajadas) || 0;
-  const tarifaActual = empleado.tarifaPorHora ?? 0;
+  const tarifaActual = empleado?.tarifaPorHora ?? 0;
   const totalCalculado = Math.round(horasNum * tarifaActual * 100) / 100;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="rounded-xl border border-subtle bg-surface w-full max-w-lg p-6 space-y-5 shadow-floating">
+    <AnimatePresence>
+      {Boolean(empleado) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30, mass: 0.8 }}
+            className="rounded-xl border border-subtle bg-surface w-full max-w-lg p-6 space-y-5 shadow-floating relative my-auto z-10"
+          >
         <div className="flex items-center justify-between pb-3 border-b border-subtle">
           <div className="flex items-center gap-2.5">
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-emerald-500">
@@ -190,10 +221,10 @@ export const ModalLiquidarJornada: React.FC<ModalLiquidarJornadaProps> = ({
         <div className="rounded-xl border border-subtle bg-elevated/50 p-4 flex items-center justify-between">
           <div>
             <span className="font-heading font-bold text-base text-primary block">
-              {empleado.nombre}
+              {empleado?.nombre}
             </span>
             <span className="text-xs text-secondary font-sans">
-              Turno: {empleado.turnoAsignado} · {empleado.email}
+              Turno: {empleado?.turnoAsignado} · {empleado?.email}
             </span>
           </div>
           <div className="text-right">
@@ -201,7 +232,7 @@ export const ModalLiquidarJornada: React.FC<ModalLiquidarJornadaProps> = ({
               Tarifa Personalizada
             </span>
             <span className="font-mono tabular-nums font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-              {formatearDinero(empleado.tarifaPorHora)} / h
+              {formatearDinero(empleado?.tarifaPorHora ?? 0)} / h
             </span>
           </div>
         </div>
@@ -270,8 +301,10 @@ export const ModalLiquidarJornada: React.FC<ModalLiquidarJornadaProps> = ({
             Cerrar [ESC]
           </Button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -300,8 +333,6 @@ export const ModalResetPasswordEmpleado: React.FC<ModalResetPasswordEmpleadoProp
     setErrorLocal(null);
   }, [empleado]);
 
-  if (!empleado) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorLocal(null);
@@ -316,12 +347,29 @@ export const ModalResetPasswordEmpleado: React.FC<ModalResetPasswordEmpleadoProp
       return;
     }
 
+    if (!empleado) return;
     await onSubmit(empleado.id, password, debeCambiarPassword);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="rounded-xl border border-subtle bg-surface w-full max-w-md p-6 space-y-5 shadow-floating">
+    <AnimatePresence>
+      {Boolean(empleado) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={!isPending ? onClose : undefined}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30, mass: 0.8 }}
+            className="rounded-xl border border-subtle bg-surface w-full max-w-md p-6 space-y-5 shadow-floating relative my-auto z-10"
+          >
         <div className="flex items-center justify-between pb-3 border-b border-subtle">
           <div className="flex items-center gap-2.5">
             <div className="rounded-lg border border-subtle bg-elevated p-2 text-amber-500">
@@ -348,12 +396,12 @@ export const ModalResetPasswordEmpleado: React.FC<ModalResetPasswordEmpleadoProp
         <div className="rounded-lg border border-subtle bg-elevated/50 p-3.5 flex items-center justify-between">
           <div>
             <span className="font-heading font-bold text-sm text-primary block">
-              {empleado.nombre}
+              {empleado?.nombre}
             </span>
-            <span className="text-xs text-muted font-mono">{empleado.email}</span>
+            <span className="text-xs text-muted font-mono">{empleado?.email}</span>
           </div>
           <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded border border-subtle bg-surface text-secondary">
-            {empleado.turnoAsignado}
+            {empleado?.turnoAsignado}
           </span>
         </div>
 
@@ -408,7 +456,9 @@ export const ModalResetPasswordEmpleado: React.FC<ModalResetPasswordEmpleadoProp
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

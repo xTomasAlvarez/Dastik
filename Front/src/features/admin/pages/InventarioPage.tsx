@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   MagnifyingGlass,
@@ -33,6 +34,29 @@ type OrdenInventario =
   | 'MENOR_PRECIO'
   | 'MAYOR_PRECIO'
   | 'MAYOR_STOCK';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 28,
+    },
+  },
+};
 
 export const InventarioPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -291,8 +315,8 @@ export const InventarioPage: React.FC = () => {
       </div>
 
       {/* Tarjetas de Métricas Rápidas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
           <span className="text-xs font-medium text-secondary flex items-center gap-1.5">
             <Package size={16} weight="duotone" className="text-amber-500" />
             Total Artículos
@@ -303,9 +327,9 @@ export const InventarioPage: React.FC = () => {
             </span>
             <span className="text-[11px] font-medium text-muted">SKUs Padre</span>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
           <span className="text-xs font-medium text-secondary flex items-center gap-1.5">
             <Barcode size={16} weight="duotone" className="text-emerald-500" />
             Unidades en Stock
@@ -318,9 +342,9 @@ export const InventarioPage: React.FC = () => {
               Físico Real
             </span>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
           <span className="text-xs font-medium text-secondary flex items-center gap-1.5">
             <TrendUp size={16} weight="duotone" className="text-red-500" />
             Sin Stock Físico
@@ -331,9 +355,9 @@ export const InventarioPage: React.FC = () => {
             </span>
             <span className="text-[11px] font-medium text-red-500/80">Quiebre Stock</span>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
+        <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-4 flex flex-col justify-between shadow-surface">
           <span className="text-xs font-medium text-secondary flex items-center gap-1.5">
             <Funnel size={16} weight="duotone" className="text-amber-500" />
             Resultados Filtro
@@ -344,8 +368,8 @@ export const InventarioPage: React.FC = () => {
             </span>
             <span className="text-[11px] font-medium text-muted">Visibles</span>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Barra de Filtros, Ordenamiento y Pills de Categorías */}
       <div className="rounded-xl border border-subtle bg-surface p-4 flex flex-col gap-3 shadow-surface">
@@ -369,21 +393,33 @@ export const InventarioPage: React.FC = () => {
           {/* Filtros Selectores */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Segmented Control de Unidad */}
-            <div className="flex items-center rounded-lg border border-subtle bg-elevated p-1">
-              {(['TODAS', 'DASTIK', 'HIDDEN'] as const).map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  onClick={() => setUnidadFiltro(u)}
-                  className={`px-3 py-1 text-xs font-sans font-semibold rounded-md transition-fast cursor-pointer ${
-                    unidadFiltro === u
-                      ? 'bg-surface text-primary shadow-sm'
-                      : 'text-secondary hover:text-primary'
-                  }`}
-                >
-                  {u === 'TODAS' ? 'Todas' : u === 'DASTIK' ? 'Dastik' : 'Hidden'}
-                </button>
-              ))}
+            <div className="flex items-center rounded-lg border border-subtle bg-elevated p-1 relative">
+              {(['TODAS', 'DASTIK', 'HIDDEN'] as const).map((u) => {
+                const activo = unidadFiltro === u;
+                return (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => setUnidadFiltro(u)}
+                    className={`relative px-3 py-1 text-xs font-sans font-semibold rounded-md transition-colors cursor-pointer ${
+                      activo
+                        ? 'text-primary'
+                        : 'text-secondary hover:text-primary'
+                    }`}
+                  >
+                    {activo && (
+                      <motion.div
+                        layoutId="inventario-unidad-pill"
+                        className="absolute inset-0 bg-surface rounded-md shadow-xs border border-subtle"
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                    <span className="relative z-10">
+                      {u === 'TODAS' ? 'Todas' : u === 'DASTIK' ? 'Dastik' : 'Hidden'}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Selector de Ordenamiento */}

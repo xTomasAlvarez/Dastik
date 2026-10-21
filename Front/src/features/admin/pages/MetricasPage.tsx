@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import {
   TrendUp,
@@ -32,6 +33,29 @@ const UNIDADES_NEGOCIO = [
   { id: 1, label: 'DASTIK' },
   { id: 2, label: 'HIDDEN SNEAKERS' },
 ];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 400,
+      damping: 28,
+    },
+  },
+};
 
 export const MetricasPage: React.FC = () => {
   // Filtros
@@ -147,7 +171,7 @@ export const MetricasPage: React.FC = () => {
         {/* Filtros de Período y Unidad de Negocio */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Selector de Período */}
-          <div className="flex items-center border border-subtle bg-elevated rounded-lg p-1 gap-0.5">
+          <div className="flex items-center border border-subtle bg-elevated rounded-lg p-1 gap-0.5 relative">
             {PERIODOS.map((p) => {
               const activo = periodo === p.key;
               return (
@@ -155,21 +179,28 @@ export const MetricasPage: React.FC = () => {
                   key={p.key}
                   type="button"
                   onClick={() => setPeriodo(p.key)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase transition-all cursor-pointer ${
+                  className={`relative px-3 py-1.5 rounded-md text-xs font-mono uppercase transition-colors cursor-pointer ${
                     activo
-                      ? 'bg-amber-400 text-zinc-950 font-bold shadow-surface'
+                      ? 'text-zinc-950 font-bold'
                       : 'text-secondary hover:text-primary'
                   }`}
                   title={p.desc}
                 >
-                  {p.label}
+                  {activo && (
+                    <motion.div
+                      layoutId="metricas-periodo-pill"
+                      className="absolute inset-0 bg-amber-400 rounded-md shadow-surface"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">{p.label}</span>
                 </button>
               );
             })}
           </div>
 
           {/* Selector de Unidad de Negocio */}
-          <div className="flex items-center border border-subtle bg-elevated rounded-lg p-1 gap-0.5">
+          <div className="flex items-center border border-subtle bg-elevated rounded-lg p-1 gap-0.5 relative">
             {UNIDADES_NEGOCIO.map((u) => {
               const activo = unidadNegocioId === u.id;
               return (
@@ -177,13 +208,20 @@ export const MetricasPage: React.FC = () => {
                   key={u.id}
                   type="button"
                   onClick={() => setUnidadNegocioId(u.id)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase transition-all cursor-pointer ${
+                  className={`relative px-3 py-1.5 rounded-md text-xs font-mono uppercase transition-colors cursor-pointer ${
                     activo
-                      ? 'bg-surface text-primary font-bold shadow-surface border border-subtle'
+                      ? 'text-primary font-bold'
                       : 'text-secondary hover:text-primary'
                   }`}
                 >
-                  {u.label}
+                  {activo && (
+                    <motion.div
+                      layoutId="metricas-unidad-pill"
+                      className="absolute inset-0 bg-surface rounded-md shadow-surface border border-subtle"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">{u.label}</span>
                 </button>
               );
             })}
@@ -210,9 +248,9 @@ export const MetricasPage: React.FC = () => {
       {/* ======================================================== */}
       {/* 2. KPIs Financieros Principales                          */}
       {/* ======================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Ingresos Brutos */}
-        <div className="bg-surface border border-subtle rounded-xl shadow-surface p-5 flex flex-col justify-between">
+        <motion.div variants={itemVariants} className="bg-surface border border-subtle rounded-xl shadow-surface p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-muted mb-2">
             <span className="text-[11px] font-mono uppercase tracking-widest">
               FACTURACIÓN BRUTA
@@ -228,10 +266,10 @@ export const MetricasPage: React.FC = () => {
               <span className="tabular-nums">Ticket prom: $ {ticketPromedio.toLocaleString('es-AR')}</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* KPI 2: Costo de Mercadería Vendida (CMV) */}
-        <div className="bg-surface border border-subtle rounded-xl shadow-surface p-5 flex flex-col justify-between">
+        <motion.div variants={itemVariants} className="bg-surface border border-subtle rounded-xl shadow-surface p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-muted mb-2">
             <span className="text-[11px] font-mono uppercase tracking-widest">
               COSTO DE MERCADERÍA (CMV)
@@ -246,10 +284,10 @@ export const MetricasPage: React.FC = () => {
               Costo base real de prendas cobradas
             </span>
           </div>
-        </div>
+        </motion.div>
 
         {/* KPI 3: Ganancia Bruta (Local) */}
-        <div className="bg-surface border border-subtle rounded-xl shadow-surface p-5 flex flex-col justify-between">
+        <motion.div variants={itemVariants} className="bg-surface border border-subtle rounded-xl shadow-surface p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-muted mb-2">
             <span className="text-[11px] font-mono uppercase tracking-widest">
               GANANCIA BRUTA
@@ -264,10 +302,11 @@ export const MetricasPage: React.FC = () => {
               Ventas - Costos de producción
             </span>
           </div>
-        </div>
+        </motion.div>
 
         {/* KPI 4: GANANCIA NETA REAL DE BOLSILLO */}
-        <div
+        <motion.div
+          variants={itemVariants}
           className={`border rounded-xl shadow-surface p-5 flex flex-col justify-between ${
             gananciaNetaReal >= 0
               ? 'bg-emerald-500/10 border-emerald-500/30'
@@ -303,8 +342,8 @@ export const MetricasPage: React.FC = () => {
               </span>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* ======================================================== */}
       {/* 3. Calculadora Interactiva de Costos Ocultos             */}
@@ -580,41 +619,66 @@ export const MetricasPage: React.FC = () => {
           </div>
 
           {/* Switch de Pestañas */}
-          <div className="flex border border-subtle bg-elevated rounded-lg p-1 gap-1">
+          <div className="flex border border-subtle bg-elevated rounded-lg p-1 gap-1 relative">
             <button
               type="button"
               onClick={() => setPestañaStock('alta-rotacion')}
-              className={`px-4 py-1.5 rounded-md text-xs font-mono uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`relative px-4 py-1.5 rounded-md text-xs font-mono uppercase transition-colors cursor-pointer flex items-center gap-1.5 ${
                 pestañaStock === 'alta-rotacion'
-                  ? 'bg-amber-400 text-zinc-950 font-bold shadow-surface'
+                  ? 'text-zinc-950 font-bold'
                   : 'text-secondary hover:text-primary'
               }`}
             >
-              <Lightning size={14} weight="bold" />
-              <span>ALTA ROTACIÓN & REPOSICIÓN ({topMasVendidos.length})</span>
+              {pestañaStock === 'alta-rotacion' && (
+                <motion.div
+                  layoutId="metricas-stock-tab-pill"
+                  className="absolute inset-0 bg-amber-400 rounded-md shadow-surface"
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-1.5">
+                <Lightning size={14} weight="bold" />
+                <span>ALTA ROTACIÓN & REPOSICIÓN ({topMasVendidos.length})</span>
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setPestañaStock('estancados')}
-              className={`px-4 py-1.5 rounded-md text-xs font-mono uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`relative px-4 py-1.5 rounded-md text-xs font-mono uppercase transition-colors cursor-pointer flex items-center gap-1.5 ${
                 pestañaStock === 'estancados'
-                  ? 'bg-amber-400 text-zinc-950 font-bold shadow-surface'
+                  ? 'text-zinc-950 font-bold'
                   : 'text-secondary hover:text-primary'
               }`}
             >
-              <Hourglass size={14} weight="bold" />
-              <span>STOCK INMOVILIZADO ({productosEstancados.length})</span>
+              {pestañaStock === 'estancados' && (
+                <motion.div
+                  layoutId="metricas-stock-tab-pill"
+                  className="absolute inset-0 bg-amber-400 rounded-md shadow-surface"
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-1.5">
+                <Hourglass size={14} weight="bold" />
+                <span>STOCK INMOVILIZADO ({productosEstancados.length})</span>
+              </span>
             </button>
           </div>
         </div>
 
-        {/* Contenido Pestaña 1: ALTA ROTACIÓN & REPOSICIÓN */}
-        {pestañaStock === 'alta-rotacion' && (
-          <div className="space-y-3">
-            <div className="text-xs font-mono text-muted flex items-center justify-between">
-              <span>TOP PRENDAS MÁS VENDIDAS // CÁLCULO DE VELOCIDAD DIARIA & DEMANDA A 7 DÍAS</span>
-              <span className="text-amber-600 dark:text-amber-400 font-bold">PERÍODO: {periodo.toUpperCase()}</span>
-            </div>
+        <AnimatePresence mode="wait">
+          {pestañaStock === 'alta-rotacion' ? (
+            <motion.div
+              key="alta-rotacion"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-3"
+            >
+              <div className="text-xs font-mono text-muted flex items-center justify-between">
+                <span>TOP PRENDAS MÁS VENDIDAS // CÁLCULO DE VELOCIDAD DIARIA & DEMANDA A 7 DÍAS</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">PERÍODO: {periodo.toUpperCase()}</span>
+              </div>
 
             {topMasVendidos.length === 0 ? (
               <div className="p-8 text-center text-xs font-mono text-muted border border-dashed border-subtle rounded-lg">
@@ -678,12 +742,16 @@ export const MetricasPage: React.FC = () => {
                 </table>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Contenido Pestaña 2: STOCK INMOVILIZADO (SIN ROTACIÓN) */}
-        {pestañaStock === 'estancados' && (
-          <div className="space-y-3">
+            </motion.div>
+          ) : (
+            <motion.div
+              key="estancados"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-3"
+            >
             <div className="text-xs font-mono text-muted flex items-center justify-between">
               <span>
                 PRENDAS CON STOCK &gt; 0 Y 0 VENTAS EN EL PERÍODO // CAPITAL INMOVILIZADO TOTAL:{' '}
@@ -750,8 +818,9 @@ export const MetricasPage: React.FC = () => {
                 </table>
               </div>
             )}
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

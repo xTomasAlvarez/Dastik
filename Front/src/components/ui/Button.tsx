@@ -15,17 +15,17 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'rounded-lg font-sans font-semibold tracking-tight transition-fast inline-flex items-center justify-center cursor-pointer select-none active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed';
+    'rounded-lg font-sans font-semibold tracking-tight transition-all duration-150 inline-flex items-center justify-center cursor-pointer select-none active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed';
 
   const variants = {
     primary:
-      'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover)] shadow-sm',
+      'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover)] hover:-translate-y-0.5 hover:shadow-md shadow-sm active:translate-y-0',
     secondary:
-      'bg-surface text-primary border border-subtle hover:bg-elevated hover:border-strong shadow-surface',
+      'bg-surface text-primary border border-subtle hover:bg-elevated hover:border-strong hover:-translate-y-0.5 hover:shadow-md shadow-surface active:translate-y-0',
     danger:
-      'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/25 hover:bg-red-500/20',
+      'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/25 hover:bg-red-500/20 hover:-translate-y-0.5 active:translate-y-0',
     ghost:
-      'bg-transparent text-secondary hover:text-primary hover:bg-elevated',
+      'bg-transparent text-secondary hover:text-primary hover:bg-elevated active:translate-y-0',
   };
 
   const sizes = {

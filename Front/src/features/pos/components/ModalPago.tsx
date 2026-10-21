@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   CreditCard,
   Money,
@@ -89,7 +90,6 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
     };
   }, [isOpen, isLoading, onClose]);
 
-  if (!isOpen) return null;
 
   const formatearDinero = (monto: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -190,8 +190,27 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-surface border border-subtle rounded-xl shadow-floating p-6 md:p-8 flex flex-col gap-6 text-left relative my-auto">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={!isLoading ? onClose : undefined}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+          />
+
+          {/* Dialog */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30, mass: 0.8 }}
+            className="w-full max-w-lg bg-surface border border-subtle rounded-xl shadow-floating p-6 md:p-8 flex flex-col gap-6 text-left relative my-auto z-10"
+          >
         {/* Header del Modal */}
         <div className="flex items-start justify-between border-b border-subtle pb-4">
           <div>
@@ -545,7 +564,9 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
   Printer,
@@ -190,10 +191,9 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
   };
 
   // SI NO ESTÁ ABIERTO O NO HAY PRODUCTO, RETORNAR NULL DESPUÉS DE DECLARAR TODOS LOS HOOKS
-  if (!isOpen || !producto) return null;
 
   const totalEtiquetas = listaEtiquetas.length;
-  const variantesDisponibles = producto.variantes ?? [];
+  const variantesDisponibles = producto?.variantes ?? [];
 
   // Renderizador de cada etiqueta exacta de 38mm x 21mm (proporción 144px x 80px)
   // INTOCABLE: Geometría estricta 144x80px para html2canvas + jsPDF
@@ -204,7 +204,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
         : (item.nombre || '').toUpperCase();
 
     const unidadNegocioNombre =
-      item.unidadNegocio || item.marca || producto.unidadNegocio || 'DASTIK';
+      item.unidadNegocio || item.marca || producto?.unidadNegocio || 'DASTIK';
 
     const codigoBarrasSeguro = item.codigoBarras;
     const precioLista = item.precioLista;
@@ -325,12 +325,18 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-150 print:hidden"
-        onClick={onClose}
-      />
+    <AnimatePresence>
+      {isOpen && producto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm print:hidden"
+          />
 
       {/* Reglas CSS para impresión directa @media print */}
       <style>{`
@@ -360,7 +366,13 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
       `}</style>
 
       {/* Modal Dialog (Controles del Modal con tokens semánticos) */}
-      <div className="relative w-full max-w-4xl bg-surface border border-subtle rounded-xl shadow-floating text-primary flex flex-col max-h-[92vh] z-10 overflow-hidden print:hidden">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 8 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 30, mass: 0.8 }}
+        className="relative w-full max-w-4xl bg-surface border border-subtle rounded-xl shadow-floating text-primary flex flex-col max-h-[92vh] z-10 overflow-hidden print:hidden"
+      >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-subtle bg-elevated/60 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -544,7 +556,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
             </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ======================================================== */}
       {/* Contenedor Oculto para Exportación en Alta Resolución    */}
@@ -576,5 +588,7 @@ export const ModalImprimirEtiquetas: React.FC<ModalImprimirEtiquetasProps> = ({
         </div>
       </div>
     </div>
+      )}
+    </AnimatePresence>
   );
 };
