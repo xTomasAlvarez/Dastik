@@ -9,6 +9,8 @@ import {
   X,
   Barcode,
   Package,
+  CaretRight,
+  CaretLeft,
 } from '@phosphor-icons/react';
 import { PosHeader } from '../components/PosHeader';
 import { CatalogoGrid } from '../components/CatalogoGrid';
@@ -31,6 +33,22 @@ export const DashboardPos: React.FC = () => {
   const [isModalCambioOpen, setIsModalCambioOpen] = useState(false);
   const [confirmandoVaciar, setConfirmandoVaciar] = useState(false);
   const vaciarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [isCartCollapsed, setIsCartCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('dastik_pos_cart_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dastik_pos_cart_collapsed', String(isCartCollapsed));
+    } catch {
+      // ignore
+    }
+  }, [isCartCollapsed]);
 
   const [ventaExitosa, setVentaExitosa] = useState<{
     ordenId: number;
@@ -85,9 +103,16 @@ export const DashboardPos: React.FC = () => {
     };
   }, []);
 
-  // Atajo de teclado POS: F2 para abrir modal de cobro
+  // Atajos de teclado POS: F2 para cobrar orden / Ctrl + B para alternar panel derecho
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Toggle de panel orden en curso con Ctrl + B
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        setIsCartCollapsed((prev) => !prev);
+        return;
+      }
+
       if (
         (e.key === 'F2' || e.key === 'F4') &&
         items.length > 0 &&
@@ -96,6 +121,7 @@ export const DashboardPos: React.FC = () => {
         !isModalCerrarTurnoOpen
       ) {
         e.preventDefault();
+        setIsCartCollapsed(false); // Despliega automáticamente si estaba minimizado
         setIsModalPagoOpen(true);
       }
     };
@@ -183,68 +209,93 @@ export const DashboardPos: React.FC = () => {
       )}
 
       {/* 3. Área Principal Dividida 70% / 30% */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         {/* ======================================================== */}
-        {/* PANEL IZQUIERDO (70%): Omnibar + Grilla Retail Paginada  */}
+        {/* PANEL IZQUIERDO: Omnibar + Grilla Retail Paginada        */}
         {/* ======================================================== */}
-        <main className="w-full lg:w-[70%] flex-1 flex flex-col overflow-y-auto p-3.5 md:p-4">
+        <main
+          className={`w-full flex-1 flex flex-col overflow-y-auto p-3.5 md:p-4 transition-all duration-300 ${
+            isCartCollapsed ? 'lg:w-full' : 'lg:w-[70%]'
+          }`}
+        >
           <CatalogoGrid />
         </main>
 
         {/* ======================================================== */}
-        {/* PANEL DERECHO (30%): Ticket de Venta en Vivo (PosCart)   */}
+        {/* PANEL DERECHO: Ticket de Venta en Vivo (PosCart)         */}
         {/* ======================================================== */}
-        <aside className="w-full lg:w-[30%] lg:min-w-[360px] lg:max-w-[420px] border-t lg:border-t-0 lg:border-l border-subtle bg-surface flex flex-col h-full shrink-0 shadow-surface">
-          {/* Header del Ticket */}
-          <div className="px-4 py-3.5 border-b border-subtle flex items-center justify-between bg-surface">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-elevated border border-subtle text-primary">
-                <Receipt size={18} weight="duotone" className="text-amber-500" />
-              </div>
-              <div>
-                <h3 className="font-heading text-xs font-bold tracking-wide text-primary uppercase">
-                  Orden en Curso
-                </h3>
-                <span className="text-[11px] text-muted font-mono tabular-nums block">
-                  {itemCount} {itemCount === 1 ? 'artículo' : 'artículos'}
-                </span>
-              </div>
-            </div>
+        <AnimatePresence>
+          {!isCartCollapsed && (
+            <motion.aside
+              key="pos-cart-panel"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 'auto', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+              className="w-full lg:w-[30%] lg:min-w-[360px] lg:max-w-[420px] border-t lg:border-t-0 lg:border-l border-subtle bg-surface flex flex-col h-full shrink-0 shadow-surface overflow-hidden"
+            >
+              {/* Header del Ticket */}
+              <div className="px-4 py-3.5 border-b border-subtle flex items-center justify-between bg-surface">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-elevated border border-subtle text-primary">
+                    <Receipt size={18} weight="duotone" className="text-amber-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-heading text-xs font-bold tracking-wide text-primary uppercase">
+                      Orden en Curso
+                    </h3>
+                    <span className="text-[11px] text-muted font-mono tabular-nums block">
+                      {itemCount} {itemCount === 1 ? 'artículo' : 'artículos'}
+                    </span>
+                  </div>
+                </div>
 
-            {items.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                {confirmandoVaciar && (
+                <div className="flex items-center gap-1.5">
+                  {items.length > 0 && (
+                    <>
+                      {confirmandoVaciar && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmandoVaciar(false);
+                            if (vaciarTimerRef.current) clearTimeout(vaciarTimerRef.current);
+                          }}
+                          className="text-[11px] font-medium px-2 py-1 rounded-md border border-subtle bg-elevated text-secondary hover:text-primary transition-fast cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleVaciarClick}
+                        className={`text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-fast px-2.5 py-1 rounded-md border ${
+                          confirmandoVaciar
+                            ? 'bg-red-500/15 border-red-500/50 text-red-600 dark:text-red-300'
+                            : 'border-transparent text-red-500 hover:bg-red-500/10'
+                        }`}
+                        title={
+                          confirmandoVaciar
+                            ? 'Clic para confirmar vaciado de ticket'
+                            : 'Vaciar ticket actual'
+                        }
+                      >
+                        <Trash size={14} weight={confirmandoVaciar ? 'bold' : 'regular'} />
+                        <span>{confirmandoVaciar ? '¿Vaciar?' : 'Vaciar'}</span>
+                      </button>
+                    </>
+                  )}
+
+                  {/* Botón Minimizar Panel */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setConfirmandoVaciar(false);
-                      if (vaciarTimerRef.current) clearTimeout(vaciarTimerRef.current);
-                    }}
-                    className="text-[11px] font-medium px-2 py-1 rounded-md border border-subtle bg-elevated text-secondary hover:text-primary transition-fast cursor-pointer"
+                    onClick={() => setIsCartCollapsed(true)}
+                    className="p-1.5 rounded-lg border border-subtle bg-elevated hover:bg-surface text-secondary hover:text-primary transition-fast cursor-pointer active:scale-95 ml-1"
+                    title="Minimizar orden en curso [Ctrl + B]"
                   >
-                    Cancelar
+                    <CaretRight size={15} weight="bold" />
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={handleVaciarClick}
-                  className={`text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-fast px-2.5 py-1 rounded-md border ${
-                    confirmandoVaciar
-                      ? 'bg-red-500/15 border-red-500/50 text-red-600 dark:text-red-300'
-                      : 'border-transparent text-red-500 hover:bg-red-500/10'
-                  }`}
-                  title={
-                    confirmandoVaciar
-                      ? 'Clic para confirmar vaciado de ticket'
-                      : 'Vaciar ticket actual'
-                  }
-                >
-                  <Trash size={14} weight={confirmandoVaciar ? 'bold' : 'regular'} />
-                  <span>{confirmandoVaciar ? '¿Vaciar?' : 'Vaciar'}</span>
-                </button>
+                </div>
               </div>
-            )}
-          </div>
 
           {/* Lista de Artículos en el Carrito Animada con Miniatura y EAN-13 */}
           <div className="flex-1 overflow-y-auto p-3.5 space-y-2.5">
@@ -392,8 +443,49 @@ export const DashboardPos: React.FC = () => {
                 : `Cobrar Orden [F2] ${items.length > 0 ? `· ${formatearDinero(total)}` : ''}`}
             </Button>
           </div>
-        </aside>
-      </div>
+        </motion.aside>
+      )}
+    </AnimatePresence>
+
+    {/* Dock Flotante cuando el panel está Minimizado */}
+    <AnimatePresence>
+      {isCartCollapsed && (
+        <motion.button
+          type="button"
+          initial={{ opacity: 0, scale: 0.9, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 16 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+          onClick={() => setIsCartCollapsed(false)}
+          className="fixed right-6 bottom-6 z-40 rounded-2xl border border-subtle bg-surface/95 backdrop-blur-md hover:border-amber-500/60 shadow-floating px-4 py-3 flex items-center gap-3.5 group cursor-pointer transition-all active:scale-[0.98]"
+          title="Desplegar orden en curso [Ctrl + B]"
+        >
+          <div className="relative p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500">
+            <Receipt size={22} weight="duotone" />
+            {itemCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-amber-500 text-black font-mono text-[11px] font-extrabold flex items-center justify-center shadow-xs">
+                {itemCount}
+              </span>
+            )}
+          </div>
+
+          <div className="text-left pr-1">
+            <div className="text-[10px] font-heading font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+              <span>Orden en Curso</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            <div className="text-base font-mono tabular-nums font-extrabold text-primary">
+              {formatearDinero(total)}
+            </div>
+          </div>
+
+          <div className="p-1 rounded-md text-muted group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all">
+            <CaretLeft size={16} weight="bold" />
+          </div>
+        </motion.button>
+      )}
+    </AnimatePresence>
+  </div>
 
       {/* 4. Modal Bloqueante de Apertura de Turno */}
       <ModalAbrirTurno
