@@ -10,8 +10,10 @@ import { ArqueosPage } from './features/admin/pages/ArqueosPage';
 import { EmpleadosPage } from './features/admin/pages/EmpleadosPage';
 import { MetricasPage } from './features/admin/pages/MetricasPage';
 import { ConfiguracionPage } from './features/admin/pages/ConfiguracionPage';
+import { NotFoundPage } from './features/common/pages/NotFoundPage';
 import { CambiarPasswordModal } from './features/auth/components/CambiarPasswordModal';
 import { SandboxBanner } from './components/layout/SandboxBanner';
+import { GlobalErrorBoundary } from './components/layout/GlobalErrorBoundary';
 import { useAuthStore } from './stores/useAuthStore';
 import { useTenantStore } from './stores/useTenantStore';
 import { useThemeStore } from './stores/useThemeStore';
@@ -70,65 +72,70 @@ export function App() {
   useThemeStore();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <div className="h-screen w-screen flex flex-col bg-canvas text-primary overflow-hidden">
-          {isSandboxMode && <SandboxBanner />}
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <Routes>
-              <Route
-                path="/login"
-                element={
-                  isAuthenticated && !debeCambiarPassword ? (
-                    <Navigate to="/" replace />
-                  ) : (
-                    <LoginPage />
-                  )
-                }
-              />
+    <GlobalErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <div className="h-screen w-screen flex flex-col bg-canvas text-primary overflow-hidden">
+            {isSandboxMode && <SandboxBanner />}
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <Routes>
+                <Route
+                  path="/login"
+                  element={
+                    isAuthenticated && !debeCambiarPassword ? (
+                      <Navigate to="/" replace />
+                    ) : (
+                      <LoginPage />
+                    )
+                  }
+                />
 
-              {/* Terminal POS (Caja de mostrador) */}
-              <Route
-                path="/"
-                element={
-                  <RutaProtegida>
-                    <DashboardPos />
-                  </RutaProtegida>
-                }
-              />
-              <Route
-                path="/pos"
-                element={
-                  <RutaProtegida>
-                    <DashboardPos />
-                  </RutaProtegida>
-                }
-              />
+                {/* Terminal POS (Caja de mostrador) */}
+                <Route
+                  path="/"
+                  element={
+                    <RutaProtegida>
+                      <DashboardPos />
+                    </RutaProtegida>
+                  }
+                />
+                <Route
+                  path="/pos"
+                  element={
+                    <RutaProtegida>
+                      <DashboardPos />
+                    </RutaProtegida>
+                  }
+                />
 
-              {/* Panel de Administración (Back-Office) - Exclusivo Admin */}
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <AdminLayout />
-                  </AdminRoute>
-                }
-              >
-                <Route index element={<DashboardPage />} />
-                <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="inventario" element={<InventarioPage />} />
-                <Route path="arqueos" element={<ArqueosPage />} />
-                <Route path="empleados" element={<EmpleadosPage />} />
-                <Route path="metricas" element={<MetricasPage />} />
-                <Route path="configuracion" element={<ConfiguracionPage />} />
-              </Route>
+                {/* Panel de Administración (Back-Office) - Exclusivo Admin */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminLayout />
+                    </AdminRoute>
+                  }
+                >
+                  <Route index element={<DashboardPage />} />
+                  <Route path="dashboard" element={<DashboardPage />} />
+                  <Route path="inventario" element={<InventarioPage />} />
+                  <Route path="arqueos" element={<ArqueosPage />} />
+                  <Route path="empleados" element={<EmpleadosPage />} />
+                  <Route path="metricas" element={<MetricasPage />} />
+                  <Route path="configuracion" element={<ConfiguracionPage />} />
+                  {/* Sub-rutas desconocidas en /admin/* */}
+                  <Route path="*" element={<NotFoundPage />} />
+                </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                {/* Ruta Comodín Global 404 */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </div>
           </div>
-        </div>
-      </BrowserRouter>
-    </QueryClientProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </GlobalErrorBoundary>
   );
 }
 

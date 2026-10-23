@@ -1329,3 +1329,29 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **4. Verificación de Compilación y Suite de Tests:**
   - `dotnet test Back/DastikERP.sln`: **184/184 pruebas superadas en verde** (0 fallos, 0 errores).
   - `npm run build --prefix Front`: **0 errores TypeScript**, bundle generado exitosamente en 2.17s.
+---
+
+### [feat/not-found-and-error-boundary] Pantalla 404 Personalizada y Animada con Temática Streetwear y Error Boundary Global - COMPLETADO
+
+**Objetivo:** Implementar una pantalla de error 404 personalizada (`NotFoundPage.tsx`) con estética de etiqueta retail (*clothing hangtag*) y código de barras vectorial con animación de escaneo láser en `motion/react`, junto con un `GlobalErrorBoundary.tsx` para atrapar cualquier excepción de renderizado imprevista sin dejar la pantalla en blanco.
+
+- **Rama:** `develop`.
+- **1. Pantalla 404 Retail / Streetwear (`NotFoundPage.tsx`):**
+  - **Identidad Visual High-Craft:** Diseño de tarjeta tipo hangtag con ojal metálico, hilo superior, badge monospaciado `ERROR DE RUTA // SKU FUERA DE CATÁLOGO`, tipografía display `404` con física spring y código de barras vectorial.
+  - **Línea Láser Ámbar Animada (`motion/react`):** Escáner láser vertical continuo con `animate={{ y: [0, 48, 0] }}` y `repeat: Infinity`.
+  - **Chip de Ruta Intentada:** Muestra en formato monoespaciado la ruta inexistente (`location.pathname`) para diagnóstico inmediato.
+  - **Acciones de Rescate Operativo:**
+    - Botón primario de rescate a Terminal POS (`/pos` o `/login` según autenticación).
+    - Botón secundario condicional hacia Panel Admin (`/admin/dashboard`) exclusivo para roles `Admin` o `Dev`.
+    - Botón terciario de retroceso (`navigate(-1)`).
+    - Atajos de teclado físicos (`Escape` y `Backspace` fuera de campos de texto) con redirección automática.
+- **2. Conexión de Rutas en React Router (`App.tsx`):**
+  - Incorporada la ruta comodín `<Route path="*" element={<NotFoundPage />} />` tanto a nivel raíz como dentro de las subrutas administrativas `/admin/*`.
+- **3. Contingencia Global ante Fallos de Renderizado (`GlobalErrorBoundary.tsx`):**
+  - Captura excepciones con `componentDidCatch` y muestra una tarjeta sobria con estética Dastik compatible con modo Dark y Light.
+  - Opciones de recuperación: `Recargar Sistema` (`window.location.reload()`) y `Volver al POS` (`window.location.href = '/pos'`).
+  - Panel colapsable de traza técnica con botón de copiado al portapapeles.
+  - Integrado envolviendo la jerarquía en `main.tsx` y en el núcleo de `App.tsx`.
+- **4. Verificación de Compilación y Suite de Tests:**
+  - `npm run build --prefix Front`: **0 errores TypeScript**, bundle generado en 2.05s.
+  - `dotnet test Back/DastikERP.sln`: **184/184 pruebas superadas en verde** (0 fallos).
