@@ -1167,3 +1167,29 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **5. Verificación de Compilación y Tests:**
   - `dotnet test`: **180/180 pruebas superadas en verde** (0 errores, 0 warnings).
   - `npm run build`: **0 errores TypeScript**, bundle de producción limpio generado en 1.80s.
+
+---
+
+### [fix/ui-modal-producto-tabs] Refactorización Visual y de Navegación del Modal de Creación/Edición de Prendas (`ModalCrearProducto.tsx`) - COMPLETADO
+
+**Objetivo:** Solucionar el bug de alineación y desplazamiento del modal al scrollear la tabla de inventario, y reestructurar el formulario kilométrico en 3 pestañas horizontales limpias con cabecera y pie fijos, ergonomía táctil y atajos de teclado (`F2` / `Escape`).
+
+- **Rama:** `develop` (se mantiene en `develop` según directiva de release).
+- **1. Corrección de Layout y Centrado Fijo en Viewport:**
+  - Contenedor raíz reconfigurado con `fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm overflow-hidden`, eliminando el desplazamiento residual hacia el fondo al scrollear el Data Grid.
+  - Tarjeta del modal con dimensiones controladas y centradas: `w-full max-w-4xl max-h-[90vh] flex flex-col bg-surface border border-subtle rounded-2xl shadow-2xl overflow-hidden my-auto`.
+  - Bloqueo preventivo de scroll del documento en montaje y desmontaje (`document.body.style.overflow = 'hidden'`).
+- **2. Reestructuración en 3 Pestañas Horizontales Especializadas:**
+  - **Cabecera Fija:** Icono según modo (`PencilSimple` / `Package`), título reactivo con badge `TIENDANUBE #ID` y botón de cierre `X` [ESC].
+  - **Barra de Pestañas Fija (`shrink-0`):**
+    - `[ 👕 General & Fotos ]` (Tab 1): Nombre de prenda, descripción editorial con toolbar de formato (Negrita, Cursiva, Lista, +Template Fit Modelo) y contador de caracteres, dropzone con drag & drop y explorador de archivos locales, agregador por URL, grilla de fotos con selección de portada y eliminación, URL de video embebido, y selector de tipo de producto (Físico vs Digital/Servicio).
+    - `[ 🏷️ Talles, Precios & Stock ]` (Tab 2): Unidad de negocio (`Dastik` vs `Hidden Sneakers`), proveedor con markup sugerido (+XX%), desglose de costos ERP y margen comercial estimado con atajos rápidos (+50%, +60%, +70%, +100%), curva rápida de talles y tabla completa de variantes (`CrearProductoVariantesSection.tsx`).
+    - `[ 🌐 Categorías & SEO ]` (Tab 3): Marca, categoría principal, etiquetas/subcategorías dinámicas (chips agregables y borrables), colecciones destacadas (Nuevos, Destacados, Sale) y bloque de optimización SEO (tags, Google title tag con contador /70 y meta description con contador /160).
+  - **Cuerpo con Scroll Interno:** `flex-1 min-h-0 overflow-y-auto p-6 scrollbar-thin` renderizando exclusivamente la pestaña activa con transición fade-in instantánea.
+  - **Pie Fijo (Siempre Visible):** Switch `Sincronizar con Tiendanube Oficial` con indicador Sandbox o exclusividad Dastik, botón `Cancelar [ESC]` y botón de acción primario `Guardar Cambios [F2]` / `Crear Prenda [F2]`.
+- **3. Ergonomía de Teclado & Salto Automático por Validación:**
+  - Atajos de teclado: `Escape` para cancelar y `F2` para guardar cambios / enviar el formulario desde cualquier pestaña.
+  - Validación inteligente: si falta el nombre del producto, la interfaz conmuta automáticamente a la pestaña `General & Fotos`; si no se configuraron variantes o el precio es inválido, conmuta automáticamente a `Talles, Precios & Stock` mostrando el mensaje de alerta.
+- **4. Verificación de Compilación y Calidad:**
+  - `dotnet test`: **180/180 pruebas superadas en verde** (0 fallos).
+  - `npm run build`: **0 errores TypeScript**, bundle de producción generado en 1.98s.
