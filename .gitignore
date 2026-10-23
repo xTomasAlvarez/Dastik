@@ -8,6 +8,32 @@
 .env.local
 .env.*.local
 
-# OS
+# Agent Customizations & Skills (Local workspace packages)
+.agents/
+.agent/
+_agents/
+_agent/
+skills/
+skills-lock.json
+
+# Dependencies & Build Outputs
+node_modules/
+dist/
+dist-ssr/
+bin/
+obj/
+
+# IDE & OS Artifacts
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
 Thumbs.db
 .DS_Store
+
+# Logs & Temporary Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
