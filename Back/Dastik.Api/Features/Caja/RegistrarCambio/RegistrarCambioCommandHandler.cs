@@ -87,6 +87,33 @@ public class RegistrarCambioCommandHandler : IRequestHandler<RegistrarCambioComm
                 : diferencia;
         }
 
+        // 4.b Validación e inmutabilidad de ticket original (evitar doble cambio del mismo ítem)
+        DetalleOrden? itemTicketDevuelto = null;
+        if (request.OrdenIdOriginal.HasValue && request.OrdenIdOriginal.Value > 0)
+        {
+            var ordenOriginal = await _context.Ordenes
+                .Include(o => o.Detalles)
+                .FirstOrDefaultAsync(o => o.Id == request.OrdenIdOriginal.Value, cancellationToken);
+
+            if (ordenOriginal is not null)
+            {
+                itemTicketDevuelto = ordenOriginal.Detalles
+                    .FirstOrDefault(d => d.VarianteId == request.VarianteDevueltaId && d.Cantidad > 0);
+
+                if (itemTicketDevuelto is null)
+                {
+                    return Result<RegistrarCambioResult>.Failure(
+                        $"El ticket #{request.OrdenIdOriginal.Value} no contiene la prenda devuelta especificada.");
+                }
+
+                if (itemTicketDevuelto.FueCambiado)
+                {
+                    return Result<RegistrarCambioResult>.Failure(
+                        $"La prenda del ticket #{request.OrdenIdOriginal.Value} ya fue cambiada previamente y no admite un segundo cambio.");
+                }
+            }
+        }
+
         // 5. Persistencia Transaccional ESTRICTAMENTE ACID
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
@@ -98,7 +125,13 @@ public class RegistrarCambioCommandHandler : IRequestHandler<RegistrarCambioComm
 
             var fechaActual = DateTime.UtcNow;
 
-            // B. Registrar la Orden con etiqueta de Cambio
+            // B. Bloquear el ítem original para evitar duplicación
+            if (itemTicketDevuelto is not null)
+            {
+                itemTicketDevuelto.FueCambiado = true;
+            }
+
+            // C. Registrar la Orden con etiqueta de Cambio
             var orden = new Orden
             {
                 TurnoId = request.TurnoId,
@@ -106,7 +139,8 @@ public class RegistrarCambioCommandHandler : IRequestHandler<RegistrarCambioComm
                 Total = montoCobrado,
                 Estado = EstadoOrden.Pagada,
                 EsCambio = true,
-                MotivoCambio = request.MotivoCambio
+                MotivoCambio = request.MotivoCambio,
+                OrdenOrigenId = request.OrdenIdOriginal
             };
 
             // C. Detalles de la orden (Prenda que sale positiva, Prenda devuelta negativa para trazabilidad)
@@ -139,7 +173,32 @@ public class RegistrarCambioCommandHandler : IRequestHandler<RegistrarCambioComm
 
             _context.Ordenes.Add(orden);
 
-            // E. Tenant Guard + Outbox Pattern para Omnicanalidad Tiendanube
+            // E. Asentar registros en MovimientosStock vinculados a la orden
+            _context.MovimientosStock.Add(new MovimientoStock
+            {
+                VarianteId = varianteDevuelta.Id,
+                Cantidad = request.CantidadDevuelta,
+                StockResultante = varianteDevuelta.StockFisico,
+                Tipo = TipoMovimientoStock.DevolucionCambio,
+                Motivo = $"Cambio de prenda: Devolución (Ticket Origen: #{request.OrdenIdOriginal?.ToString() ?? "N/A"}) - {request.MotivoCambio}",
+                Orden = orden,
+                TurnoId = request.TurnoId,
+                FechaUtc = fechaActual
+            });
+
+            _context.MovimientosStock.Add(new MovimientoStock
+            {
+                VarianteId = varianteNueva.Id,
+                Cantidad = -request.CantidadNueva,
+                StockResultante = varianteNueva.StockFisico,
+                Tipo = TipoMovimientoStock.SalidaCambio,
+                Motivo = $"Cambio de prenda: Salida nueva (Ticket Origen: #{request.OrdenIdOriginal?.ToString() ?? "N/A"}) - {request.MotivoCambio}",
+                Orden = orden,
+                TurnoId = request.TurnoId,
+                FechaUtc = fechaActual
+            });
+
+            // F. Tenant Guard + Outbox Pattern para Omnicanalidad Tiendanube
             // Variante devuelta (entra al stock)
             if (varianteDevuelta.Producto?.UnidadNegocio?.TieneTiendaNube == true &&
                 !string.IsNullOrWhiteSpace(varianteDevuelta.TiendanubeVariantId))
@@ -194,7 +253,8 @@ public class RegistrarCambioCommandHandler : IRequestHandler<RegistrarCambioComm
                 MetodoPago: request.MetodoPagoDiferencia,
                 MotivoCambio: request.MotivoCambio,
                 StockDevueltoFinal: varianteDevuelta.StockFisico,
-                StockNuevoFinal: varianteNueva.StockFisico
+                StockNuevoFinal: varianteNueva.StockFisico,
+                OrdenOrigenId: request.OrdenIdOriginal
             );
 
             return Result<RegistrarCambioResult>.Success(resultado);

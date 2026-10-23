@@ -21,13 +21,13 @@ public class Producto
     public bool Activo { get; set; } = true;
 
     // Campos extendidos de paridad con Tiendanube & ERP
-    public string? VideoUrl { get; set; }
+    public string VideoUrl { get; set; } = string.Empty;
     public bool EsFisico { get; set; } = true;
     public string SubcategoriasJson { get; set; } = "[]";
     public string DestacadosJson { get; set; } = "[]";
-    public string? TagsSeo { get; set; }
-    public string? SeoTitulo { get; set; }
-    public string? SeoDescripcion { get; set; }
+    public string TagsSeo { get; set; } = string.Empty;
+    public string SeoTitulo { get; set; } = string.Empty;
+    public string SeoDescripcion { get; set; } = string.Empty;
 
     // Propiedades de navegación
     public UnidadNegocio UnidadNegocio { get; set; } = null!;

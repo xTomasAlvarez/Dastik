@@ -52,13 +52,13 @@ public class CrearProductoCommandHandler : IRequestHandler<CrearProductoCommand,
             MarkupAplicado = request.MarkupAplicado,
             PrecioVenta = request.PrecioVenta,
             Activo = true,
-            VideoUrl = request.VideoUrl,
+            VideoUrl = request.VideoUrl ?? string.Empty,
             EsFisico = request.EsFisico,
             SubcategoriasJson = request.Subcategorias != null ? JsonSerializer.Serialize(request.Subcategorias) : "[]",
             DestacadosJson = request.Destacados != null ? JsonSerializer.Serialize(request.Destacados) : "[]",
-            TagsSeo = request.TagsSeo,
-            SeoTitulo = request.SeoTitulo,
-            SeoDescripcion = request.SeoDescripcion
+            TagsSeo = request.TagsSeo ?? string.Empty,
+            SeoTitulo = request.SeoTitulo ?? string.Empty,
+            SeoDescripcion = request.SeoDescripcion ?? string.Empty
         };
 
         foreach (var vDto in request.Variantes)

@@ -11,8 +11,16 @@ public class ProductoConfiguration : IEntityTypeConfiguration<Producto>
         builder.ToTable("Productos");
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Nombre).IsRequired().HasMaxLength(200);
-        builder.Property(p => p.Descripcion).HasMaxLength(1000);
-        builder.Property(p => p.ImagenUrl).HasMaxLength(500);
+        builder.Property(p => p.Descripcion).IsRequired().HasDefaultValue("").HasMaxLength(1000);
+        builder.Property(p => p.ImagenUrl).IsRequired().HasDefaultValue("").HasMaxLength(500);
+        builder.Property(p => p.ImagenesJson).IsRequired().HasDefaultValue("[]");
+        builder.Property(p => p.VideoUrl).IsRequired().HasDefaultValue("");
+        builder.Property(p => p.EsFisico).IsRequired().HasDefaultValue(true);
+        builder.Property(p => p.SubcategoriasJson).IsRequired().HasDefaultValue("[]");
+        builder.Property(p => p.DestacadosJson).IsRequired().HasDefaultValue("[]");
+        builder.Property(p => p.TagsSeo).IsRequired().HasDefaultValue("");
+        builder.Property(p => p.SeoTitulo).IsRequired().HasDefaultValue("");
+        builder.Property(p => p.SeoDescripcion).IsRequired().HasDefaultValue("");
 
         // Tipos de datos financieros estrictos decimal(18,2)
         builder.Property(p => p.CostoBase).HasColumnType("decimal(18,2)").IsRequired();

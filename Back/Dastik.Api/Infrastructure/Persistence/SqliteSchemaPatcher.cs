@@ -79,13 +79,13 @@ public static class SqliteSchemaPatcher
             "PrecioVenta" TEXT NOT NULL DEFAULT '0',
             "TiendanubeProductId" TEXT NULL,
             "Activo" INTEGER NOT NULL DEFAULT 1,
-            "VideoUrl" TEXT NULL,
+            "VideoUrl" TEXT NOT NULL DEFAULT '',
             "EsFisico" INTEGER NOT NULL DEFAULT 1,
             "SubcategoriasJson" TEXT NOT NULL DEFAULT '[]',
             "DestacadosJson" TEXT NOT NULL DEFAULT '[]',
-            "TagsSeo" TEXT NULL,
-            "SeoTitulo" TEXT NULL,
-            "SeoDescripcion" TEXT NULL
+            "TagsSeo" TEXT NOT NULL DEFAULT '',
+            "SeoTitulo" TEXT NOT NULL DEFAULT '',
+            "SeoDescripcion" TEXT NOT NULL DEFAULT ''
         );
         """,
         """
@@ -172,6 +172,19 @@ public static class SqliteSchemaPatcher
             "Activo" INTEGER NOT NULL DEFAULT 1
         );
         """,
+        """
+        CREATE TABLE IF NOT EXISTS "MovimientosStock" (
+            "Id" INTEGER NOT NULL CONSTRAINT "PK_MovimientosStock" PRIMARY KEY AUTOINCREMENT,
+            "VarianteId" INTEGER NOT NULL,
+            "Cantidad" INTEGER NOT NULL,
+            "StockResultante" INTEGER NOT NULL,
+            "Tipo" TEXT NOT NULL,
+            "Motivo" TEXT NOT NULL,
+            "OrdenId" INTEGER NULL,
+            "TurnoId" INTEGER NULL,
+            "FechaUtc" TEXT NOT NULL
+        );
+        """,
     ];
 
     private static readonly ColumnPatch[] ColumnPatches =
@@ -180,6 +193,10 @@ public static class SqliteSchemaPatcher
         new("Ordenes", "EsCambio", "INTEGER NOT NULL DEFAULT 0"),
         new("Ordenes", "MotivoCambio", "TEXT NULL"),
         new("Ordenes", "Estado", "TEXT NOT NULL DEFAULT 'Pagada'"),
+        new("Ordenes", "OrdenOrigenId", "INTEGER NULL"),
+
+        // DetallesOrden
+        new("DetallesOrden", "FueCambiado", "INTEGER NOT NULL DEFAULT 0"),
 
         // Turnos
         new("Turnos", "GastosTurno", "TEXT NOT NULL DEFAULT '0'"),
@@ -217,13 +234,13 @@ public static class SqliteSchemaPatcher
         new("Productos", "PrecioVenta", "TEXT NOT NULL DEFAULT '0'"),
         new("Productos", "TiendanubeProductId", "TEXT NULL"),
         new("Productos", "Activo", "INTEGER NOT NULL DEFAULT 1"),
-        new("Productos", "VideoUrl", "TEXT NULL"),
+        new("Productos", "VideoUrl", "TEXT NOT NULL DEFAULT ''"),
         new("Productos", "EsFisico", "INTEGER NOT NULL DEFAULT 1"),
         new("Productos", "SubcategoriasJson", "TEXT NOT NULL DEFAULT '[]'"),
         new("Productos", "DestacadosJson", "TEXT NOT NULL DEFAULT '[]'"),
-        new("Productos", "TagsSeo", "TEXT NULL"),
-        new("Productos", "SeoTitulo", "TEXT NULL"),
-        new("Productos", "SeoDescripcion", "TEXT NULL"),
+        new("Productos", "TagsSeo", "TEXT NOT NULL DEFAULT ''"),
+        new("Productos", "SeoTitulo", "TEXT NOT NULL DEFAULT ''"),
+        new("Productos", "SeoDescripcion", "TEXT NOT NULL DEFAULT ''"),
 
         // Variantes
         new("Variantes", "Talle", "TEXT NOT NULL DEFAULT ''"),
@@ -314,6 +331,15 @@ public static class SqliteSchemaPatcher
                     "DELETE FROM \"Usuarios\" WHERE \"Email\" IN ('cajero.sandbox@dastik.com', 'sofia.empleada@dastik.com', 'lucas@dastik.com', 'franco@dastik.com', 'admin@dastik.com');",
                     cancellationToken);
             }
+
+            // 6. Asegurar que columnas editoriales no contengan NULLs en Productos
+            await ExecuteNonQueryAsync(
+                connection,
+                "UPDATE \"Productos\" SET \"SeoTitulo\" = '' WHERE \"SeoTitulo\" IS NULL; " +
+                "UPDATE \"Productos\" SET \"SeoDescripcion\" = '' WHERE \"SeoDescripcion\" IS NULL; " +
+                "UPDATE \"Productos\" SET \"TagsSeo\" = '' WHERE \"TagsSeo\" IS NULL; " +
+                "UPDATE \"Productos\" SET \"VideoUrl\" = '' WHERE \"VideoUrl\" IS NULL;",
+                cancellationToken);
         }
         finally
         {

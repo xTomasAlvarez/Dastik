@@ -18,6 +18,7 @@ public class DetalleOrdenConfiguration : IEntityTypeConfiguration<DetalleOrden>
         // Tipos de datos financieros estrictos decimal(18,2)
         builder.Property(d => d.PrecioUnitario).HasColumnType("decimal(18,2)").IsRequired();
         builder.Property(d => d.Subtotal).HasColumnType("decimal(18,2)").IsRequired();
+        builder.Property(d => d.FueCambiado).IsRequired().HasDefaultValue(false);
 
         // Relaciones
         builder.HasOne(d => d.Orden)

@@ -20,6 +20,7 @@ public class OrdenConfiguration : IEntityTypeConfiguration<Orden>
         builder.Property(o => o.Estado).HasConversion<int>().IsRequired();
         builder.Property(o => o.EsCambio).HasDefaultValue(false);
         builder.Property(o => o.MotivoCambio).HasMaxLength(500);
+        builder.Property(o => o.OrdenOrigenId).IsRequired(false);
 
         // Relaciones
         builder.HasOne(o => o.Turno)

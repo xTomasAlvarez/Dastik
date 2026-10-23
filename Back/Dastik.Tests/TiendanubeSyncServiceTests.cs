@@ -302,5 +302,61 @@ public class TiendanubeSyncServiceTests : IDisposable
         var resultado = TiendanubeSyncService.LimpiarHtml(entrada);
         resultado.Should().Be(esperado);
     }
+
+    [Fact]
+    public async Task SincronizarCatalogoAsync_ConCamposSeoNulos_InsertaExitosamenteSinViolacionNotnull()
+    {
+        // Arrange: Producto proveniente de Tiendanube con tags, video y SEO nulos
+        var productoConSeoNulo = new TiendanubeProductResponse(
+            Id: 9999,
+            Nombre: "Remera Boxy Sin Seo",
+            Descripcion: "Descripción básica",
+            ImagenUrl: "https://cdn.tiendanube.com/img1.jpg",
+            Precio: 25000m,
+            Costo: 12000m,
+            Variantes: new List<TiendanubeProductVariantResponse>
+            {
+                new(
+                    Id: 8888,
+                    ProductId: 9999,
+                    Talle: "M",
+                    Color: "Negro",
+                    Barcode: "2000000009991",
+                    Precio: 25000m,
+                    Costo: 12000m,
+                    Stock: 10
+                )
+            },
+            Imagenes: new List<string> { "https://cdn.tiendanube.com/img1.jpg" },
+            Categorias: new List<string> { "Remeras" },
+            VideoUrl: null,
+            Tags: null,
+            Brand: "Dastik",
+            SeoTitulo: null, // Campo NULL en JSON
+            SeoDescripcion: null
+        );
+
+        var mockClient = new MockTiendanubeClient
+        {
+            ProductosARetornar = new List<TiendanubeProductResponse> { productoConSeoNulo }
+        };
+        var service = new TiendanubeSyncService(_context, mockClient, _generadorEan13, NullLogger<TiendanubeSyncService>.Instance);
+
+        // Act
+        var result = await service.SincronizarCatalogoAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var guardado = await _context.Productos
+            .Include(p => p.Variantes)
+            .FirstOrDefaultAsync(p => p.TiendanubeProductId == "9999");
+
+        guardado.Should().NotBeNull();
+        guardado!.SeoTitulo.Should().Be("");
+        guardado.SeoDescripcion.Should().Be("");
+        guardado.TagsSeo.Should().Be("");
+        guardado.VideoUrl.Should().Be("");
+        guardado.Variantes.Should().ContainSingle();
+    }
 }
 

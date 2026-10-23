@@ -302,13 +302,13 @@ public class TiendanubeSyncService : ITiendanubeSyncService
                     MarkupAplicado = markup,
                     TiendanubeProductId = tnProdId,
                     Activo = true,
-                    VideoUrl = pDto.VideoUrl,
+                    VideoUrl = pDto.VideoUrl ?? string.Empty,
                     EsFisico = true,
                     SubcategoriasJson = pDto.Categorias != null && pDto.Categorias.Count > 0 ? JsonSerializer.Serialize(pDto.Categorias) : "[]",
                     DestacadosJson = "[]",
-                    TagsSeo = pDto.Tags,
-                    SeoTitulo = pDto.SeoTitulo,
-                    SeoDescripcion = pDto.SeoDescripcion
+                    TagsSeo = pDto.Tags ?? string.Empty,
+                    SeoTitulo = pDto.SeoTitulo ?? string.Empty,
+                    SeoDescripcion = pDto.SeoDescripcion ?? string.Empty
                 };
 
                 foreach (var vDto in pDto.Variantes)

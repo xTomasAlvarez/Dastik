@@ -9,6 +9,7 @@ public class Orden
     public EstadoOrden Estado { get; set; } = EstadoOrden.Pagada;
     public bool EsCambio { get; set; } = false;
     public string? MotivoCambio { get; set; }
+    public int? OrdenOrigenId { get; set; }
 
     // Propiedades de navegación
     public Turno Turno { get; set; } = null!;

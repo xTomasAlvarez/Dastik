@@ -13,7 +13,8 @@ public record RegistrarCambioCommand(
     string MotivoCambio,
     MetodoPago? MetodoPagoDiferencia = null,
     decimal? MontoDiferenciaPagada = null,
-    decimal? RecargoDescuento = null
+    decimal? RecargoDescuento = null,
+    int? OrdenIdOriginal = null
 ) : IRequest<Result<RegistrarCambioResult>>;
 
 public record RegistrarCambioResult(
@@ -27,5 +28,6 @@ public record RegistrarCambioResult(
     MetodoPago? MetodoPago,
     string MotivoCambio,
     int StockDevueltoFinal,
-    int StockNuevoFinal
+    int StockNuevoFinal,
+    int? OrdenOrigenId = null
 );

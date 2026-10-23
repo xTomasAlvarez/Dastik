@@ -45,6 +45,7 @@ export interface RegistrarCambioRequest {
   motivoCambio: string;
   metodoPagoDiferencia?: MetodoPagoTipo | null;
   montoDiferenciaPagada?: number | null;
+  ordenIdOriginal?: number | null;
 }
 
 export interface RegistrarCambioResponse {
@@ -59,6 +60,7 @@ export interface RegistrarCambioResponse {
   motivoCambio: string;
   stockDevueltoFinal: number;
   stockNuevoFinal: number;
+  ordenOrigenId?: number | null;
 }
 
 export const posApi = {

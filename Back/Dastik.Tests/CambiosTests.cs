@@ -356,4 +356,165 @@ public class CambiosTests : IDisposable
         ordenEnBd!.Total.Should().Be(0m);
         ordenEnBd.Pagos.Should().BeEmpty(); // Caja intacta
     }
+
+    [Fact]
+    public async Task RegistrarCambio_EntreTurnoCerradoYTurnoAbierto_NoAlteraTurnoCerradoYAsientaEnTurnoActual()
+    {
+        // Arrange
+        // Escenario con entidades relacionadas válidas (Tenant, Categoria, Marca, Proveedor)
+        var (turnoAyer, devuelta, nueva) = await CrearEscenarioBaseAsync(
+            precioDevuelta: 20000m,
+            precioNueva: 28000m,
+            stockDevuelta: 5,
+            stockNueva: 3
+        );
+
+        // Turno 1 (ayer, ya cerrado)
+        turnoAyer.FechaApertura = DateTime.UtcNow.AddDays(-1);
+        turnoAyer.FechaCierre = DateTime.UtcNow.AddDays(-1).AddHours(8);
+        turnoAyer.SaldoFinal = 30000m;
+        turnoAyer.GastosTurno = 0m;
+        turnoAyer.Estado = EstadoTurno.Cerrado;
+
+        // Venta original de ayer en Turno 1
+        var ordenAyer = new Orden
+        {
+            TurnoId = turnoAyer.Id,
+            Fecha = DateTime.UtcNow.AddDays(-1).AddHours(2),
+            Total = 20000m,
+            Estado = EstadoOrden.Pagada
+        };
+        ordenAyer.Detalles.Add(new DetalleOrden
+        {
+            Variante = devuelta,
+            Cantidad = 1,
+            PrecioUnitario = 20000m,
+            Subtotal = 20000m
+        });
+        ordenAyer.Pagos.Add(new Pago
+        {
+            MetodoPago = MetodoPago.Efectivo,
+            Monto = 20000m
+        });
+        _context.Ordenes.Add(ordenAyer);
+
+        // Turno 2 (hoy, abierto)
+        var turnoHoy = new Turno
+        {
+            EmpleadoId = turnoAyer.EmpleadoId,
+            FechaApertura = DateTime.UtcNow,
+            SaldoInicial = 10000m,
+            Estado = EstadoTurno.Abierto
+        };
+        _context.Turnos.Add(turnoHoy);
+        await _context.SaveChangesAsync();
+
+        var handler = new RegistrarCambioCommandHandler(_context);
+        var command = new RegistrarCambioCommand(
+            TurnoId: turnoHoy.Id,
+            VarianteDevueltaId: devuelta.Id,
+            CantidadDevuelta: 1,
+            VarianteNuevaId: nueva.Id,
+            CantidadNueva: 1,
+            MotivoCambio: "Talle y modelo",
+            MetodoPagoDiferencia: MetodoPago.Efectivo,
+            MontoDiferenciaPagada: 8000m,
+            OrdenIdOriginal: ordenAyer.Id
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Diferencia.Should().Be(8000m);
+        result.Value.MontoCobrado.Should().Be(8000m);
+
+        // 1. Turno de ayer permanece INTACTO (Inmutabilidad temporal)
+        var turnoAyerEnBd = await _context.Turnos.AsNoTracking().FirstOrDefaultAsync(t => t.Id == turnoAyer.Id);
+        turnoAyerEnBd!.Estado.Should().Be(EstadoTurno.Cerrado);
+        turnoAyerEnBd.SaldoFinal.Should().Be(30000m);
+
+        var pagosAyer = await _context.Pagos.Where(p => p.Orden.TurnoId == turnoAyer.Id).ToListAsync();
+        pagosAyer.Sum(p => p.Monto).Should().Be(20000m); // Sin alteraciones
+
+        // 2. Turno de hoy tiene el pago de la diferencia
+        var ordenCambioHoy = await _context.Ordenes
+            .Include(o => o.Pagos)
+            .FirstOrDefaultAsync(o => o.Id == result.Value.OrdenId);
+        ordenCambioHoy.Should().NotBeNull();
+        ordenCambioHoy!.TurnoId.Should().Be(turnoHoy.Id);
+        ordenCambioHoy.Total.Should().Be(8000m);
+        ordenCambioHoy.Pagos.Should().ContainSingle();
+        ordenCambioHoy.Pagos.First().Monto.Should().Be(8000m);
+
+        // 3. Stock atómico actualizado y registrado en MovimientosStock
+        var devueltaEnBd = await _context.Variantes.FindAsync(devuelta.Id);
+        var nuevaEnBd = await _context.Variantes.FindAsync(nueva.Id);
+        devueltaEnBd!.StockFisico.Should().Be(6); // 5 + 1
+        nuevaEnBd!.StockFisico.Should().Be(2);     // 3 - 1
+
+        var movimientos = await _context.MovimientosStock
+            .Where(m => m.OrdenId == result.Value.OrdenId)
+            .ToListAsync();
+        movimientos.Should().HaveCount(2);
+        movimientos.Should().Contain(m => m.VarianteId == devuelta.Id && m.Cantidad == 1 && m.Tipo == TipoMovimientoStock.DevolucionCambio);
+        movimientos.Should().Contain(m => m.VarianteId == nueva.Id && m.Cantidad == -1 && m.Tipo == TipoMovimientoStock.SalidaCambio);
+    }
+
+    [Fact]
+    public async Task RegistrarCambio_ItemDeTicketCambiadoPreviamente_RechazaSegundoCambio()
+    {
+        // Arrange
+        var (turno, devuelta, nueva) = await CrearEscenarioBaseAsync();
+
+        var ordenOriginal = new Orden
+        {
+            TurnoId = turno.Id,
+            Fecha = DateTime.UtcNow.AddHours(-1),
+            Total = 10000m,
+            Estado = EstadoOrden.Pagada
+        };
+        ordenOriginal.Detalles.Add(new DetalleOrden
+        {
+            Variante = devuelta,
+            Cantidad = 1,
+            PrecioUnitario = 10000m,
+            Subtotal = 10000m
+        });
+        _context.Ordenes.Add(ordenOriginal);
+        await _context.SaveChangesAsync();
+
+        var handler = new RegistrarCambioCommandHandler(_context);
+        var command1 = new RegistrarCambioCommand(
+            TurnoId: turno.Id,
+            VarianteDevueltaId: devuelta.Id,
+            CantidadDevuelta: 1,
+            VarianteNuevaId: nueva.Id,
+            CantidadNueva: 1,
+            MotivoCambio: "Primer cambio legítimo",
+            OrdenIdOriginal: ordenOriginal.Id
+        );
+
+        // Act 1: Primer cambio
+        var result1 = await handler.Handle(command1, CancellationToken.None);
+        result1.IsSuccess.Should().BeTrue();
+
+        // Act 2: Intento de cambiar la misma prenda del ticket por segunda vez
+        var command2 = new RegistrarCambioCommand(
+            TurnoId: turno.Id,
+            VarianteDevueltaId: devuelta.Id,
+            CantidadDevuelta: 1,
+            VarianteNuevaId: nueva.Id,
+            CantidadNueva: 1,
+            MotivoCambio: "Segundo cambio fraudulento",
+            OrdenIdOriginal: ordenOriginal.Id
+        );
+
+        var result2 = await handler.Handle(command2, CancellationToken.None);
+
+        // Assert
+        result2.IsSuccess.Should().BeFalse();
+        result2.Error.Should().Contain("ya fue cambiada previamente");
+    }
 }

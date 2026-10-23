@@ -1295,3 +1295,37 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **5. Verificación de Compilación y Suite de Tests:**
   - `dotnet test Back/DastikERP.sln`: **181/181 pruebas superadas en verde** (0 fallos, 0 errores), incluyendo nuevo test de Stealth Mode `ListarEmpleados_DebeOcultarCuentasDev_StealthMode`.
   - `npm run build --prefix Front`: **0 errores TypeScript**, bundle generado exitosamente en 2.68s.
+---
+
+### [fix/tiendanube-notnull-and-cambios-audit] Corrección de Error 19 NOT NULL en Sincronización Tiendanube y Auditoría Exhaustiva de Cambios de Ropa e Integridad de Base de Datos - COMPLETADO
+
+**Objetivo:** Resolver el Error 500 (`SQLite Error 19: 'NOT NULL constraint failed: Productos.SeoTitulo'`) reportado al sincronizar con Tiendanube, y ejecutar una auditoría profunda de la integridad de base de datos para Cambios de Ropa (inmutabilidad temporal de turnos cerrados, prevención de doble cambio de prendas, tabla de auditoría `MovimientosStock` y verificación física de integridad SQLite).
+
+- **Rama:** `develop`.
+- **1. Corrección Defensiva de Columnas NOT NULL en Tiendanube e Inventario:**
+  - `Producto.cs`: Inicializadores por defecto seguros (`= string.Empty;` / `= "[]";`) para todas las propiedades editoriales y de SEO (`VideoUrl`, `TagsSeo`, `SeoTitulo`, `SeoDescripcion`, `SubcategoriasJson`, `DestacadosJson`).
+  - `ProductoConfiguration.cs`: Mapeo explícito `.HasDefaultValue("")` y `.HasDefaultValue("[]")` en Fluent API.
+  - `SqliteSchemaPatcher.cs`:
+    - Incorporadas columnas con defaults a `ColumnPatches` y a la sentencia `CREATE TABLE IF NOT EXISTS "Productos"`.
+    - Script de saneamiento de base de datos ejecutando `COALESCE(columna, '')` para purgar cualquier valor `NULL` residual existente en `dastik_dev.db` y `dastik_sandbox_dev.db`.
+  - Handlers de backend (`TiendanubeSyncService.cs`, `CrearProductoCommandHandler.cs`, `EditarProductoCommandHandler.cs`): Operador de coalescencia `?? string.Empty` y `?? "[]"` defensivo garantizando que jamás se transmita un `null` hacia SQLite.
+  - Nueva prueba unitaria: `SincronizarCatalogoAsync_ConCamposSeoNulos_InsertaExitosamenteSinViolacionNotnull`.
+- **2. Auditoría y Trazabilidad de Cambios de Ropa (Inmutabilidad Temporal & Doble Cambio):**
+  - **Inmutabilidad de Turnos Cerrados:** Un cambio de ropa proveniente de un ticket emitido en un turno anterior ya cerrado (`Estado = Cerrado`) asienta el comprobante y la diferencia dineraria únicamente en el turno activo actual (`Estado = Abierto`), manteniendo inalterados los saldos, totales y arqueos del turno anterior.
+  - **Prevención de Doble Cambio (`FueCambiado`):**
+    - Añadido campo `FueCambiado` (boolean, default `false`) en `DetalleOrden.cs` y su configuración EF Core.
+    - `RegistrarCambioCommandHandler.cs`: Verifica si el ítem devuelto del ticket original ya fue cambiado (`itemTicketDevuelto.FueCambiado == true`); en caso afirmativo, rechaza la operación inmediatamente (`"La prenda seleccionada del ticket #... ya fue cambiada previamente"`).
+    - Al procesarse el cambio con éxito, marca `FueCambiado = true` dentro de la transacción.
+  - **Tabla de Auditoría `MovimientosStock`:**
+    - Creada entidad `MovimientoStock.cs` con configuración Fluent API (`MovimientoStockConfiguration.cs`) y tabla correspondiente en SQLite (`SqliteSchemaPatcher.cs`).
+    - En cada cambio, se asientan dos registros atómicos: `TipoMovimientoStock.DevolucionCambio` (+stock devuelto) y `TipoMovimientoStock.SalidaCambio` (-stock nuevo), con stock resultante, timestamp UTC, referencia a la orden y motivo de cambio.
+    - Se mapeó la relación `Orden` para garantizar la resolución ordenada de claves foráneas en EF Core.
+  - **Pruebas Automatizadas:**
+    - `RegistrarCambio_EntreTurnoCerradoYTurnoAbierto_NoAlteraTurnoCerradoYAsientaEnTurnoActual`.
+    - `RegistrarCambio_ItemDeTicketCambiadoPreviamente_RechazaSegundoCambio`.
+- **3. Auditoría Física de Integridad SQLite (`PRAGMA`):**
+  - Ejecutado `PRAGMA integrity_check;` en `dastik_dev.db` y `dastik_sandbox_dev.db` -> **Resultado: `ok`**.
+  - Ejecutado `PRAGMA foreign_key_check;` en ambas bases de datos -> **Resultado: 0 violaciones de integridad referencial**.
+- **4. Verificación de Compilación y Suite de Tests:**
+  - `dotnet test Back/DastikERP.sln`: **184/184 pruebas superadas en verde** (0 fallos, 0 errores).
+  - `npm run build --prefix Front`: **0 errores TypeScript**, bundle generado exitosamente en 2.17s.

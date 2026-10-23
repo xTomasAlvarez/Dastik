@@ -50,13 +50,13 @@ public class EditarProductoCommandHandler : IRequestHandler<EditarProductoComman
         producto.CostoBase = request.CostoBase;
         producto.MarkupAplicado = request.MarkupAplicado;
         producto.PrecioVenta = request.PrecioVenta;
-        producto.VideoUrl = request.VideoUrl;
+        producto.VideoUrl = request.VideoUrl ?? string.Empty;
         producto.EsFisico = request.EsFisico;
         producto.SubcategoriasJson = request.Subcategorias != null ? JsonSerializer.Serialize(request.Subcategorias) : "[]";
         producto.DestacadosJson = request.Destacados != null ? JsonSerializer.Serialize(request.Destacados) : "[]";
-        producto.TagsSeo = request.TagsSeo;
-        producto.SeoTitulo = request.SeoTitulo;
-        producto.SeoDescripcion = request.SeoDescripcion;
+        producto.TagsSeo = request.TagsSeo ?? string.Empty;
+        producto.SeoTitulo = request.SeoTitulo ?? string.Empty;
+        producto.SeoDescripcion = request.SeoDescripcion ?? string.Empty;
 
         var imagenesLista = request.Imagenes ?? (!string.IsNullOrWhiteSpace(request.ImagenUrl)
             ? new List<string> { request.ImagenUrl.Trim() }

@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Gasto> Gastos => Set<Gasto>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<MovimientoStock> MovimientosStock => Set<MovimientoStock>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
