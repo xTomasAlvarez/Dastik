@@ -226,6 +226,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
                       src={url}
                       alt={`${producto.nombre} miniatura ${idx + 1}`}
                       decoding="async"
+                      loading="lazy"
                       className="w-full h-full object-cover"
                     />
                   </button>

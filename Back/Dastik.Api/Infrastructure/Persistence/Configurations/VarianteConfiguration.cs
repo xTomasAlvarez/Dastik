@@ -16,7 +16,7 @@ public class VarianteConfiguration : IEntityTypeConfiguration<Variante>
         builder.Property(v => v.Color).HasMaxLength(50);
         builder.Property(v => v.CodigoBarras).HasMaxLength(100);
         builder.Property(v => v.EsCodigoGenerado).IsRequired();
-        builder.Property(v => v.StockFisico).IsRequired();
+        builder.Property(v => v.StockFisico).IsRequired().IsConcurrencyToken();
         builder.Property(v => v.TiendanubeVariantId).HasMaxLength(50);
 
         // Relación Producto -> Variantes (Cascada)

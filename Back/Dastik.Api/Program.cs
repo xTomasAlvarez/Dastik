@@ -5,6 +5,7 @@ using Dastik.Api.Domain.Services;
 using Dastik.Api.Features.Auth;
 using Dastik.Api.Features.Caja;
 using Dastik.Api.Features.Configuracion;
+using Dastik.Api.Features.Configuracion.Services;
 using Dastik.Api.Features.Inventario.CrearProducto;
 using Dastik.Api.Features.Inventario.SincronizarTiendanube;
 using Dastik.Api.Features.Inventario.UploadImagenes;
@@ -70,6 +71,7 @@ builder.Services.AddTransient<ICalculadoraComisiones, CalculadoraComisiones>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<ITiendanubeSyncService, TiendanubeSyncService>();
+builder.Services.AddScoped<IDatabaseBackupService, DatabaseBackupService>();
 
 // Cliente HTTP Tipado para Tiendanube con Políticas de Resiliencia (Polly)
 builder.Services.AddHttpClient<ITiendanubeApiClient, TiendanubeApiClient>(client =>
@@ -217,6 +219,27 @@ try
 catch (Exception ex)
 {
     app.Logger.LogWarning(ex, "No se pudo ejecutar el SandboxDataSeeder (¿base de datos sandbox desconectada?).");
+}
+
+// Snapshot diario automático al iniciar la aplicación (Bloque 1: Resiliencia de Base de Datos)
+try
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var backupService = scope.ServiceProvider.GetRequiredService<IDatabaseBackupService>();
+        var backupsResult = backupService.ListarBackups();
+        var todayStr = DateTime.Now.ToString("yyyyMMdd");
+        var yaTieneBackupHoy = backupsResult.IsSuccess && backupsResult.Value is not null && backupsResult.Value.Any(b => b.Archivo.Contains(todayStr) && b.Motivo.Contains("inicio"));
+        if (!yaTieneBackupHoy)
+        {
+            await backupService.CrearBackupAsync("inicio-diario");
+            app.Logger.LogInformation("Snapshot diario automático generado al inicio de la aplicación.");
+        }
+    }
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "No se pudo generar el snapshot diario automático al inicio.");
 }
 
 app.Run();

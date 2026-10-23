@@ -3,6 +3,7 @@ using Dastik.Api.Common;
 using Dastik.Api.Domain.Entities;
 using Dastik.Api.Domain.Integrations.Tiendanube;
 using Dastik.Api.Domain.Services;
+using Dastik.Api.Features.Configuracion.Services;
 using Dastik.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -15,17 +16,20 @@ public class TiendanubeSyncService : ITiendanubeSyncService
     private readonly ITiendanubeApiClient _apiClient;
     private readonly GeneradorEan13 _generadorEan13;
     private readonly ILogger<TiendanubeSyncService> _logger;
+    private readonly IDatabaseBackupService? _backupService;
 
     public TiendanubeSyncService(
         AppDbContext context,
         ITiendanubeApiClient apiClient,
         GeneradorEan13 generadorEan13,
-        ILogger<TiendanubeSyncService> logger)
+        ILogger<TiendanubeSyncService> logger,
+        IDatabaseBackupService? backupService = null)
     {
         _context = context;
         _apiClient = apiClient;
         _generadorEan13 = generadorEan13;
         _logger = logger;
+        _backupService = backupService;
     }
 
     public async Task<Result<SincronizarCatalogoResult>> SincronizarCatalogoAsync(
@@ -33,6 +37,18 @@ public class TiendanubeSyncService : ITiendanubeSyncService
         string? accessToken = null,
         CancellationToken ct = default)
     {
+        if (_backupService != null)
+        {
+            try
+            {
+                await _backupService.CrearBackupAsync("pre-sync", ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Aviso: no se pudo generar el snapshot preventivo pre-sync antes de sincronizar.");
+            }
+        }
+
         _logger.LogInformation("Iniciando proceso de sincronización de catálogo desde Tiendanube...");
 
         // 1. REGLA DE TENANT: Ubicar Unidad de Negocio 'Dastik' con integración a Tiendanube

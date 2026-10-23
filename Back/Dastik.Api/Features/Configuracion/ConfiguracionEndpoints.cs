@@ -1,4 +1,5 @@
 using Dastik.Api.Domain.Entities;
+using Dastik.Api.Features.Configuracion.Services;
 using Dastik.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -37,6 +38,53 @@ public static class ConfiguracionEndpoints
 
         RegistrarRutasCatalogosBase(invGroup);
         RegistrarRutasCatalogosBase(cfgGroup);
+        RegistrarRutasBackups(cfgGroup);
+    }
+
+    private static void RegistrarRutasBackups(RouteGroupBuilder group)
+    {
+        // ==========================================
+        // 4. BACKUPS & ROLLBACK DE BASE DE DATOS
+        // ==========================================
+        group.MapGet("/backups", (IDatabaseBackupService backupService) =>
+        {
+            var result = backupService.ListarBackups();
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { error = result.Error });
+            }
+            return Results.Ok(result.Value);
+        })
+        .WithName("ListarBackups")
+        .WithSummary("Lista todos los puntos de restauración disponibles con metadatos de tamaño, fecha y motivo.")
+        .RequireAuthorization("AdminOnly");
+
+        group.MapPost("/backups", async (CrearBackupRequest? req, IDatabaseBackupService backupService, CancellationToken ct) =>
+        {
+            var motivo = req?.Motivo ?? "manual";
+            var result = await backupService.CrearBackupAsync(motivo, ct);
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { error = result.Error });
+            }
+            return Results.Ok(result.Value);
+        })
+        .WithName("CrearBackupManual")
+        .WithSummary("Genera un snapshot inmediato de la base de datos con motivo personalizado.")
+        .RequireAuthorization("AdminOnly");
+
+        group.MapPost("/backups/{fileName}/restore", async (string fileName, IDatabaseBackupService backupService, CancellationToken ct) =>
+        {
+            var result = await backupService.RestaurarBackupAsync(fileName, ct);
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { error = result.Error });
+            }
+            return Results.Ok(result.Value);
+        })
+        .WithName("RestaurarBackup")
+        .WithSummary("Ejecuta el rollback seguro de la base de datos hacia el snapshot indicado.")
+        .RequireAuthorization("AdminOnly");
     }
 
     private static void RegistrarRutasCatalogosBase(RouteGroupBuilder group)

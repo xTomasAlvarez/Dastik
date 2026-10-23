@@ -2,6 +2,8 @@
 *.db
 *.db-shm
 *.db-wal
+Backups/
+Back/Dastik.Api/Backups/
 
 # Environment files
 .env

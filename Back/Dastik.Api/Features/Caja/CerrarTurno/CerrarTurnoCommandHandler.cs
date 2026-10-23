@@ -62,7 +62,22 @@ public class CerrarTurnoCommandHandler : IRequestHandler<CerrarTurnoCommand, Res
         turno.Estado = EstadoTurno.Cerrado;
 
         // 5. Guardar en PostgreSQL
-        await _context.SaveChangesAsync(cancellationToken);
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result<CerrarTurnoResult>.Failure("Conflicto de concurrencia: el turno fue modificado simultáneamente por otra operación.");
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
 
         // 6. Retornar el resumen del arqueo con Result Pattern
         var resultado = new CerrarTurnoResult(

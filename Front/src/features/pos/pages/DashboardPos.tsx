@@ -328,6 +328,8 @@ export const DashboardPos: React.FC = () => {
                           <img
                             src={item.imagenUrl}
                             alt={item.nombreProducto}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';

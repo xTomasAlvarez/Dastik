@@ -76,7 +76,7 @@ public class RecuperarPasswordCommandHandlerTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Nombre.Should().Be("tomiDev");
+        result.Value!.Nombre.Should().Be("tomiDev");
 
         var adminActualizado = await _context.Usuarios.FirstAsync(u => u.Id == admin.Id);
         _passwordHasher.Verify("NuevaPasswordSegura2026!", adminActualizado.PasswordHash).Should().BeTrue();

@@ -32,7 +32,7 @@ public static class TiendanubeTokenHelper
                     return segments[^1];
                 }
             }
-            catch
+            catch (UriFormatException)
             {
                 // Si no es URI válida, continuar con trimmed
             }

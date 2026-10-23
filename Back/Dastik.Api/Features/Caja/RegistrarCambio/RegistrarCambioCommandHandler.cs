@@ -199,6 +199,11 @@ public class RegistrarCambioCommandHandler : IRequestHandler<RegistrarCambioComm
 
             return Result<RegistrarCambioResult>.Success(resultado);
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result<RegistrarCambioResult>.Failure("Conflicto de concurrencia: el stock disponible de una prenda fue modificado simultáneamente por otra terminal. Vuelva a intentar la operación.");
+        }
         catch (Exception)
         {
             await transaction.RollbackAsync(cancellationToken);

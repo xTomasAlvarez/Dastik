@@ -177,6 +177,11 @@ public class CobrarOrdenCommandHandler : IRequestHandler<CobrarOrdenCommand, Res
 
             return Result<CobrarOrdenResult>.Success(resultado);
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result<CobrarOrdenResult>.Failure("Conflicto de concurrencia: el stock disponible de una prenda fue modificado simultáneamente por otra terminal. Vuelva a intentar la operación.");
+        }
         catch (Exception)
         {
             await transaction.RollbackAsync(cancellationToken);

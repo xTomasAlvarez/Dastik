@@ -195,7 +195,7 @@ public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery,
                     }
                 }
             }
-            catch
+            catch (JsonException)
             {
                 // Fallback a ImagenUrl individual si el JSON es inválido
             }
@@ -220,7 +220,7 @@ public class ListarProductosQueryHandler : IRequestHandler<ListarProductosQuery,
         {
             return JsonSerializer.Deserialize<List<string>>(json) ?? [];
         }
-        catch
+        catch (JsonException)
         {
             return [];
         }

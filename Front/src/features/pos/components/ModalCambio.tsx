@@ -485,6 +485,8 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                                 <img
                                   src={v.producto.imagenUrl}
                                   alt={v.producto.nombre}
+                                  loading="lazy"
+                                  decoding="async"
                                   className="w-9 h-9 rounded-lg border border-subtle object-cover shrink-0 bg-elevated"
                                 />
                               ) : (
@@ -536,6 +538,8 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                         <img
                           src={varianteDevuelta.producto.imagenUrl}
                           alt={varianteDevuelta.producto.nombre}
+                          loading="lazy"
+                          decoding="async"
                           className="w-12 h-12 rounded-lg border border-subtle object-cover shrink-0 bg-surface"
                         />
                       ) : (
@@ -676,7 +680,9 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                                   <img
                                     src={v.producto.imagenUrl}
                                     alt={v.producto.nombre}
-                                    className="w-9 h-9 rounded-lg border border-subtle object-cover shrink-0 bg-elevated"
+                                    loading="lazy"
+                                  decoding="async"
+                                  className="w-9 h-9 rounded-lg border border-subtle object-cover shrink-0 bg-elevated"
                                   />
                                 ) : (
                                   <div className="w-9 h-9 rounded-lg border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-xs text-primary shrink-0">
@@ -732,6 +738,8 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                         <img
                           src={varianteNueva.producto.imagenUrl}
                           alt={varianteNueva.producto.nombre}
+                          loading="lazy"
+                          decoding="async"
                           className="w-12 h-12 rounded-lg border border-subtle object-cover shrink-0 bg-surface"
                         />
                       ) : (

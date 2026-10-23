@@ -23,6 +23,7 @@ import {
   type CategoriaDto,
 } from '../api/configuracionApi';
 import { Button } from '../../../components/ui/Button';
+import { BackupsSection } from '../components/BackupsSection';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -917,6 +918,9 @@ export const ConfiguracionPage: React.FC = () => {
             </div>
           </section>
         </motion.div>
+
+        {/* SECCIÓN 4: COPIAS DE SEGURIDAD & PUNTOS DE RESTAURACIÓN (ROLLBACK BD) */}
+        <BackupsSection onFeedback={mostrarFeedback} itemVariants={itemVariants} />
       </motion.div>
     </div>
   );

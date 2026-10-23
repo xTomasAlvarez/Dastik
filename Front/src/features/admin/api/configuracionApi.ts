@@ -53,6 +53,25 @@ export interface EliminarCatalogoResponse {
   productosReasignados: number;
 }
 
+export interface BackupInfoDto {
+  archivo: string;
+  motivo: string;
+  fecha: string;
+  tamanoBytes: number;
+  tamanoLegible: string;
+  esAutomatico: boolean;
+}
+
+export interface CrearBackupRequest {
+  motivo?: string;
+}
+
+export interface RestaurarBackupResponse {
+  mensaje: string;
+  archivoRestaurado: string;
+  snapshotPrevio: string;
+}
+
 export const configuracionApi = {
   obtenerProveedores: async (): Promise<ProveedorDto[]> => {
     const response = await apiClient.get<ProveedorDto[]>('/api/inventario/proveedores');
@@ -111,6 +130,22 @@ export const configuracionApi = {
 
   eliminarCategoria: async (id: number): Promise<EliminarCatalogoResponse> => {
     const response = await apiClient.delete<EliminarCatalogoResponse>(`/api/inventario/categorias/${id}`);
+    return response.data;
+  },
+
+  // Backups y Puntos de Restauración (Rollback)
+  obtenerBackups: async (): Promise<BackupInfoDto[]> => {
+    const response = await apiClient.get<BackupInfoDto[]>('/api/configuracion/backups');
+    return response.data;
+  },
+
+  crearBackup: async (data?: CrearBackupRequest): Promise<BackupInfoDto> => {
+    const response = await apiClient.post<BackupInfoDto>('/api/configuracion/backups', data ?? { motivo: 'manual' });
+    return response.data;
+  },
+
+  restaurarBackup: async (fileName: string): Promise<RestaurarBackupResponse> => {
+    const response = await apiClient.post<RestaurarBackupResponse>(`/api/configuracion/backups/${encodeURIComponent(fileName)}/restore`);
     return response.data;
   },
 };

@@ -464,7 +464,7 @@ public static class CatalogClassifierService
                 {
                     listaActual = JsonSerializer.Deserialize<List<string>>(prod.ImagenesJson) ?? new List<string>();
                 }
-                catch
+                catch (JsonException)
                 {
                     listaActual = new List<string>();
                 }

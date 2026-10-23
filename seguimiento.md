@@ -1116,3 +1116,54 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **Verificación de Compilación y Tests:**
   - `dotnet test`: **125/125 pruebas superadas en verde**.
   - `npm run build`: **0 errores TypeScript**, build de producción limpio.
+
+
+---
+
+### [audit/resilience-security-and-backups] Escaneo Integral de Arquitectura, Endurecimiento de Seguridad, Resiliencia ACID y Sistema de Hot Backup/Rollback - COMPLETADO
+
+**Objetivo:** Realizar un escaneo exhaustivo de arquitectura, seguridad (OWASP), deuda técnica y resiliencia de persistencia previa al release en `main`, implementando un sistema a prueba de fallas de copias de seguridad consistentes en caliente (Hot Backup) y Rollback para SQLite, control de concurrencia optimista, protección estricta de endpoints y optimizaciones de render para el catálogo masivo de 1.704 prendas.
+
+- **Rama:** `develop` (trabajo verificado y consolidado; NO se fusiona aún a `main` respetando la directriz).
+- **1. Bloque 1: Sistema de Hot Backup y Rollback Atómico (`DatabaseBackupService`):**
+  - Creado `DatabaseBackupService.cs` e `IDatabaseBackupService.cs` (`Back/Dastik.Api/Features/Configuracion/Services/`):
+    - Utiliza `VACUUM INTO` nativo de SQLite para generar copias en caliente atómicas, auto-contenidas y desfragmentadas en `Back/Dastik.Api/Backups/` (ignorado en `.gitignore`).
+    - Nomenclatura normalizada: `{dbName}_{yyyyMMdd_HHmmss}_{motivo}.db`.
+    - Snapshots automáticos implementados:
+      - Al inicio de la aplicación (`inicio-diario` generado 1 vez al día en `Program.cs`).
+      - Pre-sincronización masiva de Tiendanube (`pre-sync` integrado en `TiendanubeSyncService.cs`).
+      - Snapshots manuales desde la interfaz con motivo personalizado.
+    - Rotación inteligente de snapshots: retiene los 20 más recientes para prevenir saturación de disco.
+    - Mecanismo de Rollback en vivo a prueba de fallos:
+      - Snapshot preventivo previo del estado actual (`pre-rollback`).
+      - Liberación de conexiones activas con `SqliteConnection.ClearAllPools()` y recolección forzada.
+      - Limpieza automática de archivos de journal `-wal` y `-shm`.
+      - Sobrescritura segura con reintentos y actualización no destructiva de esquemas con `SqliteSchemaPatcher`.
+  - Endpoints expuestos bajo `/api/configuracion/backups`:
+    - `GET /api/configuracion/backups`: lista snapshots con archivo, fecha, motivo, tamaño legible y origen.
+    - `POST /api/configuracion/backups`: creación de snapshot manual.
+    - `POST /api/configuracion/backups/{fileName}/restore`: ejecución de Rollback seguro.
+    - Todos los endpoints protegidos estrictamente con `.RequireAuthorization("AdminOnly")`.
+  - UI Front-End en `/admin/configuracion`:
+    - Creado componente modular `BackupsSection.tsx` integrado en `ConfiguracionPage.tsx`.
+    - Formulario con feedback animado (`motion/react`), tabla con badges según tipo (`INICIO DIARIO`, `PRE-SYNC TIENDANUBE`, `PRE-ROLLBACK`, `MANUAL`) y modal de doble confirmación con código de seguridad `"RESTAURAR"`.
+- **2. Bloque 2: Auditoría de Seguridad y Control de Acceso (OWASP & Dastik Rules):**
+  - Endpoints protegidos: verificado que ningún endpoint crítico (métricas avanzadas, liquidación de jornales, arqueos de caja, sincronización Tiendanube, backups y rollback) sea accesible sin rol `Admin` (`AdminOnly`).
+  - `/api/sandbox/reset` protegido con `.RequireAuthorization("OperadorCaja")` eliminando el bypass anónimo previo.
+  - Aislamiento de tokens y credenciales de Tiendanube: verificado que `TiendanubeAccessToken` jamás se expone en DTOs públicos, consultas de catálogo ni logs.
+  - Bloques transaccionales ACID puros:
+    - `CobrarOrdenCommandHandler`: transacciones atómicas `BeginTransactionAsync`, `CommitAsync`, `RollbackAsync`.
+    - `RegistrarCambioCommandHandler`: transacción atómica de movimiento dual de prendas y pagos.
+    - `CerrarTurnoCommandHandler`: transacción atómica para sellar saldo final, gastos y estado cerrado.
+  - Concurrencia optimista implementada en `VarianteConfiguration.cs`:
+    - Marcada la propiedad `StockFisico` con `.IsConcurrencyToken()` para control optimista en SQLite y PostgreSQL.
+    - Captura de `DbUpdateConcurrencyException` en handlers de cobro y cambios retornando respuestas descriptivas con Result Pattern (`Result.Failure`) sin arrojar excepciones no controladas.
+- **3. Bloque 3: Deuda Técnica, Detección de Bugs Silenciosos y Compilador:**
+  - Eliminados todos los bloques `catch` vacíos o bare `catch`: convertidos a captura tipada (`JsonException`, `UriFormatException`) en `CatalogClassifierService`, `TiendanubeTokenHelper` y `ListarProductosQuery`.
+  - Eliminado el warning CS8602 en `RecuperarPasswordCommandHandlerTests.cs` y suprimidos warnings de EF Core en `DatabaseBackupService.cs` y `Program.cs`.
+- **4. Bloque 4: Performance, Memoización y Carga de Catálogo:**
+  - `CatalogoGrid.tsx` e `InventarioPage.tsx`: filtros de unidad, taxonomía, búsqueda full-text y paginación 100% blindados con `useMemo`.
+  - Atributos `loading="lazy"` y `decoding="async"` incorporados en todas las imágenes de catálogo, modales (`ProductCard`, `InventarioPage`, `DashboardPage`, `ModalCrearProducto`, `ModalDetalleProducto`, `ModalQuickViewPos`, `ModalCambio`, `DashboardPos`) para decodificación asíncrona fuera del hilo principal.
+- **5. Verificación de Compilación y Tests:**
+  - `dotnet test`: **180/180 pruebas superadas en verde** (0 errores, 0 warnings).
+  - `npm run build`: **0 errores TypeScript**, bundle de producción limpio generado en 1.80s.

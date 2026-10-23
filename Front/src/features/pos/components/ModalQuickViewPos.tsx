@@ -237,6 +237,7 @@ export const ModalQuickViewPos: React.FC<ModalQuickViewPosProps> = ({
                           src={url}
                           alt={`Miniatura ${idx + 1}`}
                           decoding="async"
+                          loading="lazy"
                           className="w-full h-full object-cover"
                         />
                       </button>

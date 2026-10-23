@@ -38,7 +38,7 @@ public static class SandboxEndpoints
                 message = "Entorno Sandbox reiniciado con éxito. Caja restaurada y lista para comenzar la práctica."
             });
         })
-        .AllowAnonymous()
+        .RequireAuthorization("OperadorCaja")
         .WithName("ReiniciarSandbox")
         .WithSummary("Limpia ventas y turnos de prueba, restablece stock y restaura el estado para practicar.")
         .WithOpenApi();

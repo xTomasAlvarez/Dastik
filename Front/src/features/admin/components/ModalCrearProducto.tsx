@@ -811,6 +811,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
                         alt={`Foto ${idx + 1}`}
                         className="w-full h-full object-cover"
                         loading="lazy"
+                        decoding="async"
                       />
 
                       {/* Badge Portada */}

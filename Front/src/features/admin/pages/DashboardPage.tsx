@@ -380,6 +380,7 @@ export const DashboardPage: React.FC = () => {
                               alt={nombre}
                               className="w-full h-full object-cover"
                               loading="lazy"
+                              decoding="async"
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 const fb =
