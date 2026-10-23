@@ -25,7 +25,10 @@ public static class SqliteSchemaPatcher
             "Activo" INTEGER NOT NULL DEFAULT 1,
             "TurnoAsignado" TEXT NOT NULL DEFAULT 'Completo',
             "TarifaPorHora" TEXT NOT NULL DEFAULT '0',
-            "FechaCreacion" TEXT NOT NULL
+            "FechaCreacion" TEXT NOT NULL,
+            "PinRecuperacionHash" TEXT NULL,
+            "PinRecuperacionExpira" TEXT NULL,
+            "EsOcultoDev" INTEGER NOT NULL DEFAULT 0
         );
         """,
         """
@@ -192,6 +195,7 @@ public static class SqliteSchemaPatcher
         new("Usuarios", "FechaCreacion", "TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'"),
         new("Usuarios", "PinRecuperacionHash", "TEXT NULL"),
         new("Usuarios", "PinRecuperacionExpira", "TEXT NULL"),
+        new("Usuarios", "EsOcultoDev", "INTEGER NOT NULL DEFAULT 0"),
 
         // Gastos
         new("Gastos", "Moneda", "TEXT NOT NULL DEFAULT 'ARS'"),
@@ -295,6 +299,21 @@ public static class SqliteSchemaPatcher
                 connection,
                 "UPDATE \"Ordenes\" SET \"MotivoCambio\" = REPLACE(\"MotivoCambio\", 'Gordo', 'Facundo') WHERE \"MotivoCambio\" LIKE '%Gordo%';",
                 cancellationToken);
+
+            // 4. Parche de invisibilidad Stealth Mode: marcar cuentas de desarrollo como EsOcultoDev = 1
+            await ExecuteNonQueryAsync(
+                connection,
+                "UPDATE \"Usuarios\" SET \"EsOcultoDev\" = 1 WHERE \"Email\" IN ('tomidev@dastik.com', 'tomi.empleado@dastik.com');",
+                cancellationToken);
+
+            // 5. Parche de saneamiento para Producción: eliminar cuentas ficticias de prueba si no es base Sandbox
+            if (!connection.ConnectionString.Contains("sandbox", StringComparison.OrdinalIgnoreCase))
+            {
+                await ExecuteNonQueryAsync(
+                    connection,
+                    "DELETE FROM \"Usuarios\" WHERE \"Email\" IN ('cajero.sandbox@dastik.com', 'sofia.empleada@dastik.com', 'lucas@dastik.com', 'franco@dastik.com', 'admin@dastik.com');",
+                    cancellationToken);
+            }
         }
         finally
         {

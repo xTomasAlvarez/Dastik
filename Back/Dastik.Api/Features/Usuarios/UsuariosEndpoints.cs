@@ -26,7 +26,7 @@ public static class UsuariosEndpoints
             {
                 var empleados = await context.Usuarios
                     .AsNoTracking()
-                    .Where(u => u.Rol == RolUsuario.Empleado)
+                    .Where(u => !u.EsOcultoDev && u.Email != "tomidev@dastik.com" && u.Email != "tomi.empleado@dastik.com" && u.Rol == RolUsuario.Empleado)
                     .OrderBy(u => u.Nombre)
                     .Select(u => new EmpleadoResponse(
                         u.Id,
@@ -51,7 +51,7 @@ public static class UsuariosEndpoints
         {
             var empleados = await context.Usuarios
                 .AsNoTracking()
-                .Where(u => u.Rol == RolUsuario.Empleado)
+                .Where(u => !u.EsOcultoDev && u.Email != "tomidev@dastik.com" && u.Email != "tomi.empleado@dastik.com" && u.Rol == RolUsuario.Empleado)
                 .OrderBy(u => u.Nombre)
                 .Select(u => new EmpleadoResponse(
                     u.Id,
@@ -101,6 +101,11 @@ public static class UsuariosEndpoints
             }
 
             var emailNormalizado = request.Email.Trim().ToLowerInvariant();
+
+            if (emailNormalizado == "tomidev@dastik.com" || emailNormalizado == "tomi.empleado@dastik.com")
+            {
+                return Results.BadRequest(new { error = "El correo especificado está reservado por el sistema." });
+            }
 
             var yaExiste = await context.Usuarios
                 .AnyAsync(u => u.Email == emailNormalizado, ct);
@@ -185,7 +190,7 @@ public static class UsuariosEndpoints
                 return Results.BadRequest(new { error = "La tarifa por hora no puede ser negativa." });
             }
 
-            var empleado = await context.Usuarios.FirstOrDefaultAsync(u => u.Id == id, ct);
+            var empleado = await context.Usuarios.FirstOrDefaultAsync(u => u.Id == id && !u.EsOcultoDev && u.Email != "tomidev@dastik.com" && u.Email != "tomi.empleado@dastik.com", ct);
             if (empleado is null)
             {
                 return Results.NotFound(new { error = $"Empleado con ID {id} no encontrado." });
@@ -252,7 +257,7 @@ public static class UsuariosEndpoints
                 return Results.BadRequest(new { error = "La nueva contraseña debe tener al menos 6 caracteres." });
             }
 
-            var empleado = await context.Usuarios.FirstOrDefaultAsync(u => u.Id == id, ct);
+            var empleado = await context.Usuarios.FirstOrDefaultAsync(u => u.Id == id && !u.EsOcultoDev && u.Email != "tomidev@dastik.com" && u.Email != "tomi.empleado@dastik.com", ct);
             if (empleado is null)
             {
                 return Results.NotFound(new { error = $"Empleado con ID {id} no encontrado." });
@@ -294,7 +299,7 @@ public static class UsuariosEndpoints
             AppDbContext context,
             CancellationToken ct)
         {
-            var empleado = await context.Usuarios.FirstOrDefaultAsync(u => u.Id == id, ct);
+            var empleado = await context.Usuarios.FirstOrDefaultAsync(u => u.Id == id && !u.EsOcultoDev && u.Email != "tomidev@dastik.com" && u.Email != "tomi.empleado@dastik.com", ct);
             if (empleado is null)
             {
                 return Results.NotFound(new { error = $"Empleado con ID {id} no encontrado." });
@@ -336,7 +341,7 @@ public static class UsuariosEndpoints
 
             var empleado = await context.Usuarios
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == id, ct);
+                .FirstOrDefaultAsync(u => u.Id == id && !u.EsOcultoDev && u.Email != "tomidev@dastik.com" && u.Email != "tomi.empleado@dastik.com", ct);
 
             if (empleado is null)
             {

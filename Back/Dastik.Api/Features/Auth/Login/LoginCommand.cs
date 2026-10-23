@@ -16,5 +16,6 @@ public record LoginResult(
     string Nombre,
     string Rol,
     bool DebeCambiarPassword,
-    bool IsSandboxMode
+    bool IsSandboxMode,
+    bool EsOcultoDev = false
 );

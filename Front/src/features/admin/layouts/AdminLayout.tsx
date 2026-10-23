@@ -27,6 +27,18 @@ import { useThemeStore } from '../../../stores/useThemeStore';
 
 export const AdminLayout: React.FC = () => {
   const { usuario, logout } = useAuthStore();
+
+  const isDev =
+    Boolean(usuario?.esOcultoDev) ||
+    usuario?.email?.toLowerCase() === 'tomidev@dastik.com' ||
+    usuario?.email?.toLowerCase() === 'tomi.empleado@dastik.com' ||
+    Boolean(usuario?.nombre?.toLowerCase().includes('tomi (admin dev)'));
+
+  const rolUsuarioLabel = isDev
+    ? 'Desarrollador (Dev)'
+    : usuario?.rol === 'Admin'
+    ? 'Dueño'
+    : 'Staff';
   const { isSandboxMode, toggleSandboxMode } = useTenantStore();
   const { theme, toggleTheme } = useThemeStore();
   const location = useLocation();
@@ -443,7 +455,7 @@ export const AdminLayout: React.FC = () => {
                 {/* Avatar y Salir en modo colapsado */}
                 <div
                   className="w-10 h-10 rounded-lg border border-subtle bg-surface flex items-center justify-center text-emerald-500 shadow-surface"
-                  title={`${usuario?.nombre || 'Dueño'} · ${usuario?.rol === 'Admin' ? 'Dueño' : 'Staff'}`}
+                  title={`${usuario?.nombre || 'Dueño'} · ${rolUsuarioLabel}`}
                 >
                   <ShieldCheck size={18} weight="duotone" />
                 </div>
@@ -520,8 +532,8 @@ export const AdminLayout: React.FC = () => {
                       <div className="text-xs font-semibold text-primary truncate">
                         {usuario?.nombre || 'Dueño'}
                       </div>
-                      <div className="text-[11px] text-muted font-sans">
-                        {usuario?.rol === 'Admin' ? 'Dueño' : 'Staff'}
+                      <div className="text-[11px] text-muted font-sans font-medium">
+                        {rolUsuarioLabel}
                       </div>
                     </div>
                   </div>

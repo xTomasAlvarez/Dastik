@@ -105,7 +105,21 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   }, []);
 
   const nombreCajero = usuario?.nombre || 'Cajero';
-  const rolCajero = usuario?.rol === 'Admin' ? 'Dueño' : 'Staff';
+  const isCurrentTomi =
+    usuario?.email?.toLowerCase() === 'tomidev@dastik.com' ||
+    usuario?.email?.toLowerCase() === 'tomi.empleado@dastik.com' ||
+    Boolean(usuario?.esOcultoDev) ||
+    Boolean(usuario?.nombre?.toLowerCase().includes('tomi'));
+
+  const rolCajero = isCurrentTomi
+    ? 'Desarrollador (Dev)'
+    : usuario?.rol === 'Admin'
+    ? 'Dueño'
+    : 'Staff';
+
+  const visibleSandboxAccounts = SANDBOX_ACCOUNTS.filter(
+    (acc) => isCurrentTomi || (acc.id !== 'tomiDev' && !acc.email.toLowerCase().includes('tomi'))
+  );
   const nombreTurno = turnoActivo
     ? new Date(turnoActivo.fechaApertura).getHours() < 14
       ? 'Mañana'
@@ -481,7 +495,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
                       ⚡ Selector Rápido (Sandbox)
                     </span>
                     <div className="grid grid-cols-1 gap-1">
-                      {SANDBOX_ACCOUNTS.map((acc) => {
+                      {visibleSandboxAccounts.map((acc) => {
                         const isSelected =
                           usuario?.email?.toLowerCase() === acc.email.toLowerCase() ||
                           usuario?.nombre?.toLowerCase() === acc.nombre.toLowerCase();

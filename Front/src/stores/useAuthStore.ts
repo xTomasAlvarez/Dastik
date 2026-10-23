@@ -12,6 +12,7 @@ export interface SandboxAccount {
   rol: RolUsuario;
   turno: string;
   tarifa: string;
+  esOcultoDev?: boolean;
 }
 
 export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
@@ -54,6 +55,7 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     rol: 'Admin',
     turno: 'Completo',
     tarifa: '$ 0/h',
+    esOcultoDev: true,
   },
 ];
 
@@ -137,12 +139,18 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     const { tokenKey, userKey } = getActiveStorageKeys(isSandbox);
 
+    const esDev =
+      data.esOcultoDev ||
+      data.email?.toLowerCase() === 'tomidev@dastik.com' ||
+      data.email?.toLowerCase() === 'tomi.empleado@dastik.com';
+
     const usuario: UsuarioDto = {
       id: data.usuarioId,
       nombre: data.nombre,
       email: data.email,
       rol: data.rol,
       debeCambiarPassword: data.debeCambiarPassword,
+      esOcultoDev: esDev,
     };
 
     localStorage.setItem(tokenKey, data.token);
@@ -237,12 +245,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
 
       const data = response.data;
+      const esDev =
+        data.esOcultoDev ||
+        account.esOcultoDev ||
+        account.id === 'tomiDev' ||
+        data.email?.toLowerCase() === 'tomidev@dastik.com';
+
       const usuario: UsuarioDto = {
         id: data.usuarioId,
         nombre: data.nombre,
         email: data.email,
         rol: data.rol,
         debeCambiarPassword: data.debeCambiarPassword,
+        esOcultoDev: esDev,
       };
 
       localStorage.setItem(TOKEN_SANDBOX_KEY, data.token);
@@ -266,6 +281,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         email: account.email,
         rol: account.rol,
         debeCambiarPassword: false,
+        esOcultoDev: account.esOcultoDev || account.id === 'tomiDev',
       };
 
       const fallbackToken = `mock-sandbox-jwt-${account.id}-${Date.now()}`;

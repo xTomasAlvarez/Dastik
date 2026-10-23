@@ -14,4 +14,5 @@ public class Usuario
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
     public string? PinRecuperacionHash { get; set; }
     public DateTime? PinRecuperacionExpira { get; set; }
+    public bool EsOcultoDev { get; set; } = false;
 }

@@ -1264,4 +1264,34 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **7. Verificación de Compilación y Suite de Tests:**
   - `dotnet test Back/DastikERP.sln`: **180/180 pruebas superadas en verde** (0 errores, 0 fallos).
   - `npm run build --prefix Front`: **0 errores TypeScript**, compilación completada en 1.88s.
+---
 
+### [feat/dev-stealth-and-clean-staff] Invisibilidad de Cuentas Dev (Stealth Mode), Limpieza de Usuarios en Producción y Alineación de Cabecera en Empleados - COMPLETADO
+
+**Objetivo:** Implementar la jerarquía y modo fantasma (`EsOcultoDev`) para las cuentas personales de Tomi, purgar de raíz las cuentas de prueba de la base de datos de producción (`dastik_dev.db`) para que solo figure el personal operativo real, y alinear el diseño y espaciado de la cabecera de `EmpleadosPage.tsx` con el estándar de `ArqueosPage.tsx` e `InventarioPage.tsx`.
+
+- **Rama:** `develop`.
+- **1. Jerarquía y Modo Fantasma (Stealth Mode) para Cuentas Dev:**
+  - `Usuario.cs` & `UsuarioConfiguration.cs`: Incorporado atributo booleano `EsOcultoDev` (default `false`).
+  - `SqliteSchemaPatcher.cs`: Añadida columna a `Usuarios` y parche de datos automático marcando `EsOcultoDev = 1` para `tomidev@dastik.com` y `tomi.empleado@dastik.com`.
+  - `LoginResult`, `LoginCommandHandler`, `JwtProvider` y `auth.types.ts`: Propagación de claim y propiedad `esOcultoDev`.
+  - `AdminLayout.tsx` & `PosHeader.tsx`: Si la sesión activa corresponde a Tomi, en el perfil inferior izquierdo y badges de cabecera se muestra **`Desarrollador (Dev)`** en vez de `Dueño`.
+  - `SandboxBanner.tsx` & `PosHeader.tsx`: El acceso rápido a `Tomi (Dev)` se filtra de la lista y se renderiza **únicamente** si el usuario actual es Tomi; si está logueado Diego, Ale o Facundo, `Tomi (Dev)` es 100% invisible en la interfaz.
+- **2. Invisibilidad Total a Nivel Backend y Endpoints:**
+  - `UsuariosEndpoints.cs`:
+    - `GET /api/empleados` y `GET /api/usuarios/empleados`: Excluyen siempre a nivel base de datos las cuentas con `EsOcultoDev == true` o emails `tomidev@dastik.com` y `tomi.empleado@dastik.com`.
+    - Endpoints de edición, reseteo de clave, liquidación y toggle de estado: Devuelven `404 Not Found` ante cualquier intento de acceso o modificación de cuentas de desarrollador.
+    - Creación de empleados: Prohíbe registrar usuarios con correos reservados de desarrollo.
+  - Blindaje defensivo en `EmpleadosPage.tsx`: Filtro en memoria `empleadosVisibles` garantizando que las cuentas dev no aparezcan en tablas ni alteren métricas de empleados activos o tarifa promedio por hora.
+- **3. Limpieza de Cuentas Basura en Producción (`dastik_dev.db`):**
+  - `DataSeeder.cs` & `SqliteSchemaPatcher.cs`: Removido el seeding de cuentas de prueba (`cajero.sandbox@dastik.com`, `sofia.empleada@dastik.com`, `admin@dastik.com`) en Producción y agregado script de saneamiento automático que elimina `cajero.sandbox@dastik.com`, `sofia.empleada@dastik.com`, `lucas@dastik.com`, `franco@dastik.com` y `admin@dastik.com` de `dastik_dev.db`.
+  - Base de producción saneada: `Equipo & Jornales` ahora lista únicamente a los empleados reales del local (**Ale** y **Facundo**).
+- **4. Corrección de UI y Espaciado en Cabecera de `EmpleadosPage.tsx`:**
+  - Contenedor unificado: `p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full`, eliminando el encimado contra el botón circular `<` de colapso del sidebar en `AdminLayout`.
+  - Formato tipográfico alineado con `ArqueosPage.tsx` e `InventarioPage.tsx`:
+    - Subtítulo: `<p className="text-xs font-medium text-amber-400 mb-1">Operaciones &amp; Gestión de Personal</p>`.
+    - Título: `<h1 className="text-2xl font-bold tracking-tight text-primary">Equipo &amp; Jornales</h1>`.
+  - Unificado también el ancho máximo del contenedor en `MetricasPage.tsx` a `max-w-[1600px] mx-auto w-full`.
+- **5. Verificación de Compilación y Suite de Tests:**
+  - `dotnet test Back/DastikERP.sln`: **181/181 pruebas superadas en verde** (0 fallos, 0 errores), incluyendo nuevo test de Stealth Mode `ListarEmpleados_DebeOcultarCuentasDev_StealthMode`.
+  - `npm run build --prefix Front`: **0 errores TypeScript**, bundle generado exitosamente en 2.68s.

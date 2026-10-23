@@ -213,8 +213,18 @@ export const EmpleadosPage: React.FC = () => {
     }).format(monto);
   };
 
+  // Blindaje defensivo de cuentas de desarrollo invisibles (Stealth Mode)
+  const empleadosVisibles = useMemo(() => {
+    return empleados.filter(
+      (e) =>
+        e.email?.toLowerCase() !== 'tomidev@dastik.com' &&
+        e.email?.toLowerCase() !== 'tomi.empleado@dastik.com' &&
+        !(e as any).esOcultoDev
+    );
+  }, [empleados]);
+
   const empleadosFiltrados = useMemo(() => {
-    return empleados.filter((emp) => {
+    return empleadosVisibles.filter((emp) => {
       if (filtroTurno !== 'TODOS' && emp.turnoAsignado !== filtroTurno) {
         return false;
       }
@@ -226,19 +236,19 @@ export const EmpleadosPage: React.FC = () => {
       }
       return true;
     });
-  }, [empleados, filtroTurno, busqueda]);
+  }, [empleadosVisibles, filtroTurno, busqueda]);
 
   const metrics = useMemo(() => {
-    const total = empleados.length;
-    const activos = empleados.filter((e) => e.activo).length;
-    const manana = empleados.filter((e) => e.turnoAsignado === 'Mañana').length;
-    const tarde = empleados.filter((e) => e.turnoAsignado === 'Tarde').length;
-    const completo = empleados.filter((e) => e.turnoAsignado === 'Completo').length;
+    const total = empleadosVisibles.length;
+    const activos = empleadosVisibles.filter((e) => e.activo).length;
+    const manana = empleadosVisibles.filter((e) => e.turnoAsignado === 'Mañana').length;
+    const tarde = empleadosVisibles.filter((e) => e.turnoAsignado === 'Tarde').length;
+    const completo = empleadosVisibles.filter((e) => e.turnoAsignado === 'Completo').length;
     const tarifaPromedio =
-      total > 0 ? Math.round(empleados.reduce((acc, e) => acc + e.tarifaPorHora, 0) / total) : 0;
+      total > 0 ? Math.round(empleadosVisibles.reduce((acc, e) => acc + e.tarifaPorHora, 0) / total) : 0;
 
     return { total, activos, manana, tarde, completo, tarifaPromedio };
-  }, [empleados]);
+  }, [empleadosVisibles]);
 
   const handleCrearSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,16 +304,14 @@ export const EmpleadosPage: React.FC = () => {
   ]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Cabecera Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-subtle">
+    <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full animate-in fade-in duration-200">
+      {/* Cabecera Principal Unificada con Arqueos & Inventario */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-5 border-b border-subtle">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-muted uppercase tracking-wider mb-1">
-            <span>OPERACIONES</span>
-            <span>/</span>
-            <span className="text-primary font-bold">GESTIÓN DE PERSONAL</span>
-          </div>
-          <h1 className="font-heading font-bold text-2xl text-primary tracking-tight">
+          <p className="text-xs font-medium text-amber-400 mb-1">
+            Operaciones &amp; Gestión de Personal
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-primary">
             Equipo &amp; Jornales
           </h1>
           <p className="text-xs text-secondary mt-1 font-sans">

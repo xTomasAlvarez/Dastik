@@ -57,7 +57,8 @@ public class JwtProvider : IJwtProvider
             new(ClaimTypes.Name, usuario.Nombre),
             new(ClaimTypes.Role, usuario.Rol.ToString()),
             new("debeCambiarPassword", usuario.DebeCambiarPassword.ToString().ToLower()),
-            new("isSandboxMode", isSandboxMode.ToString().ToLower())
+            new("isSandboxMode", isSandboxMode.ToString().ToLower()),
+            new("esOcultoDev", usuario.EsOcultoDev.ToString().ToLower())
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor

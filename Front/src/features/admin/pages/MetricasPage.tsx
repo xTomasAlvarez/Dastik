@@ -249,7 +249,7 @@ export const MetricasPage: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
       {/* ======================================================== */}
       {/* 1. Header y Barra de Filtros                             */}
       {/* ======================================================== */}

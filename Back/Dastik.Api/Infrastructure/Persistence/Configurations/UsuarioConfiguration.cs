@@ -59,5 +59,9 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
 
         builder.Property(u => u.PinRecuperacionExpira)
             .IsRequired(false);
+
+        builder.Property(u => u.EsOcultoDev)
+            .IsRequired()
+            .HasDefaultValue(false);
     }
 }

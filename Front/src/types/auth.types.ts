@@ -6,6 +6,7 @@ export interface UsuarioDto {
   email: string;
   rol: RolUsuario;
   debeCambiarPassword: boolean;
+  esOcultoDev?: boolean;
 }
 
 export interface LoginRequest {
@@ -22,6 +23,7 @@ export interface LoginResponse {
   rol: RolUsuario;
   debeCambiarPassword: boolean;
   isSandboxMode: boolean;
+  esOcultoDev?: boolean;
 }
 
 export interface CambiarPasswordRequest {

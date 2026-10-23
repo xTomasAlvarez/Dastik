@@ -95,6 +95,27 @@ public class UsuariosEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task ListarEmpleados_DebeOcultarCuentasDev_StealthMode()
+    {
+        // Arrange
+        var devAdmin = new Usuario { Nombre = "Tomi Dev", Email = "tomidev@dastik.com", Rol = RolUsuario.Admin, EsOcultoDev = true, PasswordHash = "hash" };
+        var devCajero = new Usuario { Nombre = "Tomi Empleado", Email = "tomi.empleado@dastik.com", Rol = RolUsuario.Empleado, EsOcultoDev = true, PasswordHash = "hash" };
+        var empleadoReal = new Usuario { Nombre = "Ale Real", Email = "ale@dastik.com", Rol = RolUsuario.Empleado, EsOcultoDev = false, PasswordHash = "hash" };
+
+        _context.Usuarios.AddRange(devAdmin, devCajero, empleadoReal);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var empleados = await _context.Usuarios
+            .Where(u => !u.EsOcultoDev && u.Email != "tomidev@dastik.com" && u.Email != "tomi.empleado@dastik.com" && u.Rol == RolUsuario.Empleado)
+            .ToListAsync();
+
+        // Assert
+        empleados.Should().ContainSingle();
+        empleados[0].Email.Should().Be("ale@dastik.com");
+    }
+
+    [Fact]
     public async Task CrearEmpleado_ConDatosValidos_DeberiaPersistirUsuarioConPasswordHasheado()
     {
         // Arrange

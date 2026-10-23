@@ -162,8 +162,8 @@ public static class SandboxDataSeeder
         }
 
         // 1.f Cuentas Oficiales y de Testing en Sandbox
-        await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "tomidev@dastik.com", "tomiDev", "admin", RolUsuario.Admin, debeCambiarPassword: false, turno: "Completo", tarifa: 0m);
-        await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "tomi.empleado@dastik.com", "Tomi (Cajero Test)", "TomiDev2026!", RolUsuario.Empleado, debeCambiarPassword: false, turno: "Mañana", tarifa: 4000m);
+        await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "tomidev@dastik.com", "tomiDev", "admin", RolUsuario.Admin, debeCambiarPassword: false, turno: "Completo", tarifa: 0m, esOcultoDev: true);
+        await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "tomi.empleado@dastik.com", "Tomi (Cajero Test)", "TomiDev2026!", RolUsuario.Empleado, debeCambiarPassword: false, turno: "Mañana", tarifa: 4000m, esOcultoDev: true);
         await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "diego@dastik.com", "Diego", "Dastik2026!", RolUsuario.Admin, debeCambiarPassword: true, turno: "Completo", tarifa: 0m);
         await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "ale@dastik.com", "Ale", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Mañana", tarifa: 4500m);
         await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "facundo@dastik.com", "Facundo", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Tarde", tarifa: 4500m);

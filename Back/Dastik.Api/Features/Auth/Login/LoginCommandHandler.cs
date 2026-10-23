@@ -54,7 +54,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginRes
             Nombre: usuario.Nombre,
             Rol: usuario.Rol.ToString(),
             DebeCambiarPassword: usuario.DebeCambiarPassword,
-            IsSandboxMode: request.IsSandboxMode
+            IsSandboxMode: request.IsSandboxMode,
+            EsOcultoDev: usuario.EsOcultoDev
         );
 
         return Result<LoginResult>.Success(result);

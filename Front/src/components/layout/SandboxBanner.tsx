@@ -37,16 +37,26 @@ export const SandboxBanner: React.FC = () => {
 
   if (!isSandboxMode) return null;
 
+  const isCurrentTomi =
+    usuario?.email?.toLowerCase() === 'tomidev@dastik.com' ||
+    usuario?.email?.toLowerCase() === 'tomi.empleado@dastik.com' ||
+    Boolean(usuario?.esOcultoDev) ||
+    Boolean(usuario?.nombre?.toLowerCase().includes('tomi'));
+
+  const visibleAccounts = SANDBOX_ACCOUNTS.filter(
+    (acc) => isCurrentTomi || (acc.id !== 'tomiDev' && !acc.email.toLowerCase().includes('tomi'))
+  );
+
   const currentAccount =
-    SANDBOX_ACCOUNTS.find(
+    visibleAccounts.find(
       (a) =>
         a.email.toLowerCase() === usuario?.email?.toLowerCase() ||
         a.nombre.toLowerCase() === usuario?.nombre?.toLowerCase() ||
         (usuario?.nombre?.toLowerCase().includes('diego') && a.id === 'diego') ||
         (usuario?.nombre?.toLowerCase().includes('ale') && a.id === 'ale') ||
         (usuario?.nombre?.toLowerCase().includes('facundo') && a.id === 'facundo') ||
-        (usuario?.nombre?.toLowerCase().includes('tomi') && a.id === 'tomiDev')
-    ) || SANDBOX_ACCOUNTS[0];
+        (isCurrentTomi && a.id === 'tomiDev')
+    ) || visibleAccounts[0];
 
   const handleSelectAccount = async (accountId: string) => {
     setIsSwitching(true);
@@ -142,7 +152,7 @@ export const SandboxBanner: React.FC = () => {
                 <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-muted border-b border-subtle mb-1">
                   Selector Rápido de Cajero
                 </div>
-                {SANDBOX_ACCOUNTS.map((acc) => {
+                {visibleAccounts.map((acc) => {
                   const isSelected =
                     currentAccount?.id === acc.id ||
                     usuario?.email?.toLowerCase() === acc.email.toLowerCase() ||
