@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -108,10 +109,12 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
     (producto ? normalizarUrlImagenAltaRes(producto.imagenUrl) : '') ||
     '';
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && producto && (
-        <div className="fixed inset-0 z-50 flex justify-end overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex justify-end overflow-hidden" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9998 }}>
           {/* Backdrop con Blur */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -462,6 +465,7 @@ export const ModalDetalleProducto: React.FC<ModalDetalleProductoProps> = ({
           />
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

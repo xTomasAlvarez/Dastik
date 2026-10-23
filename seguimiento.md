@@ -1193,3 +1193,23 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **4. Verificación de Compilación y Calidad:**
   - `dotnet test`: **180/180 pruebas superadas en verde** (0 fallos).
   - `npm run build`: **0 errores TypeScript**, bundle de producción generado en 1.98s.
+
+---
+
+### [fix/ui-modal-portal-containment] Corrección de Raíz de Posicionamiento con React Portal y Eliminación de Containing Block (`createPortal` + CSS Fix) - COMPLETADO
+
+**Objetivo:** Eliminar de raíz el bug visual por el cual `ModalCrearProducto` y `ModalDetalleProducto` aparecían hundidos y fuera del viewport tanto al presionar "Nuevo Producto" como al hacer clic en el lápiz de edición de la tabla, producto de la trampa de `containing block` de CSS generada por `transform: translateY(...)` en `.animate-view-fade-in` y el contenedor con scroll `<main>` en `AdminLayout`.
+
+- **Rama:** `develop`.
+- **1. Montaje Directo en el Viewport con React Portal (`createPortal`):**
+  - Implementado `createPortal(..., document.body)` en `ModalCrearProducto.tsx` y `ModalDetalleProducto.tsx`.
+  - Al renderizarse directamente como hijo de `document.body`, los modales escapan de la jerarquía de `<main>` y de los divs con scroll/transform, garantizando que `fixed inset-0` se vincule al viewport real del navegador (`window`).
+  - Eliminado `my-auto` de la tarjeta para permitir que `items-center justify-center` centre matemáticamente el diálogo vertical y horizontalmente en el 100% de la pantalla.
+  - Asignado `z-index: 9999` y estilos fijos inline para máxima prioridad de capa sobre cualquier header o sidebar.
+- **2. Desactivación de Containing Block Permanente en CSS (`index.css`):**
+  - Removido `transform: translateY(4px)` y `forwards` de `@keyframes fadeIn` en `.animate-view-fade-in`, dejándolo como animación pura de `opacity: 0 -> 1`. Esto previene que los elementos contenedores de vista se conviertan permanentemente en `containing blocks` para elementos con `position: fixed`.
+- **3. Bloqueo Dual de Scroll de Fondo:**
+  - `useEffect` actualizado para bloquear tanto `document.body.style.overflow = 'hidden'` como el scroll del contenedor principal `<main>` (`mainEl.style.overflow = 'hidden'`) mientras el modal está abierto, previniendo desplazamientos fantasma del Data Grid de fondo.
+- **4. Verificación de Compilación y Tests:**
+  - `dotnet test`: **180/180 pruebas superadas en verde** (0 fallos).
+  - `npm run build`: **0 errores TypeScript**, bundle de producción generado limpiamente en 2.07s.

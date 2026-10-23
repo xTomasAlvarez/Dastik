@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -544,12 +545,19 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
     };
   });
 
-  // Manejo de atajos ESC / F2 y bloqueo de scroll en el body
+  // Manejo de atajos ESC / F2 y bloqueo de scroll en el body y contenedor main
   useEffect(() => {
     if (!isOpen) return;
 
-    const originalOverflow = document.body.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+
+    // Bloquear también el scroll del contenedor principal <main> si existe
+    const mainEl = document.querySelector('main');
+    const originalMainOverflow = mainEl ? mainEl.style.overflow : '';
+    if (mainEl) {
+      mainEl.style.overflow = 'hidden';
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isLoading) {
@@ -565,14 +573,20 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = originalOverflow || '';
+      document.body.style.overflow = originalBodyOverflow || '';
+      if (mainEl) {
+        mainEl.style.overflow = originalMainOverflow || '';
+      }
     };
   }, [isOpen, isLoading, onClose]);
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="modal-crear-producto-overlay"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -582,15 +596,29 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
               onClose();
             }
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm overflow-hidden"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm overflow-hidden"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+          }}
         >
-          {/* Tarjeta del Modal con dimensiones fijas controladas */}
+          {/* Tarjeta del Modal con dimensiones fijas controladas y centrado en viewport */}
           <motion.div
+            key="modal-crear-producto-card"
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 8 }}
             transition={{ type: 'spring', stiffness: 420, damping: 30, mass: 0.8 }}
-            className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-surface border border-subtle rounded-2xl shadow-2xl overflow-hidden my-auto relative z-10 text-left"
+            className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-surface border border-subtle rounded-2xl shadow-2xl overflow-hidden relative z-10 text-left"
+            style={{
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
             role="dialog"
             aria-modal="true"
             aria-labelledby={modalHeadingId}
@@ -1531,6 +1559,7 @@ export const ModalCrearProducto: React.FC<ModalCrearProductoProps> = ({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
