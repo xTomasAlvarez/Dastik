@@ -1213,3 +1213,55 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **4. Verificación de Compilación y Tests:**
   - `dotnet test`: **180/180 pruebas superadas en verde** (0 fallos).
   - `npm run build`: **0 errores TypeScript**, bundle de producción generado limpiamente en 2.07s.
+
+---
+
+### [feat/auth-staff-ledger-fx] Autenticación Real, Seed Oficial de Cuentas, ABM de Empleados, Recuperación de Clave por PIN de 6 Dígitos y Gestión Multidivisa con Dólar API en Vivo - COMPLETADO
+
+**Objetivo:** Implementar los 6 bloques fundamentales de autenticación real, gestión integral de personal, normalización de alias de transferencias y control de gastos multidivisa en el ERP antes de la fase de pruebas de casos de uso, siguiendo estrictamente `dastik-dotnet-architecture`, `dastik-efcore-transactions`, `dastik-design-system` y `vercel-react-best-practices`.
+
+- **Rama:** `develop` (permanece en `develop` para preservación de release).
+- **1. Limpieza de Login y Seeding de Cuentas Oficiales (Producción y Sandbox):**
+  - `LoginPage.tsx` & `LoginForm.tsx`: Removidos botones de acceso rápido y autocompletado en producción y sandbox; inputs inician vacíos con placeholder sobrio.
+  - Seeding en `DataSeeder.cs` y `SandboxDataSeeder.cs`:
+    - Dev (sin cambio forzado): `tomidev@dastik.com` (`TomiDev2026!` / `tomiDev` / `admin`, Admin), `tomi.empleado@dastik.com` (`TomiDev2026!`, Empleado).
+    - Cuentas oficiales del equipo (requieren cambio obligatorio en 1° login con `Dastik2026!`): `diego@dastik.com` (Admin), `ale@dastik.com` (Empleado), `facundo@dastik.com` (Empleado).
+    - Manejo de tracking en memoria de EF Core (`context.Usuarios.Local`) para evitar excepciones de unicidad al seedear.
+- **2. Tarjeta Mandatoria de Activación de Cuenta / Cambio de Clave en 1° Ingreso:**
+  - `CambiarPasswordModal.tsx`: Modal bloqueante de High-Craft UI con toggles independientes de visibilidad (`Eye`/`EyeSlash`), checklist reactivo de 7 reglas de seguridad (mínimo 8 caracteres, mayúscula, minúscula, número, caracter especial, confirmación idéntica y no reutilizar la clave provisoria).
+  - Backend: `CambiarPasswordCommandValidator.cs` con validación estricta y `CambiarPasswordCommandHandler.cs` que persiste el nuevo hash con BCrypt, remueve el flag `DebeCambiarPassword` y emite un nuevo JWT definitivo para desbloquear la sesión sin desloguear al usuario.
+- **3. Normalización Global de Alias de Transferencia:**
+  - Actualización de `"Gordo"` a `"Facundo"` en toda la interfaz (`ModalPago.tsx`, `ModalCambio.tsx`, `MetricasPage.tsx`).
+  - `SqliteSchemaPatcher.cs`: parche no destructivo de base de datos para sanear registros históricos en `Ordenes.MotivoCambio`.
+- **4. Flujo de Recuperación de Contraseña por PIN de 6 Dígitos:**
+  - Modelo de datos: Agregados campos `PinRecuperacionHash` y `PinRecuperacionExpira` a `Usuario` en `UsuarioConfiguration.cs` y parchado en `SqliteSchemaPatcher.cs`.
+  - Endpoints REST en `AuthEndpoints.cs`:
+    - `POST /api/auth/solicitar-pin-recuperacion`: Generación de PIN numérico de 6 dígitos con hash BCrypt y vencimiento a 10 minutos (incluye retorno para entorno dev/local).
+    - `POST /api/auth/verificar-pin-recuperacion`: Validación de PIN activo y soporte de Master Key de emergencia para el Dueño.
+    - `POST /api/auth/confirmar-recuperacion-pin`: Validación de complejidad y reseteo definitivo de credencial sin requerir cambio posterior.
+  - Frontend: `ModalRecuperarPassword.tsx` con asistente guiado en 3 pasos (Ingreso de correo -> 6 inputs OTP con auto-foco, pegado de portapapeles y retroceso -> Nueva contraseña con checklist de seguridad) + pestaña de desbloqueo por Llave Maestra.
+- **5. ABM Completo de Empleados en Panel Admin:**
+  - Endpoints REST en `UsuariosEndpoints.cs` mapeados en `/api/empleados` y `/api/usuarios/empleados`:
+    - `GET /api/empleados`: Listado de colaboradores.
+    - `POST /api/empleados`: Alta con rol, turno (Mañana/Tarde/Rotativo), valor hora (`decimal(18,2)`) y clave temporal.
+    - `PUT /api/empleados/{id}`: Edición de datos, tarifa y asignaciones.
+    - `POST /api/empleados/{id}/reset-password`: Reseteo directo a `Dastik2026!` con activación forzada de `DebeCambiarPassword = true`.
+    - `PATCH /api/empleados/{id}/toggle-activo`: Suspensión o reactivación lógica sin borrar turnos ni historial de ventas.
+  - Frontend UI en `EmpleadosPage.tsx` y `EmpleadosModals.tsx`:
+    - Modales estilizados para Alta, Edición, Reseteo y Liquidación de Jornal.
+    - Acciones rápidas por fila con badges de estado (`Activo`, `Pausado`, `Clave Temp.`, `Admin`).
+- **6. Cotización del Dólar en Vivo (DolarApi.com) y Ledger Multidivisa de Gastos:**
+  - Servicio de Backend `DolarCotizacionService.cs` (`IDolarCotizacionService`): Consulta a `https://dolarapi.com/v1/dolares` con timeout defensivo de 5s, caching en memoria (`IMemoryCache`, 15 min) y fallback offline (`Blue: 1240/1220`, `Oficial: 1090/1050`).
+  - Entidad de dominio `Gasto.cs` (`Domain/Entities/Gasto.cs`) con mapeo en `GastoConfiguration.cs` y tipos exactos `decimal(18,2)`.
+  - Endpoints en `FinanzasEndpoints.cs`:
+    - `GET /api/finanzas/cotizacion-dolar`: Consulta en tiempo real de tipos de cambio.
+    - `GET /api/finanzas/gastos`: Listado del libro diario con totales calculados en ARS y USD.
+    - `POST /api/finanzas/gastos`: Registro de egresos en ARS o USD con cotización congelada y conversión exacta a ARS.
+    - `DELETE /api/finanzas/gastos/{id}`: Eliminación lógica (`Activo = false`).
+  - Frontend UI en `MetricasPage.tsx` y `finanzasApi.ts`:
+    - Widget superior con cotizaciones del Dólar Blue y Oficial y badge de estado en vivo / contingencia.
+    - Gestor de Gastos Operativos con selector de divisa ARS/USD, previsualización de conversión en vivo (`U$S 100 x $ 1.240 = $ 124.000 ARS`), categorías y deducción automática en el cálculo de Utilidad Neta real.
+- **7. Verificación de Compilación y Suite de Tests:**
+  - `dotnet test Back/DastikERP.sln`: **180/180 pruebas superadas en verde** (0 errores, 0 fallos).
+  - `npm run build --prefix Front`: **0 errores TypeScript**, compilación completada en 1.88s.
+

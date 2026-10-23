@@ -88,34 +88,12 @@ public static class DataSeeder
             await context.SaveChangesAsync();
         }
 
-        // Sembrar usuario adicional de testing y desarrollo: tomiDev (Rol Admin)
-        var tomiDevUser = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "tomidev@dastik.com" || u.Nombre == "tomiDev");
-        if (tomiDevUser is null)
-        {
-            tomiDevUser = new Usuario
-            {
-                Nombre = "tomiDev",
-                Email = "tomidev@dastik.com",
-                PasswordHash = hasher.Hash(AdminDefaultPassword),
-                Rol = RolUsuario.Admin,
-                DebeCambiarPassword = false,
-                Activo = true,
-                FechaCreacion = DateTime.UtcNow
-            };
-
-            context.Usuarios.Add(tomiDevUser);
-            await context.SaveChangesAsync();
-        }
-        else
-        {
-            tomiDevUser.Nombre = "tomiDev";
-            tomiDevUser.Email = "tomidev@dastik.com";
-            tomiDevUser.PasswordHash = hasher.Hash(AdminDefaultPassword);
-            tomiDevUser.Rol = RolUsuario.Admin;
-            tomiDevUser.DebeCambiarPassword = false;
-            tomiDevUser.Activo = true;
-            await context.SaveChangesAsync();
-        }
+        // Sembrar / actualizar las 5 cuentas oficiales y de testing
+        await UpsertUsuarioAsync(context, hasher, "tomidev@dastik.com", "Tomi (Admin Dev)", "TomiDev2026!", RolUsuario.Admin, debeCambiarPassword: false, turno: "Completo", tarifa: 0m);
+        await UpsertUsuarioAsync(context, hasher, "tomi.empleado@dastik.com", "Tomi (Cajero Test)", "TomiDev2026!", RolUsuario.Empleado, debeCambiarPassword: false, turno: "Mañana", tarifa: 4000m);
+        await UpsertUsuarioAsync(context, hasher, "diego@dastik.com", "Diego", "Dastik2026!", RolUsuario.Admin, debeCambiarPassword: true, turno: "Completo", tarifa: 0m);
+        await UpsertUsuarioAsync(context, hasher, "ale@dastik.com", "Ale", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Mañana", tarifa: 4500m);
+        await UpsertUsuarioAsync(context, hasher, "facundo@dastik.com", "Facundo", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Tarde", tarifa: 4500m);
 
         // Sembrar o actualizar Unidades de Negocio con credenciales de Tiendanube desde variables de entorno
         var configuration = scope.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
@@ -271,5 +249,51 @@ public static class DataSeeder
                 await context.SaveChangesAsync();
             }
         }
+    }
+
+    public static async Task UpsertUsuarioAsync(
+        AppDbContext context,
+        IPasswordHasher hasher,
+        string email,
+        string nombre,
+        string password,
+        RolUsuario rol,
+        bool debeCambiarPassword,
+        string turno,
+        decimal tarifa)
+    {
+        var emailLower = email.Trim().ToLowerInvariant();
+        var user = context.Usuarios.Local.FirstOrDefault(u => u.Email.Trim().ToLowerInvariant() == emailLower)
+            ?? await context.Usuarios.FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower);
+        if (user is null)
+        {
+            user = new Usuario
+            {
+                Nombre = nombre,
+                Email = email.ToLower(),
+                PasswordHash = hasher.Hash(password),
+                Rol = rol,
+                DebeCambiarPassword = debeCambiarPassword,
+                Activo = true,
+                TurnoAsignado = turno,
+                TarifaPorHora = tarifa,
+                FechaCreacion = DateTime.UtcNow
+            };
+            context.Usuarios.Add(user);
+        }
+        else
+        {
+            user.Nombre = nombre;
+            user.Rol = rol;
+            user.Activo = true;
+            user.TurnoAsignado = turno;
+            if (tarifa > 0m) user.TarifaPorHora = tarifa;
+            if (user.DebeCambiarPassword || !hasher.Verify(password, user.PasswordHash))
+            {
+                user.PasswordHash = hasher.Hash(password);
+                user.DebeCambiarPassword = debeCambiarPassword;
+            }
+        }
+        await context.SaveChangesAsync();
     }
 }

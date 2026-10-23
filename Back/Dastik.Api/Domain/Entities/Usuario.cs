@@ -12,4 +12,6 @@ public class Usuario
     public string TurnoAsignado { get; set; } = "Completo";
     public decimal TarifaPorHora { get; set; } = 0m;
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+    public string? PinRecuperacionHash { get; set; }
+    public DateTime? PinRecuperacionExpira { get; set; }
 }

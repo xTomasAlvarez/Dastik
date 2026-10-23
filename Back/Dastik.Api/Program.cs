@@ -12,6 +12,8 @@ using Dastik.Api.Features.Inventario.UploadImagenes;
 using Dastik.Api.Features.Metricas;
 using Dastik.Api.Features.Sandbox;
 using Dastik.Api.Features.Usuarios;
+using Dastik.Api.Features.Finanzas;
+using Dastik.Api.Features.Finanzas.Services;
 using Dastik.Api.Infrastructure.BackgroundServices;
 using Dastik.Api.Infrastructure.Integrations.Tiendanube;
 using Dastik.Api.Infrastructure.Persistence;
@@ -72,6 +74,8 @@ builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<ITiendanubeSyncService, TiendanubeSyncService>();
 builder.Services.AddScoped<IDatabaseBackupService, DatabaseBackupService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<IDolarCotizacionService, DolarCotizacionService>();
 
 // Cliente HTTP Tipado para Tiendanube con Políticas de Resiliencia (Polly)
 builder.Services.AddHttpClient<ITiendanubeApiClient, TiendanubeApiClient>(client =>
@@ -191,6 +195,7 @@ app.MapMetricasEndpoints();
 app.MapUsuariosEndpoints();
 app.MapConfiguracionEndpoints();
 app.MapSandboxEndpoints();
+app.MapFinanzasEndpoints();
 
 // Sincronización no destructiva de esquema y Seeder de datos iniciales (Producción)
 try

@@ -42,8 +42,9 @@ export const SandboxBanner: React.FC = () => {
       (a) =>
         a.email.toLowerCase() === usuario?.email?.toLowerCase() ||
         a.nombre.toLowerCase() === usuario?.nombre?.toLowerCase() ||
-        (usuario?.nombre?.toLowerCase().includes('franco') && a.id === 'franco') ||
-        (usuario?.nombre?.toLowerCase().includes('lucas') && a.id === 'lucas') ||
+        (usuario?.nombre?.toLowerCase().includes('diego') && a.id === 'diego') ||
+        (usuario?.nombre?.toLowerCase().includes('ale') && a.id === 'ale') ||
+        (usuario?.nombre?.toLowerCase().includes('facundo') && a.id === 'facundo') ||
         (usuario?.nombre?.toLowerCase().includes('tomi') && a.id === 'tomiDev')
     ) || SANDBOX_ACCOUNTS[0];
 

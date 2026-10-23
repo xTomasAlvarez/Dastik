@@ -14,11 +14,21 @@ import {
   Moon,
   ClockAfternoon,
   Key,
+  PencilSimple,
+  Pause,
+  Play,
+  WarningCircle,
 } from '@phosphor-icons/react';
-import { empleadosApi, type EmpleadoDto, type CrearEmpleadoRequest } from '../api/empleadosApi';
+import {
+  empleadosApi,
+  type EmpleadoDto,
+  type CrearEmpleadoRequest,
+  type ActualizarEmpleadoRequest,
+} from '../api/empleadosApi';
 import { Button } from '../../../components/ui/Button';
 import {
   ModalCrearEmpleado,
+  ModalEditarEmpleado,
   ModalLiquidarJornada,
   ModalResetPasswordEmpleado,
 } from '../components/EmpleadosModals';
@@ -54,6 +64,9 @@ export const EmpleadosPage: React.FC = () => {
   const [filtroTurno, setFiltroTurno] = useState<'TODOS' | 'Mañana' | 'Tarde' | 'Completo'>('TODOS');
 
   const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
+  const [empleadoParaEditar, setEmpleadoParaEditar] = useState<EmpleadoDto | null>(null);
+  const [isModalEditarOpen, setIsModalEditarOpen] = useState(false);
+
   const [empleadoParaLiquidar, setEmpleadoParaLiquidar] = useState<EmpleadoDto | null>(null);
   const [empleadoParaResetPassword, setEmpleadoParaResetPassword] = useState<EmpleadoDto | null>(null);
   const [horasTrabajadas, setHorasTrabajadas] = useState<string>('12');
@@ -62,9 +75,10 @@ export const EmpleadosPage: React.FC = () => {
   const [nuevoEmpleado, setNuevoEmpleado] = useState<CrearEmpleadoRequest>({
     nombre: '',
     email: '',
-    password: '',
+    password: 'Dastik2026!',
     turno: 'Completo',
-    tarifaPorHora: 3500,
+    tarifaPorHora: 4500,
+    rol: 'Empleado',
   });
 
   const [notificacion, setNotificacion] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
@@ -79,6 +93,7 @@ export const EmpleadosPage: React.FC = () => {
     queryFn: empleadosApi.obtenerEmpleados,
   });
 
+  // Mutación: Crear Empleado
   const crearMutation = useMutation({
     mutationFn: empleadosApi.crearEmpleado,
     onSuccess: (nuevo) => {
@@ -87,9 +102,10 @@ export const EmpleadosPage: React.FC = () => {
       setNuevoEmpleado({
         nombre: '',
         email: '',
-        password: '',
+        password: 'Dastik2026!',
         turno: 'Completo',
-        tarifaPorHora: 3500,
+        tarifaPorHora: 4500,
+        rol: 'Empleado',
       });
       setNotificacion({
         tipo: 'exito',
@@ -108,6 +124,54 @@ export const EmpleadosPage: React.FC = () => {
         texto: `No se pudo crear el empleado: ${errorMsg}`,
       });
       setTimeout(() => setNotificacion(null), 6000);
+    },
+  });
+
+  // Mutación: Actualizar Empleado
+  const actualizarMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ActualizarEmpleadoRequest }) =>
+      empleadosApi.actualizarEmpleado(id, data),
+    onSuccess: (actualizado) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-empleados'] });
+      setIsModalEditarOpen(false);
+      setEmpleadoParaEditar(null);
+      setNotificacion({
+        tipo: 'exito',
+        texto: `Ficha del empleado "${actualizado.nombre}" actualizada con éxito.`,
+      });
+      setTimeout(() => setNotificacion(null), 6000);
+    },
+    onError: (err: unknown) => {
+      const axiosErr = err as AxiosError<{ error?: string }>;
+      const errorMsg =
+        axiosErr.response?.data?.error ||
+        axiosErr.message ||
+        'Error al actualizar los datos del empleado.';
+      setNotificacion({
+        tipo: 'error',
+        texto: errorMsg,
+      });
+      setTimeout(() => setNotificacion(null), 6000);
+    },
+  });
+
+  // Mutación: Alternar Activo / Inactivo
+  const toggleActivoMutation = useMutation({
+    mutationFn: (id: number) => empleadosApi.toggleActivo(id),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-empleados'] });
+      setNotificacion({
+        tipo: 'exito',
+        texto: res.message || 'Estado del empleado modificado con éxito.',
+      });
+      setTimeout(() => setNotificacion(null), 5000);
+    },
+    onError: () => {
+      setNotificacion({
+        tipo: 'error',
+        texto: 'No se pudo alternar el estado del empleado.',
+      });
+      setTimeout(() => setNotificacion(null), 5000);
     },
   });
 
@@ -166,26 +230,36 @@ export const EmpleadosPage: React.FC = () => {
 
   const metrics = useMemo(() => {
     const total = empleados.length;
+    const activos = empleados.filter((e) => e.activo).length;
     const manana = empleados.filter((e) => e.turnoAsignado === 'Mañana').length;
     const tarde = empleados.filter((e) => e.turnoAsignado === 'Tarde').length;
     const completo = empleados.filter((e) => e.turnoAsignado === 'Completo').length;
     const tarifaPromedio =
       total > 0 ? Math.round(empleados.reduce((acc, e) => acc + e.tarifaPorHora, 0) / total) : 0;
 
-    return { total, manana, tarde, completo, tarifaPromedio };
+    return { total, activos, manana, tarde, completo, tarifaPromedio };
   }, [empleados]);
 
   const handleCrearSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nuevoEmpleado.nombre.trim() || !nuevoEmpleado.email.trim() || !nuevoEmpleado.password.trim()) {
+    if (!nuevoEmpleado.nombre.trim() || !nuevoEmpleado.email.trim()) {
       setNotificacion({ tipo: 'error', texto: 'Por favor completa todos los campos requeridos.' });
       return;
     }
     crearMutation.mutate(nuevoEmpleado);
   };
 
+  const handleActualizarSubmit = async (data: ActualizarEmpleadoRequest) => {
+    if (!empleadoParaEditar) return;
+    await actualizarMutation.mutateAsync({ id: empleadoParaEditar.id, data });
+  };
+
   useEffect(() => {
-    const algunModalAbierto = isModalCrearOpen || !!empleadoParaLiquidar || !!empleadoParaResetPassword;
+    const algunModalAbierto =
+      isModalCrearOpen ||
+      isModalEditarOpen ||
+      !!empleadoParaLiquidar ||
+      !!empleadoParaResetPassword;
 
     if (algunModalAbierto) {
       document.body.style.overflow = 'hidden';
@@ -197,6 +271,8 @@ export const EmpleadosPage: React.FC = () => {
       if (e.key === 'Escape') {
         if (isModalCrearOpen && !crearMutation.isPending) {
           setIsModalCrearOpen(false);
+        } else if (isModalEditarOpen && !actualizarMutation.isPending) {
+          setIsModalEditarOpen(false);
         } else if (empleadoParaLiquidar) {
           setEmpleadoParaLiquidar(null);
         } else if (empleadoParaResetPassword && !isResetPending) {
@@ -205,62 +281,50 @@ export const EmpleadosPage: React.FC = () => {
       }
     };
 
-    if (algunModalAbierto) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isModalCrearOpen, empleadoParaLiquidar, empleadoParaResetPassword, crearMutation.isPending, isResetPending]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isModalCrearOpen,
+    isModalEditarOpen,
+    empleadoParaLiquidar,
+    empleadoParaResetPassword,
+    crearMutation.isPending,
+    actualizarMutation.isPending,
+    isResetPending,
+  ]);
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
-      {/* Notificación Feedback */}
-      {notificacion && (
-        <div
-          className={`p-4 rounded-xl border text-xs font-sans flex items-center justify-between transition-all ${
-            notificacion.tipo === 'exito'
-              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-              : 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300'
-          }`}
-        >
-          <span className="font-medium">{notificacion.texto}</span>
-          <button
-            onClick={() => setNotificacion(null)}
-            className="text-muted hover:text-primary cursor-pointer"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-5 border-b border-subtle">
+    <div className="space-y-6 animate-in fade-in duration-200">
+      {/* Cabecera Principal */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-subtle">
         <div>
-          <span className="text-xs font-medium text-amber-500 block">
-            Equipo &amp; Recursos Humanos
-          </span>
-          <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-primary tracking-tight">
-            Gestión de Empleados y Sueldos
+          <div className="flex items-center gap-2 text-xs font-mono text-muted uppercase tracking-wider mb-1">
+            <span>OPERACIONES</span>
+            <span>/</span>
+            <span className="text-primary font-bold">GESTIÓN DE PERSONAL</span>
+          </div>
+          <h1 className="font-heading font-bold text-2xl text-primary tracking-tight">
+            Equipo &amp; Jornales
           </h1>
+          <p className="text-xs text-secondary mt-1 font-sans">
+            Alta de cajeros, asignación de turnos, liquidación horaria y restablecimiento de claves.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <Button
             variant="secondary"
             size="md"
             onClick={() => refetch()}
-            disabled={isRefetching}
-            title="Refrescar lista de empleados"
+            disabled={isLoading || isRefetching}
+            title="Refrescar listado"
           >
             <ArrowClockwise
-              size={15}
-              weight="regular"
-              className={isRefetching ? 'animate-spin text-amber-500' : 'text-secondary'}
+              size={16}
+              weight="bold"
+              className={isRefetching ? 'animate-spin text-amber-500' : ''}
             />
-            <span>{isRefetching ? 'Actualizando...' : 'Refrescar'}</span>
+            <span className="hidden sm:inline">Actualizar</span>
           </Button>
 
           <Button
@@ -274,18 +338,50 @@ export const EmpleadosPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tarjetas KPI de Staff */}
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Banner de Notificaciones */}
+      {notificacion && (
+        <div
+          className={`rounded-xl border p-3.5 flex items-start justify-between gap-3 text-xs font-sans animate-in slide-in-from-top-2 duration-150 ${
+            notificacion.tipo === 'exito'
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+              : 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400'
+          }`}
+        >
+          <div className="flex items-start gap-2.5">
+            {notificacion.tipo === 'exito' ? (
+              <CheckCircle size={17} weight="bold" className="shrink-0 mt-0.5" />
+            ) : (
+              <WarningCircle size={17} weight="bold" className="shrink-0 mt-0.5" />
+            )}
+            <span className="font-medium leading-relaxed">{notificacion.texto}</span>
+          </div>
+          <button
+            onClick={() => setNotificacion(null)}
+            className="hover:opacity-75 p-0.5 cursor-pointer shrink-0"
+            title="Cerrar aviso"
+          >
+            <X size={15} weight="bold" />
+          </button>
+        </div>
+      )}
+
+      {/* Widgets de Métricas Rápidas */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
         <motion.div variants={itemVariants} className="rounded-xl border border-subtle bg-surface p-5 shadow-surface">
           <div className="flex items-center justify-between text-secondary mb-3">
-            <span className="text-xs font-semibold">Personal Total</span>
-            <Users size={18} weight="duotone" className="text-sky-500" />
+            <span className="text-xs font-semibold text-primary">Equipo Activo</span>
+            <Users size={18} weight="duotone" className="text-amber-500" />
           </div>
           <div className="font-mono tabular-nums font-bold text-3xl text-primary tracking-tight">
-            {metrics.total}
+            {metrics.activos} <span className="text-xs text-muted font-normal">/ {metrics.total} total</span>
           </div>
           <p className="text-xs text-muted mt-1 font-sans">
-            Usuarios con acceso de caja al POS
+            Personal operativo habilitado para POS
           </p>
         </motion.div>
 
@@ -344,7 +440,7 @@ export const EmpleadosPage: React.FC = () => {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por nombre o correo de empleado..."
-            className="w-full bg-surface border border-subtle focus:border-amber-500/80 rounded-lg text-primary text-xs pl-9 pr-4 py-2 outline-none transition-fast"
+            className="w-full bg-elevated border border-subtle focus:border-strong rounded-xl text-primary text-xs pl-9 pr-4 py-2.5 outline-none transition-colors"
           />
         </div>
 
@@ -413,7 +509,7 @@ export const EmpleadosPage: React.FC = () => {
                   <th className="py-3.5 px-4">Empleado / Operador</th>
                   <th className="py-3.5 px-4">Turno Asignado</th>
                   <th className="py-3.5 px-4 text-right">Tarifa × Hora</th>
-                  <th className="py-3.5 px-4 text-right">Jornada Completa (12h)</th>
+                  <th className="py-3.5 px-4 text-right">Jornada 12h</th>
                   <th className="py-3.5 px-4 text-center">Estado</th>
                   <th className="py-3.5 px-4 text-center">Acciones</th>
                 </tr>
@@ -423,16 +519,28 @@ export const EmpleadosPage: React.FC = () => {
                   const jornada12h = emp.tarifaPorHora * 12;
 
                   return (
-                    <tr key={emp.id} className="hover:bg-elevated/50 transition-fast group">
+                    <tr
+                      key={emp.id}
+                      className={`hover:bg-elevated/50 transition-colors group ${
+                        !emp.activo ? 'opacity-60 bg-elevated/20' : ''
+                      }`}
+                    >
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-xs text-primary">
+                          <div className="w-9 h-9 rounded-xl border border-subtle bg-elevated flex items-center justify-center font-heading font-bold text-xs text-primary shrink-0">
                             {emp.nombre.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-heading font-bold text-sm text-primary block">
-                              {emp.nombre}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-heading font-bold text-sm text-primary block">
+                                {emp.nombre}
+                              </span>
+                              {emp.rol === 'Admin' && (
+                                <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-indigo-500/30 bg-indigo-500/10 text-indigo-500">
+                                  ADMIN
+                                </span>
+                              )}
+                            </div>
                             <span className="font-mono text-xs text-secondary">{emp.email}</span>
                           </div>
                         </div>
@@ -468,18 +576,48 @@ export const EmpleadosPage: React.FC = () => {
                         <span className="font-mono tabular-nums text-primary font-semibold">
                           {formatearDinero(jornada12h)}
                         </span>
-                        <span className="text-[11px] text-muted block">12 horas continuas</span>
+                        <span className="text-[11px] text-muted block">12 horas</span>
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle size={12} weight="bold" />
-                          Activo
-                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          {emp.activo ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              <CheckCircle size={12} weight="bold" />
+                              Activo
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border border-subtle bg-elevated text-muted">
+                              <Pause size={12} weight="bold" />
+                              Pausado
+                            </span>
+                          )}
+
+                          {emp.debeCambiarPassword && (
+                            <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                              Clave Temp.
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {/* Botón Editar */}
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setEmpleadoParaEditar(emp);
+                              setIsModalEditarOpen(true);
+                            }}
+                            title={`Editar datos de ${emp.nombre}`}
+                          >
+                            <PencilSimple size={14} weight="bold" />
+                            <span className="hidden xl:inline">Editar</span>
+                          </Button>
+
+                          {/* Botón Liquidar */}
                           <Button
                             variant="secondary"
                             size="sm"
@@ -490,18 +628,34 @@ export const EmpleadosPage: React.FC = () => {
                             title={`Calcular liquidación diaria para ${emp.nombre}`}
                           >
                             <Calculator size={14} weight="duotone" className="text-emerald-500" />
-                            <span>Liquidar</span>
+                            <span className="hidden xl:inline">Liquidar</span>
                           </Button>
 
+                          {/* Botón Cambiar Clave */}
                           <Button
                             variant="secondary"
                             size="sm"
                             onClick={() => setEmpleadoParaResetPassword(emp)}
-                            title={`Cambiar o restablecer contraseña para ${emp.nombre}`}
+                            title={`Restablecer o blanquear contraseña para ${emp.nombre}`}
                           >
                             <Key size={14} weight="duotone" className="text-amber-500" />
-                            <span>Cambiar Clave</span>
+                            <span className="hidden xl:inline">Clave</span>
                           </Button>
+
+                          {/* Botón Activar / Pausar */}
+                          <button
+                            type="button"
+                            onClick={() => toggleActivoMutation.mutate(emp.id)}
+                            disabled={toggleActivoMutation.isPending}
+                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer text-xs ${
+                              emp.activo
+                                ? 'border-subtle hover:border-red-500/40 hover:bg-red-500/10 text-muted hover:text-red-500'
+                                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'
+                            }`}
+                            title={emp.activo ? `Pausar acceso para ${emp.nombre}` : `Reactivar acceso para ${emp.nombre}`}
+                          >
+                            {emp.activo ? <Pause size={14} weight="bold" /> : <Play size={14} weight="bold" />}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -523,7 +677,19 @@ export const EmpleadosPage: React.FC = () => {
         isPending={crearMutation.isPending}
       />
 
-      {/* MODAL 2: LIQUIDAR JORNADA */}
+      {/* MODAL 2: EDITAR EMPLEADO */}
+      <ModalEditarEmpleado
+        isOpen={isModalEditarOpen}
+        onClose={() => {
+          setIsModalEditarOpen(false);
+          setEmpleadoParaEditar(null);
+        }}
+        empleado={empleadoParaEditar}
+        onActualizar={handleActualizarSubmit}
+        isPending={actualizarMutation.isPending}
+      />
+
+      {/* MODAL 3: LIQUIDAR JORNADA */}
       <ModalLiquidarJornada
         empleado={empleadoParaLiquidar}
         onClose={() => setEmpleadoParaLiquidar(null)}
@@ -532,7 +698,7 @@ export const EmpleadosPage: React.FC = () => {
         formatearDinero={formatearDinero}
       />
 
-      {/* MODAL 3: CAMBIAR / RESETEAR CONTRASEÑA DE EMPLEADO */}
+      {/* MODAL 4: CAMBIAR / RESETEAR CONTRASEÑA DE EMPLEADO */}
       <ModalResetPasswordEmpleado
         empleado={empleadoParaResetPassword}
         onClose={() => setEmpleadoParaResetPassword(null)}

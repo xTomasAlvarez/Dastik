@@ -16,5 +16,6 @@ public record CambiarPasswordCommand(
 
 public record CambiarPasswordResult(
     string Mensaje,
-    bool DebeCambiarPassword
+    bool DebeCambiarPassword,
+    string? Token = null
 );

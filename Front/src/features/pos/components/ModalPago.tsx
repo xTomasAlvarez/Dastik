@@ -368,7 +368,7 @@ export const ModalPago: React.FC<ModalPagoProps> = ({
                 <div className="flex items-center justify-between text-primary">
                   <span>Alias oficial:</span>
                   <code className="text-amber-600 dark:text-amber-400 font-bold bg-elevated rounded px-2 py-0.5 border border-subtle">
-                    el de Ale / el del Gordo
+                    ale.dastik / facundo.dastik (Ale / Facundo)
                   </code>
                 </div>
                 <p className="text-[11px] font-sans text-secondary pt-1">

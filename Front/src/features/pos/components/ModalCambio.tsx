@@ -1036,8 +1036,7 @@ export const ModalCambio: React.FC<ModalCambioProps> = ({
                         RECORDATORIO DE ALIAS // VERIFICAR ACREDITACIÓN:
                       </span>
                       <p className="text-secondary">
-                        • Alias Ale: <strong className="text-primary">ale.dastik</strong> | Alias Gordo:{' '}
-                        <strong className="text-primary">gordo.dastik</strong>
+                        • Alias Ale: <strong className="text-primary">ale.dastik</strong> | Alias Facundo: <strong className="text-primary">facundo.dastik</strong>
                       </p>
                       <p className="text-[11px] text-muted">
                         Verifica el comprobante bancario antes de confirmar la entrega.

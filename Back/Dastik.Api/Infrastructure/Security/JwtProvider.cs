@@ -17,6 +17,10 @@ public class JwtProvider : IJwtProvider
     public const string DefaultAudience = "DastikClient";
     public const int DefaultExpirationMinutes = 480;
 
+    public JwtProvider() : this(new ConfigurationBuilder().Build())
+    {
+    }
+
     public JwtProvider(IConfiguration configuration)
     {
         _configuration = configuration;
@@ -49,20 +53,19 @@ public class JwtProvider : IJwtProvider
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
-            new(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
-            new(ClaimTypes.Name, usuario.Nombre),
             new(JwtRegisteredClaimNames.Email, usuario.Email),
+            new(ClaimTypes.Name, usuario.Nombre),
             new(ClaimTypes.Role, usuario.Rol.ToString()),
-            new("IsSandboxMode", isSandboxMode ? "true" : "false"),
-            new("DebeCambiarPassword", usuario.DebeCambiarPassword ? "true" : "false")
+            new("debeCambiarPassword", usuario.DebeCambiarPassword.ToString().ToLower()),
+            new("isSandboxMode", isSandboxMode.ToString().ToLower())
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Issuer = issuer,
-            Audience = audience,
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddMinutes(expirationMinutes),
+            Issuer = issuer,
+            Audience = audience,
             SigningCredentials = creds
         };
 

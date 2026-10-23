@@ -71,33 +71,7 @@ public static class SandboxDataSeeder
         eanGenerator ??= new GeneradorEan13();
         passwordHasher ??= new PasswordHasher();
 
-        // 1. Cuenta Dueño: tomiDev (admin@dastik.com / tomidev@dastik.com) - pass: "admin"
-        var tomiDevSandbox = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "tomidev@dastik.com" || u.Nombre == "tomiDev" || u.Email == "admin@dastik.com");
-        if (tomiDevSandbox is null)
-        {
-            context.Usuarios.Add(new Usuario
-            {
-                Nombre = "tomiDev",
-                Email = "tomidev@dastik.com",
-                PasswordHash = passwordHasher.Hash("admin"),
-                Rol = RolUsuario.Admin,
-                DebeCambiarPassword = false,
-                Activo = true,
-                TurnoAsignado = "Completo",
-                TarifaPorHora = 0m,
-                FechaCreacion = DateTime.UtcNow
-            });
-        }
-        else
-        {
-            tomiDevSandbox.Nombre = "tomiDev";
-            tomiDevSandbox.Email = "tomidev@dastik.com";
-            tomiDevSandbox.PasswordHash = passwordHasher.Hash("admin");
-            tomiDevSandbox.Rol = RolUsuario.Admin;
-            tomiDevSandbox.DebeCambiarPassword = false;
-            tomiDevSandbox.Activo = true;
-            tomiDevSandbox.TurnoAsignado = "Completo";
-        }
+// 1. Cuenta Dueño tomiDev se siembra en sección 1.f
 
         // 1.b Empleado 1: Franco Romero (franco@dastik.com) - pass: "1234", Rol: Empleado, Tarifa: $4.000/h, Turno: Tarde
         var franco = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "franco@dastik.com" || u.Nombre == "Franco Romero" || u.Nombre == "franco");
@@ -186,6 +160,13 @@ public static class SandboxDataSeeder
                 FechaCreacion = DateTime.UtcNow
             });
         }
+
+        // 1.f Cuentas Oficiales y de Testing en Sandbox
+        await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "tomidev@dastik.com", "tomiDev", "admin", RolUsuario.Admin, debeCambiarPassword: false, turno: "Completo", tarifa: 0m);
+        await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "tomi.empleado@dastik.com", "Tomi (Cajero Test)", "TomiDev2026!", RolUsuario.Empleado, debeCambiarPassword: false, turno: "Mañana", tarifa: 4000m);
+        await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "diego@dastik.com", "Diego", "Dastik2026!", RolUsuario.Admin, debeCambiarPassword: true, turno: "Completo", tarifa: 0m);
+        await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "ale@dastik.com", "Ale", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Mañana", tarifa: 4500m);
+        await DataSeeder.UpsertUsuarioAsync(context, passwordHasher, "facundo@dastik.com", "Facundo", "Dastik2026!", RolUsuario.Empleado, debeCambiarPassword: true, turno: "Tarde", tarifa: 4500m);
 
         // 2. Unidades de Negocio
         var unidadDastik = await context.UnidadesNegocio.FirstOrDefaultAsync(u => u.Nombre == "Dastik");

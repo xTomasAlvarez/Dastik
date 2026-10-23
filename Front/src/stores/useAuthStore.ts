@@ -16,34 +16,44 @@ export interface SandboxAccount {
 
 export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
   {
-    id: 'tomiDev',
-    nombre: 'tomiDev',
-    email: 'tomidev@dastik.com',
-    password: 'admin',
-    label: 'Dueño: tomiDev',
+    id: 'diego',
+    nombre: 'Diego',
+    email: 'diego@dastik.com',
+    password: 'Dastik2026!',
+    label: 'Diego (Dueño)',
     rol: 'Admin',
     turno: 'Completo',
     tarifa: '$ 0/h',
   },
   {
-    id: 'franco',
-    nombre: 'Franco Romero',
-    email: 'franco@dastik.com',
-    password: '1234',
-    label: 'Empleado 1: Franco (Tarde)',
-    rol: 'Empleado',
-    turno: 'Tarde',
-    tarifa: '$ 4.000/h',
-  },
-  {
-    id: 'lucas',
-    nombre: 'Lucas Benítez',
-    email: 'lucas@dastik.com',
-    password: '1234',
-    label: 'Empleado 2: Lucas (Mañana)',
+    id: 'ale',
+    nombre: 'Ale',
+    email: 'ale@dastik.com',
+    password: 'Dastik2026!',
+    label: 'Ale (Cajero)',
     rol: 'Empleado',
     turno: 'Mañana',
     tarifa: '$ 4.500/h',
+  },
+  {
+    id: 'facundo',
+    nombre: 'Facundo',
+    email: 'facundo@dastik.com',
+    password: 'Dastik2026!',
+    label: 'Facundo (Cajero)',
+    rol: 'Empleado',
+    turno: 'Tarde',
+    tarifa: '$ 4.500/h',
+  },
+  {
+    id: 'tomiDev',
+    nombre: 'Tomi (Admin Dev)',
+    email: 'tomidev@dastik.com',
+    password: 'TomiDev2026!',
+    label: 'Tomi (Dev)',
+    rol: 'Admin',
+    turno: 'Completo',
+    tarifa: '$ 0/h',
   },
 ];
 
@@ -54,7 +64,7 @@ interface AuthState {
   debeCambiarPassword: boolean;
 
   setAuth: (data: LoginResponse) => void;
-  setPasswordCambiado: () => void;
+  setPasswordCambiado: (nuevoToken?: string) => void;
   syncEnvironment: (isSandbox: boolean) => void;
   fastSwitchSandboxUser: (accountId: string) => Promise<boolean>;
   logout: () => void;
@@ -152,10 +162,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
 
-  setPasswordCambiado: () => {
+  setPasswordCambiado: (nuevoToken?: string) => {
     set((state) => {
       if (!state.usuario) return state;
-      const { isSandbox, userKey } = getActiveStorageKeys();
+      const { isSandbox, userKey, tokenKey } = getActiveStorageKeys();
       const updatedUser: UsuarioDto = {
         ...state.usuario,
         debeCambiarPassword: false,
@@ -164,7 +174,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (!isSandbox) {
         localStorage.setItem('dastik_auth_user', JSON.stringify(updatedUser));
       }
+      if (nuevoToken) {
+        localStorage.setItem(tokenKey, nuevoToken);
+        if (!isSandbox) {
+          localStorage.setItem('dastik_auth_token', nuevoToken);
+        }
+      }
       return {
+        token: nuevoToken || state.token,
         usuario: updatedUser,
         debeCambiarPassword: false,
       };

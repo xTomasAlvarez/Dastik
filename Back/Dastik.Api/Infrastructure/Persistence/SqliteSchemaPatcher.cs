@@ -152,7 +152,23 @@ public static class SqliteSchemaPatcher
             "Error" TEXT NULL,
             "Intentos" INTEGER NOT NULL DEFAULT 0
         );
+        """,
         """
+        CREATE TABLE IF NOT EXISTS "Gastos" (
+            "Id" INTEGER NOT NULL CONSTRAINT "PK_Gastos" PRIMARY KEY AUTOINCREMENT,
+            "Descripcion" TEXT NOT NULL,
+            "Monto" TEXT NOT NULL DEFAULT '0',
+            "Moneda" TEXT NOT NULL DEFAULT 'ARS',
+            "MontoMonedaOriginal" TEXT NOT NULL DEFAULT '0',
+            "TipoCambioAplicado" TEXT NULL,
+            "TipoDolar" TEXT NULL,
+            "Categoria" TEXT NOT NULL DEFAULT 'General',
+            "Fecha" TEXT NOT NULL,
+            "TurnoId" INTEGER NULL,
+            "UsuarioId" INTEGER NOT NULL,
+            "Activo" INTEGER NOT NULL DEFAULT 1
+        );
+        """,
     ];
 
     private static readonly ColumnPatch[] ColumnPatches =
@@ -174,6 +190,16 @@ public static class SqliteSchemaPatcher
         new("Usuarios", "DebeCambiarPassword", "INTEGER NOT NULL DEFAULT 1"),
         new("Usuarios", "Activo", "INTEGER NOT NULL DEFAULT 1"),
         new("Usuarios", "FechaCreacion", "TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'"),
+        new("Usuarios", "PinRecuperacionHash", "TEXT NULL"),
+        new("Usuarios", "PinRecuperacionExpira", "TEXT NULL"),
+
+        // Gastos
+        new("Gastos", "Moneda", "TEXT NOT NULL DEFAULT 'ARS'"),
+        new("Gastos", "MontoMonedaOriginal", "TEXT NOT NULL DEFAULT '0'"),
+        new("Gastos", "TipoCambioAplicado", "TEXT NULL"),
+        new("Gastos", "TipoDolar", "TEXT NULL"),
+        new("Gastos", "Categoria", "TEXT NOT NULL DEFAULT 'General'"),
+        new("Gastos", "Activo", "INTEGER NOT NULL DEFAULT 1"),
 
         // Proveedores
         new("Proveedores", "MarkupPorDefecto", "TEXT NOT NULL DEFAULT '0'"),
@@ -264,6 +290,11 @@ public static class SqliteSchemaPatcher
                     existingColumns.Add(patch.Column);
                 }
             }
+            // 3. Parche de datos: migración de alias histórico 'Gordo' a 'Facundo'
+            await ExecuteNonQueryAsync(
+                connection,
+                "UPDATE \"Ordenes\" SET \"MotivoCambio\" = REPLACE(\"MotivoCambio\", 'Gordo', 'Facundo') WHERE \"MotivoCambio\" LIKE '%Gordo%';",
+                cancellationToken);
         }
         finally
         {
