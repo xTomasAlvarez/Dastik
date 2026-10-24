@@ -1390,9 +1390,9 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Implementado mecanismo de reintento automático: si el token inicial es rechazado con `401 Unauthorized`, reintenta de forma transparente con el token alternativo (ej. el de BD si difiere del de Config, o viceversa).
   - Auto-sanación de base de datos: si una credencial resulta exitosa (`200 OK`), actualiza inmediatamente el registro de `UnidadNegocio` "Dastik" en `AppDbContext` (`await _context.SaveChangesAsync()`).
 - **2. Unificación en Fuentes Locales y Base de Datos:**
-  - `dastik_dev.db`: Actualizada la entidad `UnidadNegocio` de Dastik con `StoreId: '5686318'` y `AccessToken: 'b0b1c5f8e482ed372168badfe114d2cf97254bd5'`.
+  - `dastik_dev.db`: Actualizada la entidad `UnidadNegocio` de Dastik con `StoreId: '5686318'` y `AccessToken: '[TOKEN_ANTERIOR_REVOCADO]'`.
   - `dastik_sandbox_dev.db`: Mantiene aislado su entorno mock (`Store: 'sandbox-dastik'`, `Token: 'mock-token-dastik'`).
-  - `Back/.env`: Sincronizado con `TIENDANUBE_STORE_ID="5686318"` y `TIENDANUBE_ACCESS_TOKEN="b0b1c5f8e482ed372168badfe114d2cf97254bd5"`.
+  - `Back/.env`: Sincronizado con `TIENDANUBE_STORE_ID="5686318"` y `TIENDANUBE_ACCESS_TOKEN="[TOKEN_ANTERIOR_REVOCADO]"`.
   - `Back/Dastik.Api/appsettings.Development.json`: Persistido con las credenciales locales de desarrollo.
   - `SqliteSchemaPatcher.cs`: Añadido parche 7 para asegurar que `TieneTiendaNube = 1` y `TiendanubeStoreId = '5686318'` en la base local de producción.
 - **3. Verificación de Compilación y Suite de Tests:**
@@ -1411,12 +1411,32 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Se integró `IConfiguration` de forma consistente en `CrearProductoCommandHandler.cs` para homologar la creación y sincronización de productos.
   - Mecanismo de fallback transparente preservado: si el token configurado devuelve `401 Unauthorized`, el servicio ejecuta un segundo intento con el token de base de datos / parámetro antes de fallar.
 - **2. Sanitización Exhaustiva de Tokens (`TiendanubeTokenHelper.cs`):**
-  - Limpieza profunda de caracteres de envoltura: `Trim('"', '\'', '[', ']', '{', '}').Trim()`, permitiendo que cadenas pegadas con corchetes (ej. `[b0b1c5f8...]`) se normalicen de inmediato a su formato hexadecimal limpio.
+  - Limpieza profunda de caracteres de envoltura: `Trim('"', '\'', '[', ']', '{', '}').Trim()`, permitiendo que cadenas pegadas con corchetes (ej. `[token_hex...]`) se normalicen de inmediato a su formato hexadecimal limpio.
 - **3. Diagnóstico Técnico en Vivo contra la API Upstream de Tiendanube:**
-  - Se ejecutaron peticiones HTTP reales a `https://api.tiendanube.com/v1/5686318/products?per_page=1` y `https://api.tiendanube.com/2025-03/5686318/products?per_page=1` utilizando la cabecera canónica `Authentication: bearer b0b1c5f8e482ed372168badfe114d2cf97254bd5` y `User-Agent: Dastik POS/ERP (contacto@dastik.com)`.
+  - Se ejecutaron peticiones HTTP reales a `https://api.tiendanube.com/v1/5686318/products?per_page=1` y `https://api.tiendanube.com/2025-03/5686318/products?per_page=1` utilizando la cabecera canónica `Authentication: bearer [TOKEN_ANTERIOR_REVOCADO]` y `User-Agent: Dastik POS/ERP (contacto@dastik.com)`.
   - El servidor oficial de Tiendanube respondió invariablemente con código `401 Unauthorized: {"code": 401, "message": "Unauthorized", "description": "Invalid access token"}`.
-  - Se inspeccionó el enlace de origen (`https://www.tiendanube.com/share/api-key/b8d9b3970a7e7977fe1ca7a29102f4dda9bc6b43ec5e100d0bc7ea8c4cf1994e`), confirmando el mensaje emitido por Tiendanube: *"Compartir Clave de Acceso - Enlace Inválido. Este enlace de compartición ya no es válido. Contactá al dueño de la tienda para generar uno nuevo."*
+  - Se inspeccionó el enlace de origen (`https://www.tiendanube.com/share/api-key/[ENLACE_ANTERIOR_REVOCADO]`), confirmando el mensaje emitido por Tiendanube: *"Compartir Clave de Acceso - Enlace Inválido. Este enlace de compartición ya no es válido. Contactá al dueño de la tienda para generar uno nuevo."*
 - **4. Suite de Tests y Compilación:**
   - Nueva prueba unitaria: `SincronizarCatalogoAsync_CuandoExistenParametrosClientePeroHayConfiguracion_ConfiguracionTienePrioridadAbsoluta` en `TiendanubeSyncServiceTests.cs`.
   - `dotnet test Back/DastikERP.sln`: **186/186 pruebas superadas en verde** (0 fallos).
   - `npm run build --prefix Front`: **0 errores TypeScript**, compilación completada en 1.91s.
+---
+
+## [chore/tiendanube-token-rotation-and-sync-success] Rotación Definitiva de Token Tiendanube y Sincronización Exitosa - COMPLETADO
+
+**Objetivo:** Rotar la clave de acceso de Tiendanube comprometida en GitGuardian, revocar el token anterior en el panel administrativo oficial, inyectar el nuevo token generado (terminado en `39e1`) exclusivamente en fuentes locales no rastreadas por Git (`.env`, `appsettings.Development.json` y `dastik_dev.db`), verificar la descarga efectiva del catálogo y cerrar todas las alertas de seguridad.
+
+- **Rama:** `develop`.
+- **1. Rotación y Saneamiento Local:**
+  - Token anterior revocado de inmediato en la consola de Tiendanube.
+  - Nuevo token generado e inyectado con éxito en `Back/.env` y `Back/Dastik.Api/appsettings.Development.json`.
+  - Base de datos local `dastik_dev.db` actualizada en `UnidadesNegocio` (`StoreId = 5686318`).
+- **2. Validación Funcional en Vivo:**
+  - Sincronización ejecutada desde el botón "Sincronizar Tiendanube" en `/admin/inventario` devolviendo `200 OK` y descargando los productos correctamente.
+  - Verificación con `git grep`: cero ocurrencias de credenciales sensibles en archivos rastreados.
+- **3. Cierre de Incidentes GitGuardian:**
+  - Todas las alertas de desarrollo/mock resueltas como `Test / Development credential`.
+  - Las alertas de API key de Tiendanube resueltas y marcadas como `Revoked`. Repositorio en estado 100% limpio y protegido.
+- **4. Verificación de Calidad:**
+  - `dotnet test`: **186/186 pruebas superadas en verde** (0 fallos).
+  - `npm run build`: compilación de frontend limpia (**0 errores TypeScript**).
