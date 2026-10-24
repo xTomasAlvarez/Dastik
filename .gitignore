@@ -5,10 +5,15 @@
 Backups/
 Back/Dastik.Api/Backups/
 
-# Environment files
+# Environment files & Local Secrets
 .env
+.env.*
 .env.local
 .env.*.local
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+!appsettings.json
 
 # Agent Customizations & Skills (Local workspace packages)
 .agents/

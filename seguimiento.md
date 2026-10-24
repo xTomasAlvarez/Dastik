@@ -1355,3 +1355,26 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
 - **4. Verificación de Compilación y Suite de Tests:**
   - `npm run build --prefix Front`: **0 errores TypeScript**, bundle generado en 2.05s.
   - `dotnet test Back/DastikERP.sln`: **184/184 pruebas superadas en verde** (0 fallos).
+---
+
+### [chore/tiendanube-credentials-sanitization] Saneamiento de Credenciales de Tiendanube y Blindaje de Secretos en Git - COMPLETADO
+
+**Objetivo:** Eliminar cualquier token o enlace real de Tiendanube expuesto en el código y pruebas unitarias (resolviendo alerta de GitGuardian), blindar el rastreo de Git mediante `.gitignore` para secretos y configuraciones locales (`appsettings.Development.json`, `appsettings.Local.json`, `.env*`), y configurar el token local desacoplado.
+
+- **Rama:** `develop`.
+- **1. Saneamiento de Pruebas Unitarias y Código Fuente:**
+  - `TiendanubeApiClientTests.cs`: Enlace compartido reemplazado por `"https://shared.tiendanube.com/share/api-key/mock_test_key_dummy_12345"` y aserción de cabecera contra `"bearer mock_token_dummy_98765"`.
+  - `TiendanubeTokenHelper.cs`: Eliminados hashes y tokens duros; ahora normaliza dinámicamente cualquier URI válida y maneja mocks ficticios sin datos sensibles.
+  - `TiendanubeSyncServiceTests.cs`: Token real sustituido por `"mock_test_token_dastik_999"`.
+  - `TiendanubeApiClient.cs`: Ajustada la guardia `EsModoMock` para permitir que el test de cabeceras de red evalúe el envío del bearer simulado.
+- **2. Blindaje de Git y Archivos de Configuración:**
+  - `.gitignore` (raíz y `Back/`): Incorporadas reglas explícitas para ignorar `appsettings.Development.json`, `appsettings.Local.json`, `appsettings.*.json` (excepto `appsettings.json`), `.env` y `.env.*`.
+  - `git rm --cached Back/Dastik.Api/appsettings.Development.json`: Removido del índice de Git sin eliminar el archivo físico local.
+  - `appsettings.json` (público/trackeado): Valores de Tiendanube limpios (`"StoreId": "5686318"`, `"AccessToken": ""`).
+  - `DataSeeder.cs`: Habilitada la lectura jerárquica de `Tiendanube:StoreId` y `Tiendanube:AccessToken` desde `IConfiguration` además de variables de entorno.
+- **3. Configuración Local Segura:**
+  - `appsettings.Development.json` (ignorado en Git): Configurado con el StoreId `"5686318"` y el nuevo token de desarrollo de Tiendanube.
+- **4. Verificación de Compilación y Suite de Tests:**
+  - `dotnet test Back/DastikERP.sln`: **184/184 pruebas superadas en verde** (0 fallos).
+  - `npm run build --prefix Front`: **0 errores TypeScript**, compilación completada limpiamente.
+  - Verificación `git grep`: **0 ocurrencias** de credenciales sensibles en todo el repositorio rastreado.

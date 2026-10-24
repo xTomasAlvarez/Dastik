@@ -276,7 +276,7 @@ public class TiendanubeSyncServiceTests : IDisposable
     {
         // Arrange
         _unidadDastik.TiendanubeStoreId = "5686318";
-        _unidadDastik.TiendanubeAccessToken = "b0b1c5f8e482ed372168badfe114d2cf97254bd5";
+        _unidadDastik.TiendanubeAccessToken = "mock_test_token_dastik_999";
         await _context.SaveChangesAsync();
 
         var mockClient = new MockTiendanubeClient();
@@ -288,7 +288,7 @@ public class TiendanubeSyncServiceTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeTrue();
         mockClient.UltimoStoreId.Should().Be("5686318");
-        mockClient.UltimoAccessToken.Should().Be("b0b1c5f8e482ed372168badfe114d2cf97254bd5");
+        mockClient.UltimoAccessToken.Should().Be("mock_test_token_dastik_999");
     }
 
     [Theory]

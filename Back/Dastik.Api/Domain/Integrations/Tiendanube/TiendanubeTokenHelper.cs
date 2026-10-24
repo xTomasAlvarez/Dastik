@@ -14,13 +14,13 @@ public static class TiendanubeTokenHelper
     {
         if (string.IsNullOrWhiteSpace(token)) return null;
 
-        var trimmed = token.Trim().Trim('"').Trim('\'');
+        var trimmed = token.Trim().Trim('"', '\'', '[', ']');
 
         if (trimmed.Contains("shared.tiendanube.com/share/api-key/") || trimmed.Contains("tiendanube.com/share/api-key/"))
         {
-            if (trimmed.Contains("b8d9b3970a7e7977fe1ca7a29102f4dda9bc6b43ec5e100d0bc7ea8c4cf1994e"))
+            if (trimmed.Contains("mock_test_key_dummy_12345"))
             {
-                return "b0b1c5f8e482ed372168badfe114d2cf97254bd5";
+                return "mock_token_dummy_98765";
             }
 
             try

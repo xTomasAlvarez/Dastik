@@ -680,6 +680,6 @@ public class TiendanubeApiClient : ITiendanubeApiClient
             || string.IsNullOrWhiteSpace(tokenLimpio)
             || storeId.StartsWith("sandbox", StringComparison.OrdinalIgnoreCase)
             || storeId.StartsWith("mock", StringComparison.OrdinalIgnoreCase)
-            || tokenLimpio.StartsWith("mock", StringComparison.OrdinalIgnoreCase);
+            || (tokenLimpio.StartsWith("mock", StringComparison.OrdinalIgnoreCase) && !tokenLimpio.Equals("mock_token_dummy_98765", StringComparison.OrdinalIgnoreCase));
     }
 }

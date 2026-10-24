@@ -52,8 +52,10 @@ public static class DataSeeder
         // Sembrar o actualizar Unidades de Negocio con credenciales de Tiendanube desde variables de entorno
         var configuration = scope.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
         var envStoreId = configuration?["TIENDANUBE_STORE_ID"]
+            ?? configuration?["Tiendanube:StoreId"]
             ?? Environment.GetEnvironmentVariable("TIENDANUBE_STORE_ID");
         var envAccessToken = configuration?["TIENDANUBE_ACCESS_TOKEN"]
+            ?? configuration?["Tiendanube:AccessToken"]
             ?? Environment.GetEnvironmentVariable("TIENDANUBE_ACCESS_TOKEN");
 
         var cleanStoreId = !string.IsNullOrWhiteSpace(envStoreId) ? envStoreId.Trim() : null;

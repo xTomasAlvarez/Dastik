@@ -268,8 +268,8 @@ public class TiendanubeApiClientTests
     }
 
     [Theory]
-    [InlineData("https://shared.tiendanube.com/share/api-key/b8d9b3970a7e7977fe1ca7a29102f4dda9bc6b43ec5e100d0bc7ea8c4cf1994e", "b0b1c5f8e482ed372168badfe114d2cf97254bd5")]
-    [InlineData("b0b1c5f8e482ed372168badfe114d2cf97254bd5", "b0b1c5f8e482ed372168badfe114d2cf97254bd5")]
+    [InlineData("https://shared.tiendanube.com/share/api-key/mock_test_key_dummy_12345", "mock_token_dummy_98765")]
+    [InlineData("mock_token_dummy_98765", "mock_token_dummy_98765")]
     [InlineData("https://shared.tiendanube.com/share/api-key/abc123xyz", "abc123xyz")]
     [InlineData("  token-con-espacios  ", "token-con-espacios")]
     public void TiendanubeTokenHelper_NormalizarToken_DebeResolverCorrectamente(string entrada, string esperado)
@@ -300,7 +300,7 @@ public class TiendanubeApiClientTests
         };
 
         var client = new TiendanubeApiClient(httpClient, NullLogger<TiendanubeApiClient>.Instance);
-        const string enlaceCompartir = "https://shared.tiendanube.com/share/api-key/b8d9b3970a7e7977fe1ca7a29102f4dda9bc6b43ec5e100d0bc7ea8c4cf1994e";
+        const string enlaceCompartir = "https://shared.tiendanube.com/share/api-key/mock_test_key_dummy_12345";
 
         // Act
         var result = await client.ObtenerProductosAsync("5686318", enlaceCompartir);
@@ -308,7 +308,7 @@ public class TiendanubeApiClientTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         requestCapturado.Should().NotBeNull();
-        requestCapturado!.Headers.GetValues("Authentication").Should().Contain("bearer b0b1c5f8e482ed372168badfe114d2cf97254bd5");
+        requestCapturado!.Headers.GetValues("Authentication").Should().Contain("bearer mock_token_dummy_98765");
     }
 
     [Fact]
