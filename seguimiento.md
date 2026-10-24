@@ -1399,3 +1399,24 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - Nueva prueba unitaria: `SincronizarCatalogoAsync_CuandoTokenPrimarioResponde401_EjecutaFallbackConTokenAlternativoYActualizaBd` en `TiendanubeSyncServiceTests.cs`.
   - `dotnet test Back/DastikERP.sln`: **185/185 pruebas superadas en verde** (0 fallos).
   - `npm run build --prefix Front`: **0 errores TypeScript**, compilación en 1.86s.
+---
+
+### [fix/tiendanube-hierarchy-and-validation] Blindaje de Prevalencia de IConfiguration, Saneamiento de Tokens y Diagnóstico Exhaustivo de Autenticación Tiendanube - COMPLETADO
+
+**Objetivo:** Consolidar la prioridad absoluta de `IConfiguration` (`appsettings.Development.json` / `.env`) sobre cualquier parámetro stale enviado por el cliente o guardado en el frontend, robustecer la normalización de tokens (eliminando corchetes `[]`, llaves `{}`, comillas y espacios), y diagnosticar con verificación en vivo contra la API real de Tiendanube (`https://api.tiendanube.com/v1/5686318/products`).
+
+- **Rama:** `develop`.
+- **1. Prevalencia Absoluta de Servidor (`TiendanubeSyncService.cs` y `CrearProductoCommandHandler.cs`):**
+  - Se modificó la resolución de credenciales para que `IConfiguration` (`Tiendanube:AccessToken` / `TIENDANUBE_ACCESS_TOKEN`) sea la fuente primaria e inalterable, anulando cualquier valor obsoleto o residual que pudiera ser despachado por el cliente en `POST /api/inventario/sincronizar-tiendanube`.
+  - Se integró `IConfiguration` de forma consistente en `CrearProductoCommandHandler.cs` para homologar la creación y sincronización de productos.
+  - Mecanismo de fallback transparente preservado: si el token configurado devuelve `401 Unauthorized`, el servicio ejecuta un segundo intento con el token de base de datos / parámetro antes de fallar.
+- **2. Sanitización Exhaustiva de Tokens (`TiendanubeTokenHelper.cs`):**
+  - Limpieza profunda de caracteres de envoltura: `Trim('"', '\'', '[', ']', '{', '}').Trim()`, permitiendo que cadenas pegadas con corchetes (ej. `[b0b1c5f8...]`) se normalicen de inmediato a su formato hexadecimal limpio.
+- **3. Diagnóstico Técnico en Vivo contra la API Upstream de Tiendanube:**
+  - Se ejecutaron peticiones HTTP reales a `https://api.tiendanube.com/v1/5686318/products?per_page=1` y `https://api.tiendanube.com/2025-03/5686318/products?per_page=1` utilizando la cabecera canónica `Authentication: bearer b0b1c5f8e482ed372168badfe114d2cf97254bd5` y `User-Agent: Dastik POS/ERP (contacto@dastik.com)`.
+  - El servidor oficial de Tiendanube respondió invariablemente con código `401 Unauthorized: {"code": 401, "message": "Unauthorized", "description": "Invalid access token"}`.
+  - Se inspeccionó el enlace de origen (`https://www.tiendanube.com/share/api-key/b8d9b3970a7e7977fe1ca7a29102f4dda9bc6b43ec5e100d0bc7ea8c4cf1994e`), confirmando el mensaje emitido por Tiendanube: *"Compartir Clave de Acceso - Enlace Inválido. Este enlace de compartición ya no es válido. Contactá al dueño de la tienda para generar uno nuevo."*
+- **4. Suite de Tests y Compilación:**
+  - Nueva prueba unitaria: `SincronizarCatalogoAsync_CuandoExistenParametrosClientePeroHayConfiguracion_ConfiguracionTienePrioridadAbsoluta` en `TiendanubeSyncServiceTests.cs`.
+  - `dotnet test Back/DastikERP.sln`: **186/186 pruebas superadas en verde** (0 fallos).
+  - `npm run build --prefix Front`: **0 errores TypeScript**, compilación completada en 1.91s.

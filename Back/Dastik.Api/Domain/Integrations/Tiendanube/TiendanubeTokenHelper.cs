@@ -14,7 +14,7 @@ public static class TiendanubeTokenHelper
     {
         if (string.IsNullOrWhiteSpace(token)) return null;
 
-        var trimmed = token.Trim().Trim('"', '\'', '[', ']');
+        var trimmed = token.Trim().Trim('"', '\'', '[', ']', '{', '}').Trim();
 
         if (trimmed.Contains("shared.tiendanube.com/share/api-key/") || trimmed.Contains("tiendanube.com/share/api-key/"))
         {

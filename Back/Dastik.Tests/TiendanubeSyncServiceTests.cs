@@ -349,6 +349,31 @@ public class TiendanubeSyncServiceTests : IDisposable
         unidadEnBd.TiendanubeAccessToken.Should().Be("token-viejo-bd");
     }
 
+    [Fact]
+    public async Task SincronizarCatalogoAsync_CuandoExistenParametrosClientePeroHayConfiguracion_ConfiguracionTienePrioridadAbsoluta()
+    {
+        // Arrange: appsettings/IConfiguration tiene un token, y el cliente manda un parámetro stale
+        var inMemorySettings = new Dictionary<string, string?>
+        {
+            ["Tiendanube:StoreId"] = "5686318",
+            ["Tiendanube:AccessToken"] = "token-prioritario-config"
+        };
+        IConfiguration config = new ConfigurationBuilder()
+            .AddInMemoryCollection(inMemorySettings)
+            .Build();
+
+        var mockClient = new MockTiendanubeClient();
+        var service = new TiendanubeSyncService(_context, mockClient, _generadorEan13, NullLogger<TiendanubeSyncService>.Instance, null, config);
+
+        // Act: El cliente manda parámetros viejos/stale
+        var result = await service.SincronizarCatalogoAsync("store-stale-cliente", "token-stale-cliente");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        mockClient.UltimoStoreId.Should().Be("5686318");
+        mockClient.UltimoAccessToken.Should().Be("token-prioritario-config");
+    }
+
     [Theory]
     [InlineData("<h4><span>Remera de corte boxy</span></h4><p>100% algod&oacute;n peinado 24/1.&nbsp;Hecho en Argentina.</p>", "Remera de corte boxy 100% algodón peinado 24/1. Hecho en Argentina.")]
     [InlineData("Texto simple sin tags", "Texto simple sin tags")]

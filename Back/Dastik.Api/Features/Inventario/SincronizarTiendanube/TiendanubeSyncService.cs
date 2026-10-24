@@ -81,10 +81,10 @@ public class TiendanubeSyncService : ITiendanubeSyncService
             ?? _configuration?["TIENDANUBE_ACCESS_TOKEN"]
             ?? Environment.GetEnvironmentVariable("TIENDANUBE_ACCESS_TOKEN");
 
-        var finalStoreId = !string.IsNullOrWhiteSpace(storeId)
-            ? storeId.Trim()
-            : (!string.IsNullOrWhiteSpace(configStoreId)
-                ? configStoreId.Trim()
+        var finalStoreId = !string.IsNullOrWhiteSpace(configStoreId)
+            ? configStoreId.Trim()
+            : (!string.IsNullOrWhiteSpace(storeId)
+                ? storeId.Trim()
                 : (!string.IsNullOrWhiteSpace(unidadDastik.TiendanubeStoreId)
                     ? unidadDastik.TiendanubeStoreId.Trim()
                     : "sandbox-dastik"));
@@ -93,9 +93,9 @@ public class TiendanubeSyncService : ITiendanubeSyncService
         var tokenCandidatoConfig = TiendanubeTokenHelper.NormalizarToken(configAccessToken);
         var tokenCandidatoDb = TiendanubeTokenHelper.NormalizarToken(unidadDastik.TiendanubeAccessToken);
 
-        // Si appsettings/IConfiguration tiene un token configurado, priorizarlo como el más fresco
-        var finalAccessToken = tokenCandidatoParam
-            ?? tokenCandidatoConfig
+        // Jerarquía estricta: IConfiguration (appsettings / .env) prevalece sobre parámetros stale del cliente
+        var finalAccessToken = tokenCandidatoConfig
+            ?? tokenCandidatoParam
             ?? tokenCandidatoDb
             ?? "mock-token-dastik";
 
@@ -107,7 +107,7 @@ public class TiendanubeSyncService : ITiendanubeSyncService
         if (!responseApi.IsSuccess && responseApi.Error?.Contains("401") == true)
         {
             var tokenAlternativo = (finalAccessToken == tokenCandidatoConfig)
-                ? tokenCandidatoDb
+                ? (tokenCandidatoDb != finalAccessToken ? tokenCandidatoDb : tokenCandidatoParam)
                 : tokenCandidatoConfig;
 
             if (!string.IsNullOrWhiteSpace(tokenAlternativo) && tokenAlternativo != finalAccessToken)

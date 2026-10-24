@@ -17,17 +17,20 @@ public class CrearProductoCommandHandler : IRequestHandler<CrearProductoCommand,
     private readonly GeneradorEan13 _generadorEan13;
     private readonly ITiendanubeApiClient _tiendanubeApiClient;
     private readonly ILogger<CrearProductoCommandHandler> _logger;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration? _configuration;
 
     public CrearProductoCommandHandler(
         AppDbContext context,
         GeneradorEan13 generadorEan13,
         ITiendanubeApiClient? tiendanubeApiClient = null,
-        ILogger<CrearProductoCommandHandler>? logger = null)
+        ILogger<CrearProductoCommandHandler>? logger = null,
+        Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
     {
         _context = context;
         _generadorEan13 = generadorEan13;
         _tiendanubeApiClient = tiendanubeApiClient ?? new TiendanubeApiClient(new HttpClient(), NullLogger<TiendanubeApiClient>.Instance);
         _logger = logger ?? NullLogger<CrearProductoCommandHandler>.Instance;
+        _configuration = configuration;
     }
 
     public async Task<CrearProductoResult> Handle(CrearProductoCommand request, CancellationToken cancellationToken)
@@ -116,13 +119,22 @@ public class CrearProductoCommandHandler : IRequestHandler<CrearProductoCommand,
                     )).ToList()
                 );
 
-                var storeId = !string.IsNullOrWhiteSpace(unidad.TiendanubeStoreId)
-                    ? unidad.TiendanubeStoreId.Trim()
-                    : "sandbox-dastik";
+                var configStoreId = _configuration?["Tiendanube:StoreId"]
+                    ?? _configuration?["TIENDANUBE_STORE_ID"]
+                    ?? Environment.GetEnvironmentVariable("TIENDANUBE_STORE_ID");
+                var configAccessToken = _configuration?["Tiendanube:AccessToken"]
+                    ?? _configuration?["TIENDANUBE_ACCESS_TOKEN"]
+                    ?? Environment.GetEnvironmentVariable("TIENDANUBE_ACCESS_TOKEN");
 
-                var token = !string.IsNullOrWhiteSpace(unidad.TiendanubeAccessToken)
-                    ? unidad.TiendanubeAccessToken.Trim()
-                    : "mock-token-dastik";
+                var storeId = !string.IsNullOrWhiteSpace(configStoreId)
+                    ? configStoreId.Trim()
+                    : (!string.IsNullOrWhiteSpace(unidad.TiendanubeStoreId)
+                        ? unidad.TiendanubeStoreId.Trim()
+                        : "sandbox-dastik");
+
+                var token = TiendanubeTokenHelper.NormalizarToken(configAccessToken)
+                    ?? TiendanubeTokenHelper.NormalizarToken(unidad.TiendanubeAccessToken)
+                    ?? "mock-token-dastik";
 
                 var tnResult = await _tiendanubeApiClient.CrearProductoAsync(storeId, token, payload, cancellationToken);
                 if (tnResult.IsSuccess && tnResult.Value != null)
