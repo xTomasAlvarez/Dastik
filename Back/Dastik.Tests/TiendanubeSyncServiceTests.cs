@@ -7,6 +7,7 @@ using Dastik.Api.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -72,9 +73,11 @@ public class TiendanubeSyncServiceTests : IDisposable
     {
         public bool DebeFallar { get; set; }
         public List<TiendanubeProductResponse> ProductosARetornar { get; set; } = new();
+        public Func<string, string, Result<List<TiendanubeProductResponse>>>? CustomResponder { get; set; }
 
         public string? UltimoStoreId { get; private set; }
         public string? UltimoAccessToken { get; private set; }
+        public List<string> TokensProbados { get; } = new();
 
         public Task<Result<TiendanubeVariantResponse>> ActualizarStockVarianteAsync(
             string storeId, string accessToken, string productId, string variantId, int nuevoStock, CancellationToken ct = default)
@@ -91,6 +94,12 @@ public class TiendanubeSyncServiceTests : IDisposable
         {
             UltimoStoreId = storeId;
             UltimoAccessToken = accessToken;
+            TokensProbados.Add(accessToken);
+
+            if (CustomResponder != null)
+            {
+                return Task.FromResult(CustomResponder(storeId, accessToken));
+            }
 
             if (DebeFallar)
             {
@@ -289,6 +298,55 @@ public class TiendanubeSyncServiceTests : IDisposable
         result.IsSuccess.Should().BeTrue();
         mockClient.UltimoStoreId.Should().Be("5686318");
         mockClient.UltimoAccessToken.Should().Be("mock_test_token_dastik_999");
+    }
+
+    [Fact]
+    public async Task SincronizarCatalogoAsync_CuandoTokenPrimarioResponde401_EjecutaFallbackConTokenAlternativoYActualizaBd()
+    {
+        // Arrange: BD tiene un token y appsettings/config tiene otro
+        _unidadDastik.TiendanubeStoreId = "5686318";
+        _unidadDastik.TiendanubeAccessToken = "token-viejo-bd";
+        await _context.SaveChangesAsync();
+
+        var inMemorySettings = new Dictionary<string, string?>
+        {
+            ["Tiendanube:StoreId"] = "5686318",
+            ["Tiendanube:AccessToken"] = "token-nuevo-config"
+        };
+        IConfiguration config = new ConfigurationBuilder()
+            .AddInMemoryCollection(inMemorySettings)
+            .Build();
+
+        var mockClient = new MockTiendanubeClient
+        {
+            CustomResponder = (store, token) =>
+            {
+                // El primer intento con token-nuevo-config devuelve 401
+                if (token == "token-nuevo-config")
+                {
+                    return Result<List<TiendanubeProductResponse>>.Failure("401 Unauthorized: Invalid access token");
+                }
+                // El fallback a token-viejo-bd devuelve éxito
+                if (token == "token-viejo-bd")
+                {
+                    return Result<List<TiendanubeProductResponse>>.Success(new List<TiendanubeProductResponse>());
+                }
+                return Result<List<TiendanubeProductResponse>>.Failure("Error inesperado");
+            }
+        };
+
+        var service = new TiendanubeSyncService(_context, mockClient, _generadorEan13, NullLogger<TiendanubeSyncService>.Instance, null, config);
+
+        // Act
+        var result = await service.SincronizarCatalogoAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        mockClient.TokensProbados.Should().ContainInOrder("token-nuevo-config", "token-viejo-bd");
+
+        // La BD se actualiza automáticamente con el token que funcionó
+        var unidadEnBd = await _context.UnidadesNegocio.FirstAsync(u => u.Nombre == "Dastik");
+        unidadEnBd.TiendanubeAccessToken.Should().Be("token-viejo-bd");
     }
 
     [Theory]

@@ -340,6 +340,15 @@ public static class SqliteSchemaPatcher
                 "UPDATE \"Productos\" SET \"TagsSeo\" = '' WHERE \"TagsSeo\" IS NULL; " +
                 "UPDATE \"Productos\" SET \"VideoUrl\" = '' WHERE \"VideoUrl\" IS NULL;",
                 cancellationToken);
+
+            // 7. Parche de configuración de Tiendanube para Dastik en Producción
+            if (!connection.ConnectionString.Contains("sandbox", StringComparison.OrdinalIgnoreCase))
+            {
+                await ExecuteNonQueryAsync(
+                    connection,
+                    "UPDATE \"UnidadesNegocio\" SET \"TieneTiendaNube\" = 1, \"TiendanubeStoreId\" = '5686318' WHERE \"Nombre\" = 'Dastik' AND (\"TiendanubeStoreId\" IS NULL OR \"TiendanubeStoreId\" = '' OR \"TieneTiendaNube\" = 0);",
+                    cancellationToken);
+            }
         }
         finally
         {

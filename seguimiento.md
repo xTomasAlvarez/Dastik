@@ -1378,3 +1378,24 @@ Toma de nota formal de las especificaciones de negocio para las próximas fases 
   - `dotnet test Back/DastikERP.sln`: **184/184 pruebas superadas en verde** (0 fallos).
   - `npm run build --prefix Front`: **0 errores TypeScript**, compilación completada limpiamente.
   - Verificación `git grep`: **0 ocurrencias** de credenciales sensibles en todo el repositorio rastreado.
+---
+
+### [feat/tiendanube-intelligent-fallback] Jerarquía de Configuración y Fallback Inteligente de Tokens Tiendanube - COMPLETADO
+
+**Objetivo:** Implementar la lectura jerárquica de credenciales desde `IConfiguration` (`appsettings.Development.json`), fallback inteligente ante respuestas 401 Unauthorized y auto-sincronización en base de datos (`dastik_dev.db`), unificando todas las fuentes del StoreId `5686318` y token de Tiendanube.
+
+- **Rama:** `develop`.
+- **1. Jerarquía de Configuración y Fallback Inteligente (`TiendanubeSyncService.cs`):**
+  - Inyección de `IConfiguration` en `TiendanubeSyncService` para priorizar los valores configurados en `appsettings.Development.json` (`Tiendanube:StoreId` y `Tiendanube:AccessToken`) sobre la base de datos y variables de entorno.
+  - Implementado mecanismo de reintento automático: si el token inicial es rechazado con `401 Unauthorized`, reintenta de forma transparente con el token alternativo (ej. el de BD si difiere del de Config, o viceversa).
+  - Auto-sanación de base de datos: si una credencial resulta exitosa (`200 OK`), actualiza inmediatamente el registro de `UnidadNegocio` "Dastik" en `AppDbContext` (`await _context.SaveChangesAsync()`).
+- **2. Unificación en Fuentes Locales y Base de Datos:**
+  - `dastik_dev.db`: Actualizada la entidad `UnidadNegocio` de Dastik con `StoreId: '5686318'` y `AccessToken: 'b0b1c5f8e482ed372168badfe114d2cf97254bd5'`.
+  - `dastik_sandbox_dev.db`: Mantiene aislado su entorno mock (`Store: 'sandbox-dastik'`, `Token: 'mock-token-dastik'`).
+  - `Back/.env`: Sincronizado con `TIENDANUBE_STORE_ID="5686318"` y `TIENDANUBE_ACCESS_TOKEN="b0b1c5f8e482ed372168badfe114d2cf97254bd5"`.
+  - `Back/Dastik.Api/appsettings.Development.json`: Persistido con las credenciales locales de desarrollo.
+  - `SqliteSchemaPatcher.cs`: Añadido parche 7 para asegurar que `TieneTiendaNube = 1` y `TiendanubeStoreId = '5686318'` en la base local de producción.
+- **3. Verificación de Compilación y Suite de Tests:**
+  - Nueva prueba unitaria: `SincronizarCatalogoAsync_CuandoTokenPrimarioResponde401_EjecutaFallbackConTokenAlternativoYActualizaBd` en `TiendanubeSyncServiceTests.cs`.
+  - `dotnet test Back/DastikERP.sln`: **185/185 pruebas superadas en verde** (0 fallos).
+  - `npm run build --prefix Front`: **0 errores TypeScript**, compilación en 1.86s.

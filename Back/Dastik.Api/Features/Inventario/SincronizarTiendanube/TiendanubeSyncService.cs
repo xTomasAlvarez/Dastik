@@ -6,6 +6,7 @@ using Dastik.Api.Domain.Services;
 using Dastik.Api.Features.Configuracion.Services;
 using Dastik.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Dastik.Api.Features.Inventario.SincronizarTiendanube;
@@ -17,19 +18,22 @@ public class TiendanubeSyncService : ITiendanubeSyncService
     private readonly GeneradorEan13 _generadorEan13;
     private readonly ILogger<TiendanubeSyncService> _logger;
     private readonly IDatabaseBackupService? _backupService;
+    private readonly IConfiguration? _configuration;
 
     public TiendanubeSyncService(
         AppDbContext context,
         ITiendanubeApiClient apiClient,
         GeneradorEan13 generadorEan13,
         ILogger<TiendanubeSyncService> logger,
-        IDatabaseBackupService? backupService = null)
+        IDatabaseBackupService? backupService = null,
+        IConfiguration? configuration = null)
     {
         _context = context;
         _apiClient = apiClient;
         _generadorEan13 = generadorEan13;
         _logger = logger;
         _backupService = backupService;
+        _configuration = configuration;
     }
 
     public async Task<Result<SincronizarCatalogoResult>> SincronizarCatalogoAsync(
@@ -63,26 +67,76 @@ public class TiendanubeSyncService : ITiendanubeSyncService
             return Result<SincronizarCatalogoResult>.Failure("No se encontró la Unidad de Negocio 'Dastik' en el sistema.");
         }
 
+        // 2. Jerarquía de resolución inteligente de credenciales:
+        // Prioridad:
+        // A) Parámetros explícitos del comando/request
+        // B) IConfiguration ("Tiendanube:StoreId", "Tiendanube:AccessToken") desde appsettings.Development.json o variables de entorno
+        // C) Base de datos (UnidadesNegocio.TiendanubeAccessToken)
+        // D) Variables de entorno del sistema operativo
+        var configStoreId = _configuration?["Tiendanube:StoreId"]
+            ?? _configuration?["TIENDANUBE_STORE_ID"]
+            ?? Environment.GetEnvironmentVariable("TIENDANUBE_STORE_ID");
+
+        var configAccessToken = _configuration?["Tiendanube:AccessToken"]
+            ?? _configuration?["TIENDANUBE_ACCESS_TOKEN"]
+            ?? Environment.GetEnvironmentVariable("TIENDANUBE_ACCESS_TOKEN");
+
         var finalStoreId = !string.IsNullOrWhiteSpace(storeId)
             ? storeId.Trim()
-            : (!string.IsNullOrWhiteSpace(unidadDastik.TiendanubeStoreId)
-                ? unidadDastik.TiendanubeStoreId.Trim()
-                : Environment.GetEnvironmentVariable("TIENDANUBE_STORE_ID")?.Trim() ?? "sandbox-dastik");
+            : (!string.IsNullOrWhiteSpace(configStoreId)
+                ? configStoreId.Trim()
+                : (!string.IsNullOrWhiteSpace(unidadDastik.TiendanubeStoreId)
+                    ? unidadDastik.TiendanubeStoreId.Trim()
+                    : "sandbox-dastik"));
 
-        var rawAccessToken = !string.IsNullOrWhiteSpace(accessToken)
-            ? accessToken.Trim()
-            : (!string.IsNullOrWhiteSpace(unidadDastik.TiendanubeAccessToken)
-                ? unidadDastik.TiendanubeAccessToken.Trim()
-                : Environment.GetEnvironmentVariable("TIENDANUBE_ACCESS_TOKEN")?.Trim() ?? "mock-token-dastik");
+        var tokenCandidatoParam = TiendanubeTokenHelper.NormalizarToken(accessToken);
+        var tokenCandidatoConfig = TiendanubeTokenHelper.NormalizarToken(configAccessToken);
+        var tokenCandidatoDb = TiendanubeTokenHelper.NormalizarToken(unidadDastik.TiendanubeAccessToken);
 
-        var finalAccessToken = TiendanubeTokenHelper.NormalizarToken(rawAccessToken) ?? "mock-token-dastik";
+        // Si appsettings/IConfiguration tiene un token configurado, priorizarlo como el más fresco
+        var finalAccessToken = tokenCandidatoParam
+            ?? tokenCandidatoConfig
+            ?? tokenCandidatoDb
+            ?? "mock-token-dastik";
 
-        // 2. Obtener productos desde la API de Tiendanube (SOLO LECTURA GET)
+        // 3. Obtener productos desde la API de Tiendanube (SOLO LECTURA GET)
         var responseApi = await _apiClient.ObtenerProductosAsync(finalStoreId, finalAccessToken, ct);
+
+        // Fallback Inteligente ante 401 Unauthorized:
+        // Si el token primario falla con 401 y disponemos de un token alternativo, reintentar automáticamente
+        if (!responseApi.IsSuccess && responseApi.Error?.Contains("401") == true)
+        {
+            var tokenAlternativo = (finalAccessToken == tokenCandidatoConfig)
+                ? tokenCandidatoDb
+                : tokenCandidatoConfig;
+
+            if (!string.IsNullOrWhiteSpace(tokenAlternativo) && tokenAlternativo != finalAccessToken)
+            {
+                _logger.LogWarning("Tiendanube respondió 401 con el token inicial. Ejecutando fallback automático con token alternativo...");
+                var responseRetry = await _apiClient.ObtenerProductosAsync(finalStoreId, tokenAlternativo, ct);
+                if (responseRetry.IsSuccess)
+                {
+                    _logger.LogInformation("Fallback a token alternativo de Tiendanube exitoso.");
+                    responseApi = responseRetry;
+                    finalAccessToken = tokenAlternativo;
+                }
+            }
+        }
+
         if (!responseApi.IsSuccess)
         {
             _logger.LogError("Error al consultar API de Tiendanube: {Error}", responseApi.Error);
             return Result<SincronizarCatalogoResult>.Failure(responseApi.Error ?? "Error desconocido al consultar API de Tiendanube");
+        }
+
+        // 4. Auto-sincronización y curación en Base de Datos: persistir el token exitoso si difiere del actual
+        if (unidadDastik.TiendanubeAccessToken != finalAccessToken || unidadDastik.TiendanubeStoreId != finalStoreId)
+        {
+            unidadDastik.TiendanubeAccessToken = finalAccessToken;
+            unidadDastik.TiendanubeStoreId = finalStoreId;
+            unidadDastik.TieneTiendaNube = true;
+            await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("UnidadNegocio Dastik actualizada en BD con credenciales operativas de Tiendanube (StoreId: {StoreId}).", finalStoreId);
         }
 
         var productosNube = responseApi.Value ?? new List<TiendanubeProductResponse>();
